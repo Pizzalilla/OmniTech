@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniTech - Cart & Orders (Student 4)</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .student-nav {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            padding: 0.85rem 1rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+        }
+        .nav-label {
+            font-weight: 700;
+            align-self: center;
+            font-size: 0.9rem;
+        }
+        .nav-link {
+            text-decoration: none;
+            padding: 0.4rem 0.85rem;
+            background-color: var(--bg-surface-soft);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .nav-link.active {
+            background-color: var(--color-slate-blue);
+            color: var(--text-inverse);
+            border-color: var(--color-slate-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Navigation to All Microservices -->
+        <nav class="student-nav" aria-label="Microservice Navigation">
+            <span class="nav-label">Services:</span>
+            <a href="../../shared/frontend/index.html" class="nav-link">Shared Demo</a>
+            <a href="../../student-1/frontend/index.html" class="nav-link">Student 1 (Catalog)</a>
+            <a href="../../student-2/frontend/index.html" class="nav-link">Student 2 (Users)</a>
+            <a href="../../student-3/frontend/index.html" class="nav-link">Student 3 (Inventory)</a>
+            <a href="../../student-4/frontend/index.html" class="nav-link active">Student 4 (Cart & Orders)</a>
+            <a href="../../student-5/frontend/index.html" class="nav-link">Student 5 (Support)</a>
+        </nav>
+
+        <!-- Header -->
+        <header class="service-header">
+            <h1>Student 4: Cart & Order Processing</h1>
+            <p>Smart Home Appliances Checkout & Agentic AI Compatibility System</p>
+        </header>
+
+        <div class="grid-2">
+            
+            <!-- Active Cart & Orders Panel -->
+            <section class="card">
+                <h2>Active Shopping Cart</h2>
+                <p>Fetch real-time cart data from the database microservice (Port 5014 → 5004).</p>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button hx-get="/api/cart/1" hx-target="#cart-box" class="btn">Load Cart #1</button>
+                    <button hx-get="/api/orders/list" hx-target="#orders-box" class="btn btn-secondary">Load Order History</button>
+                </div>
+                
+                <div id="cart-box" class="panel">
+                    <small style="color: var(--text-muted);">Click "Load Cart #1" to display active items.</small>
+                </div>
+
+                <div id="orders-box" class="panel" style="margin-top: 1rem;">
+                    <small style="color: var(--text-muted);">Click "Load Order History" to retrieve database records.</small>
+                </div>
+            </section>
+
+            <!-- Agentic AI Validator -->
+            <section class="card">
+                <h2>AI Installation & Accessory Check</h2>
+                <form hx-post="/api/orders/ai-validate-cart" hx-target="#ai-box">
+                    <label for="cart_items">Appliances in Cart</label>
+                    <textarea id="cart_items" name="cart_items" rows="3">French Door Smart Refrigerator 600L, Smart Convection Air Fryer Oven 12L</textarea>
+                    <button type="submit" class="btn">Run AI Compatibility Check</button>
+                </form>
+
+                <div id="ai-box"></div>
+            </section>
+
+        </div>
+
+    </div>
+</body>
+</html>
