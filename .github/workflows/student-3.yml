@@ -29,6 +29,8 @@ jobs:
       - name: Check syntax
         run: |
           python -m py_compile student-3/backend/main.py
+          python -m py_compile student-3/backend/agent.py
+          python -m py_compile student-3/backend/catalog.py
           python -m py_compile student-3/database/database.py
 
       - name: Run tests
