@@ -1,0 +1,12 @@
+{% for session in sessions %}
+<div class="session-tab"
+     data-id="{{ session.id }}"
+     onclick="loadSession({{ session.id }})">
+    {{ session.title | truncate(25) }}
+    <button class="close-tab"
+            title="Delete"
+            onclick="deleteSession({{ session.id }}, event)">&times;</button>
+</div>
+{% else %}
+<span style="font-size:0.8rem;color:var(--text-muted);">No consultations yet</span>
+{% endfor %}

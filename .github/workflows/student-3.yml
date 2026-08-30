@@ -1,0 +1,40 @@
+name: Student 3 - AI Product Consultant
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "student-3/**"
+      - ".github/workflows/student-3.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "student-3/**"
+      - ".github/workflows/student-3.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r student-3/requirements.txt
+
+      - name: Check syntax
+        run: |
+          python -m py_compile student-3/backend/main.py
+          python -m py_compile student-3/database/database.py
+
+      - name: Run tests
+        run: |
+          cd student-3
+          python -m pytest tests/ -v
+
+      - name: Build Docker image
+        run: docker build -t student-3 ./student-3

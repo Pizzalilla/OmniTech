@@ -1,0 +1,44 @@
+<div class="chat-header">
+    <h2 id="chat-title">{{ session.title }}</h2>
+    <button class="btn-edit"
+            onclick="startEditTitle({{ session.id }}, '{{ session.title | replace("'", "\\'") }}')">
+        Edit
+    </button>
+</div>
+
+<div class="chat-messages" id="chat-messages">
+    {% for msg in messages %}
+    <div class="message message-{{ msg.role }}">
+        {{ msg.content }}
+        <div class="message-meta">{{ msg.created_at }}</div>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="icon">&#129302;</div>
+        <p>Ask me about any consumer electronics product!</p>
+    </div>
+    {% endfor %}
+</div>
+
+{% if recommendations %}
+<div class="recs-strip">
+    <span class="recs-strip-label">Recommended:</span>
+    {% for rec in recommendations %}
+    <span class="rec-chip">
+        {{ rec.product_name }}
+        <span class="rec-chip-cat">({{ rec.category }})</span>
+    </span>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="chat-input-area">
+    <div class="chat-form">
+        <input type="text"
+               id="chat-input"
+               placeholder="Ask about a product..."
+               autocomplete="off"
+               onkeydown="handleChatKeydown(event, {{ session.id }})">
+        <button class="btn btn-send" onclick="sendMessage({{ session.id }})">Send</button>
+    </div>
+</div>
