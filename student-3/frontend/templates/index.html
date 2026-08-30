@@ -4,460 +4,256 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ service_name }} - OmniTech</title>
-    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-    <style>
-        body { padding: 0; }
-
-        .page-wrapper {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-
-        .top-bar {
-            background: linear-gradient(135deg, var(--color-slate-blue), var(--color-light-blue));
-            color: var(--text-inverse);
-            padding: 0.75rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-shrink: 0;
-        }
-        .top-bar h1 { font-size: 1.1rem; font-weight: 700; }
-        .top-bar a {
-            color: rgba(255,255,255,0.85);
-            text-decoration: none;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
-        .top-bar a:hover { color: #fff; }
-
-        .content-area {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            max-width: 900px;
-            width: 100%;
-            margin: 0 auto;
-            padding: 1.5rem 1.5rem 0;
-            overflow: hidden;
-        }
-
-        /* Session tabs */
-        .session-bar {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-bottom: 1rem;
-            flex-shrink: 0;
-        }
-        .session-bar-scroll {
-            flex: 1;
-            display: flex;
-            gap: 0.4rem;
-            overflow-x: auto;
-            padding-bottom: 2px;
-        }
-        .session-bar-scroll::-webkit-scrollbar { height: 3px; }
-        .session-bar-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-        .session-tab {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            padding: 0.4rem 0.75rem;
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--text-primary);
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.15s;
-        }
-        .session-tab:hover { border-color: var(--primary); }
-        .session-tab.active {
-            background: var(--primary);
-            color: var(--text-inverse);
-            border-color: var(--primary);
-        }
-        .session-tab .close-tab {
-            font-size: 0.7rem;
-            opacity: 0;
-            margin-left: 0.2rem;
-            padding: 0 2px;
-            line-height: 1;
-            background: none;
-            border: none;
-            color: inherit;
-            cursor: pointer;
-        }
-        .session-tab:hover .close-tab { opacity: 0.6; }
-        .session-tab .close-tab:hover { opacity: 1; }
-
-        .btn-new-session {
-            padding: 0.4rem 0.75rem;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-
-        /* Chat area */
-        .chat-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-md) var(--radius-md) 0 0;
-            overflow: hidden;
-            min-height: 0;
-        }
-
-        .chat-header {
-            padding: 0.75rem 1.25rem;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            background: var(--bg-surface);
-            flex-shrink: 0;
-        }
-        .chat-header h2 {
-            font-size: 0.95rem;
-            font-weight: 600;
-            flex: 1;
-            border: none;
-            padding: 0;
-            margin: 0;
-        }
-        .chat-header .btn-edit {
-            padding: 0.25rem 0.6rem;
-            font-size: 0.75rem;
-            background: var(--bg-surface-soft);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-        .chat-header .btn-edit:hover { background: var(--border); }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 1.25rem 1.25rem 0.5rem;
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-        }
-
-        .message {
-            max-width: 72%;
-            padding: 0.75rem 1rem;
-            border-radius: var(--radius-md);
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-        .message-user {
-            align-self: flex-end;
-            background: var(--primary);
-            color: var(--text-inverse);
-            border-bottom-right-radius: 4px;
-        }
-        .message-assistant {
-            align-self: flex-start;
-            background: var(--bg-surface-soft);
-            color: var(--text-primary);
-            border-bottom-left-radius: 4px;
-        }
-        .message-meta {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 0.3rem;
-            opacity: 0.7;
-        }
-        .message-user .message-meta { color: rgba(255,255,255,0.65); }
-
-        /* Recommendations strip */
-        .recs-strip {
-            padding: 0.6rem 1.25rem;
-            border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            overflow-x: auto;
-            flex-shrink: 0;
-            background: var(--bg-page);
-        }
-        .recs-strip-label {
-            font-size: 0.7rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            white-space: nowrap;
-        }
-        .rec-chip {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.3rem;
-            padding: 0.25rem 0.6rem;
-            background: var(--bg-surface);
-            border: 1px solid var(--border);
-            border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            white-space: nowrap;
-            color: var(--text-primary);
-        }
-        .rec-chip-cat {
-            color: var(--text-muted);
-            font-weight: 400;
-        }
-
-        /* Input area */
-        .chat-input-area {
-            padding: 0.75rem 1.25rem;
-            border-top: 1px solid var(--border);
-            background: var(--bg-surface);
-            flex-shrink: 0;
-        }
-        .chat-form {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-        .chat-form input {
-            flex: 1;
-            padding: 0.65rem 0.85rem;
-            margin: 0;
-            border: 1px solid var(--border);
-            border-radius: var(--radius-sm);
-            font-size: 0.9rem;
-        }
-        .chat-form input:focus {
-            border-color: var(--border-strong);
-            box-shadow: 0 0 0 3px rgba(129, 166, 198, 0.25);
-            outline: none;
-        }
-        .chat-form .btn-send {
-            padding: 0.65rem 1rem;
-            font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-
-        /* Empty state */
-        .empty-state {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-muted);
-            gap: 0.5rem;
-            padding: 3rem;
-        }
-        .empty-state .icon { font-size: 2.5rem; opacity: 0.5; }
-        .empty-state p { font-size: 0.9rem; }
-
-        /* Edit title inline */
-        .edit-title-form {
-            display: flex;
-            gap: 0.4rem;
-            align-items: center;
-        }
-        .edit-title-form input {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.85rem;
-            margin: 0;
-            width: 220px;
-        }
-        .edit-title-form button {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.75rem;
-        }
-        .edit-title-form .btn-cancel {
-            background: var(--bg-surface-soft);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-
-        /* Spinner */
-        .spinner {
-            display: inline-block;
-            width: 16px; height: 16px;
-            border: 2px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-            vertical-align: middle;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        @media (max-width: 640px) {
-            .content-area { padding: 0.75rem 0.75rem 0; }
-            .message { max-width: 88%; }
-        }
-    </style>
 </head>
 <body>
-    <div class="page-wrapper">
-        <header class="top-bar">
-            <h1>OmniTech &mdash; {{ service_name }}</h1>
-            <a href="http://localhost:8080">&larr; Back to Home</a>
-        </header>
+<div class="frame">
+    <div class="panel nav-collapsed" id="panel">
 
-        <div class="content-area">
-            <!-- Session tabs -->
-            <div class="session-bar">
-                <div class="session-bar-scroll" id="session-tabs"
-                     hx-get="/partials/session-list"
-                     hx-trigger="load"
-                     hx-swap="innerHTML">
+        <nav class="rail">
+            <button class="rail__logo" title="Back to start" onclick="showHero()" style="border:none">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 7V4"/><circle cx="12" cy="3" r="1"/>
+                    <circle cx="9" cy="13" r="1.2" fill="currentColor"/><circle cx="15" cy="13" r="1.2" fill="currentColor"/>
+                </svg>
+            </button>
+            <button class="rail__btn" title="New consultation" onclick="createSession()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button class="rail__btn" id="rail-nav" title="Show consultations" onclick="toggleNav()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <div class="rail__spacer"></div>
+        </nav>
+
+        <aside class="nav">
+            <div class="nav__inner">
+                <div class="nav__head">
+                    <h2>Consultations</h2>
+                    <button class="nav__collapse" title="Collapse" onclick="toggleNav(false)">
+                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg>
+                    </button>
                 </div>
-                <button class="btn btn-new-session" onclick="createSession()">+ New</button>
+                <button class="nav__new" onclick="createSession()">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                    New consultation
+                </button>
+                <div class="session-list" id="session-list"
+                     hx-get="/partials/session-list" hx-trigger="load" hx-swap="innerHTML"></div>
+            </div>
+        </aside>
+
+        <main class="stage">
+            <div class="stage__top">
+                <span class="modelpill"><span class="dot"></span> {{ service_name }}</span>
+                <a class="pill-dark" href="/dashboard">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></svg>
+                    Dashboard
+                </a>
             </div>
 
-            <!-- Chat container -->
-            <div class="chat-container" id="chat-panel">
-                <div class="empty-state">
-                    <div class="icon">&#128172;</div>
-                    <p>Start a new consultation or select one above</p>
+            <section class="stage__body" id="chat-panel">
+                <div class="hero">
+                    <h1 class="hero__title"><span class="dim">Hi there.</span> Let&rsquo;s find the right tech.</h1>
+                    <div class="hero__mascot">
+                        <span class="bubble bubble--l"><span class="b-ico"></span> Tell me your budget</span>
+                        <span class="bubble bubble--r"><span class="b-ico"></span> and what it&rsquo;s for</span>
+                        <svg viewBox="0 0 120 120" fill="none">
+                            <ellipse cx="60" cy="108" rx="32" ry="6" fill="#000" opacity="0.06"/>
+                            <rect x="26" y="34" width="68" height="52" rx="18" fill="#eef1fb" stroke="#c9d3ec" stroke-width="2"/>
+                            <rect x="38" y="46" width="44" height="24" rx="10" fill="#1f2330"/>
+                            <circle cx="52" cy="58" r="3.4" fill="#fff"/><circle cx="68" cy="58" r="3.4" fill="#fff"/>
+                            <path d="M60 34V24" stroke="#a9b6d8" stroke-width="3" stroke-linecap="round"/><circle cx="60" cy="21" r="3.5" fill="#81a6c6"/>
+                            <rect x="20" y="60" width="8" height="18" rx="4" fill="#c9d3ec"/><rect x="92" y="60" width="8" height="18" rx="4" fill="#c9d3ec"/>
+                        </svg>
+                    </div>
                 </div>
-            </div>
-        </div>
+
+                <form class="composer" id="hero-composer" onsubmit="startFromHero(event)">
+                    <div class="composer__row">
+                        <svg class="composer__spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg>
+                        <input class="composer__input" id="hero-input" type="text" autocomplete="off"
+                               placeholder="Describe what you need &mdash; budget, use case, must-haves&hellip;">
+                    </div>
+                    <div class="composer__tools">
+                        <button type="button" class="tool-pill" onclick="heroPrompt('I need a laptop for ')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg> Laptops
+                        </button>
+                        <button type="button" class="tool-pill" onclick="heroPrompt('Recommend a phone for ')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/></svg> Phones
+                        </button>
+                        <button type="button" class="tool-pill" onclick="heroPrompt('Which headphones are best for ')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v-2a8 8 0 0116 0v2"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg> Headphones
+                        </button>
+                        <button type="button" class="tool-pill" onclick="heroPrompt('Recommend a TV for ')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/></svg> TVs
+                        </button>
+                        <div class="composer__send-group">
+                            <span class="spinner" aria-hidden="true"></span>
+                            <button type="submit" class="icon-circle icon-circle--send" title="Send">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-7-7 16-2-7z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="quickrow">
+                    <button class="chip" onclick="heroPrompt('I want a tablet for ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M11 18h2"/></svg> Tablets</button>
+                    <button class="chip" onclick="heroPrompt('Recommend a monitor for ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M9 20h6M12 16v4"/></svg> Monitors</button>
+                    <button class="chip" onclick="heroPrompt('I need a camera for ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="4"/><path d="M8 6l2-2h4l2 2"/></svg> Cameras</button>
+                    <button class="chip" onclick="heroPrompt('Recommend a portable speaker for ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="3" width="12" height="18" rx="3"/><circle cx="12" cy="14" r="3"/><circle cx="12" cy="7" r="1"/></svg> Speakers</button>
+                    <button class="chip" onclick="heroPrompt('I want a smart home starter setup for ')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/></svg> Smart home</button>
+                </div>
+            </section>
+        </main>
     </div>
+</div>
 
-    <script>
-        let activeSessionId = null;
+<script>
+    let activeSessionId = null;
+    const panel = document.getElementById("panel");
 
-        function createSession() {
-            fetch("/api/sessions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: "New Consultation" }),
-            })
-            .then(r => r.json())
-            .then(session => {
-                refreshSessionList();
-                loadSession(session.id);
+    function toggleNav(force) {
+        const collapsed = force === undefined ? !panel.classList.contains("nav-collapsed") : !force;
+        panel.classList.toggle("nav-collapsed", collapsed);
+        document.getElementById("rail-nav").classList.toggle("active", !collapsed);
+    }
+
+    function refreshSessionList() {
+        return htmx.ajax("GET", "/partials/session-list?active=" + (activeSessionId || ""), "#session-list").then(markActive);
+    }
+    function markActive() {
+        document.querySelectorAll(".session-item").forEach(el =>
+            el.classList.toggle("active", el.dataset.id == activeSessionId));
+    }
+
+    function createSession() {
+        toggleNav(true);
+        fetch("/api/sessions", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: "New Consultation" }),
+        }).then(r => r.json()).then(s => { activeSessionId = s.id; refreshSessionList(); loadSession(s.id); });
+    }
+
+    function loadSession(sessionId) {
+        activeSessionId = sessionId;
+        htmx.ajax("GET", "/partials/chat/" + sessionId, "#chat-panel").then(function () {
+            markActive();
+            if (window.innerWidth < 760) toggleNav(false);
+        });
+    }
+
+    function showHero() {
+        if (!activeSessionId && location.search === "") return;
+        activeSessionId = null;
+        location.href = "/";
+    }
+
+    function heroPrompt(text) {
+        const i = document.getElementById("hero-input");
+        if (!i) return;
+        i.value = text; i.focus();
+        i.setSelectionRange(text.length, text.length);
+    }
+
+    function startFromHero(event) {
+        event.preventDefault();
+        const msg = document.getElementById("hero-input").value.trim();
+        if (!msg) return;
+        const form = document.getElementById("hero-composer");
+        form.classList.add("htmx-request");
+        fetch("/api/sessions", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: msg.slice(0, 48) }),
+        }).then(r => r.json()).then(s => {
+            activeSessionId = s.id;
+            return fetch("/api/chat", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ session_id: s.id, message: msg }),
             });
-        }
+        }).then(() => { refreshSessionList(); loadSession(activeSessionId); })
+          .catch(() => form.classList.remove("htmx-request"));
+    }
 
-        function refreshSessionList() {
-            htmx.ajax("GET", "/partials/session-list", "#session-tabs");
-        }
+    /* inline delete-session confirm */
+    function askDeleteSession(sessionId, event) {
+        event.stopPropagation();
+        const item = document.querySelector('.session-item[data-id="' + sessionId + '"]');
+        if (!item || item.querySelector(".session-item__confirm")) return;
+        const row = document.createElement("div");
+        row.className = "session-item__confirm";
+        row.innerHTML = 'Delete? <button class="btn-mini btn-mini--danger" onclick="confirmDeleteSession(' + sessionId + ', event)">Yes</button>' +
+                        '<button class="btn-mini" onclick="cancelDeleteSession(' + sessionId + ', event)">No</button>';
+        item.appendChild(row);
+    }
+    function cancelDeleteSession(sessionId, event) {
+        event.stopPropagation();
+        const r = document.querySelector('.session-item[data-id="' + sessionId + '"] .session-item__confirm');
+        if (r) r.remove();
+    }
+    function confirmDeleteSession(sessionId, event) {
+        event.stopPropagation();
+        fetch("/api/sessions/" + sessionId, { method: "DELETE" }).then(() => {
+            if (activeSessionId == sessionId) { location.href = "/"; return; }
+            refreshSessionList();
+        });
+    }
 
-        function loadSession(sessionId) {
-            activeSessionId = sessionId;
-            htmx.ajax("GET", "/partials/chat/" + sessionId, "#chat-panel");
-            setTimeout(() => {
-                document.querySelectorAll(".session-tab").forEach(el => {
-                    el.classList.toggle("active", el.dataset.id == sessionId);
-                });
-            }, 100);
-        }
+    /* inline clear-history confirm */
+    function askClearHistory(sessionId) {
+        const box = document.getElementById("chat-head-actions");
+        if (!box || box.dataset.confirming) return;
+        box.dataset.confirming = "1";
+        box.dataset.saved = box.innerHTML;
+        box.innerHTML = '<span class="chat-head__confirm">Clear all messages?' +
+            ' <button class="btn-mini btn-mini--danger" onclick="confirmClearHistory(' + sessionId + ')">Clear</button>' +
+            ' <button class="btn-mini" onclick="cancelClearHistory()">Cancel</button></span>';
+    }
+    function cancelClearHistory() {
+        const box = document.getElementById("chat-head-actions");
+        if (box && box.dataset.saved !== undefined) { box.innerHTML = box.dataset.saved; delete box.dataset.confirming; }
+    }
+    function confirmClearHistory(sessionId) {
+        htmx.ajax("DELETE", "/api/sessions/" + sessionId + "/messages",
+                  { target: "#chat-messages", swap: "innerHTML" })
+            .then(() => { cancelClearHistory(); refreshSessionList(); });
+    }
 
-        function deleteSession(sessionId, event) {
-            event.stopPropagation();
-            if (!confirm("Delete this consultation?")) return;
-            fetch("/api/sessions/" + sessionId, { method: "DELETE" })
-            .then(() => {
-                refreshSessionList();
-                if (activeSessionId == sessionId) {
-                    activeSessionId = null;
-                    document.getElementById("chat-panel").innerHTML =
-                        '<div class="empty-state"><div class="icon">&#128172;</div><p>Start a new consultation or select one above</p></div>';
-                }
-            });
-        }
+    /* rename */
+    function startEditTitle(sessionId, currentTitle) {
+        const slot = document.getElementById("chat-title-slot");
+        const safe = currentTitle.replace(/"/g, "&quot;");
+        slot.innerHTML = '<form class="edit-title-form" onsubmit="saveTitle(' + sessionId + ', event)">' +
+            '<input type="text" id="title-input" value="' + safe + '" aria-label="Session title" />' +
+            '<button type="submit" class="btn-mini">Save</button>' +
+            '<button type="button" class="btn-mini" onclick="loadSession(' + sessionId + ')">Cancel</button></form>';
+        document.getElementById("title-input").focus();
+    }
+    function saveTitle(sessionId, event) {
+        event.preventDefault();
+        const t = document.getElementById("title-input").value.trim();
+        if (!t) return;
+        fetch("/api/sessions/" + sessionId, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title: t }),
+        }).then(() => { loadSession(sessionId); refreshSessionList(); });
+    }
 
-        function sendMessage(sessionId) {
-            const input = document.getElementById("chat-input");
-            const message = input.value.trim();
-            if (!message) return;
+    document.body.addEventListener("htmx:afterSwap", function () {
+        const box = document.getElementById("chat-messages");
+        if (box) box.scrollTop = box.scrollHeight;
+    });
 
-            const messagesDiv = document.getElementById("chat-messages");
-
-            const userBubble = document.createElement("div");
-            userBubble.className = "message message-user";
-            userBubble.textContent = message;
-            messagesDiv.appendChild(userBubble);
-
-            const typing = document.createElement("div");
-            typing.className = "message message-assistant";
-            typing.id = "typing-indicator";
-            typing.innerHTML = '<span class="spinner"></span> Thinking...';
-            messagesDiv.appendChild(typing);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            input.value = "";
-            input.disabled = true;
-
-            fetch("/api/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ session_id: sessionId, message: message }),
-            })
-            .then(r => r.json())
-            .then(data => {
-                const indicator = document.getElementById("typing-indicator");
-                if (indicator) indicator.remove();
-
-                const aiBubble = document.createElement("div");
-                aiBubble.className = "message message-assistant";
-                aiBubble.textContent = data.content;
-                messagesDiv.appendChild(aiBubble);
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-                input.disabled = false;
-                input.focus();
-                refreshSessionList();
-            })
-            .catch(() => {
-                const indicator = document.getElementById("typing-indicator");
-                if (indicator) indicator.remove();
-
-                const errBubble = document.createElement("div");
-                errBubble.className = "message message-assistant";
-                errBubble.textContent = "Something went wrong. Please try again.";
-                messagesDiv.appendChild(errBubble);
-                input.disabled = false;
-                input.focus();
-            });
-        }
-
-        function startEditTitle(sessionId, currentTitle) {
-            const header = document.getElementById("chat-title");
-            header.innerHTML =
-                '<form class="edit-title-form" onsubmit="saveTitle(' + sessionId + ', event)">' +
-                '<input type="text" id="title-input" value="' + currentTitle.replace(/"/g, '&quot;') + '" />' +
-                '<button type="submit" class="btn" style="font-size:0.75rem;padding:0.3rem 0.6rem;">Save</button>' +
-                '<button type="button" class="btn-cancel" onclick="loadSession(' + sessionId + ')">Cancel</button>' +
-                '</form>';
-            document.getElementById("title-input").focus();
-        }
-
-        function saveTitle(sessionId, event) {
-            event.preventDefault();
-            const newTitle = document.getElementById("title-input").value.trim();
-            if (!newTitle) return;
-            fetch("/api/sessions/" + sessionId, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: newTitle }),
-            })
-            .then(() => {
-                loadSession(sessionId);
-                refreshSessionList();
-            });
-        }
-
-        function handleChatKeydown(event, sessionId) {
-            if (event.key === "Enter" && !event.shiftKey) {
-                event.preventDefault();
-                sendMessage(sessionId);
-            }
-        }
-    </script>
+    /* open the sidebar on wide screens; deep-link ?session=<id> from the dashboard */
+    (function () {
+        if (window.innerWidth >= 900) toggleNav(true);
+        const id = new URLSearchParams(location.search).get("session");
+        if (id) loadSession(parseInt(id, 10));
+    })();
+</script>
 </body>
 </html>

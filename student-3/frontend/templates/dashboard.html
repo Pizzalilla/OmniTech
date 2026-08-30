@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - {{ service_name }} - OmniTech</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+<div class="frame">
+    <div class="panel">
+        <div class="dash">
+            <div class="dash__top">
+                <h1>{{ service_name }} &middot; Dashboard</h1>
+                <nav>
+                    <a href="/">Chat</a>
+                    <a href="http://localhost:8080">Home</a>
+                </nav>
+            </div>
+
+            <div class="dash__body">
+                <div class="dash__label">Past consultations ({{ sessions|length }})</div>
+                {% if sessions %}
+                <div class="dash-grid">
+                    {% for s in sessions %}
+                    <div class="dash-card">
+                        <div class="dash-card__title">{{ s.title }}</div>
+                        <div class="dash-card__meta">
+                            <span><code>{{ s.user_id }}</code></span>
+                            <span>{{ s.created_at }}</span>
+                            <span>{{ s.message_count }} messages</span>
+                            <span>{{ s.reco_count }} saved</span>
+                        </div>
+                        <a class="btn-mini" href="/?session={{ s.id }}">Open</a>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="dock__empty">No consultations recorded yet.</p>
+                {% endif %}
+
+                <div class="dash__label">Saved product recommendations ({{ recommendations|length }})</div>
+                {% if recommendations %}
+                <div class="dash-grid">
+                    {% for r in recommendations %}
+                    <div class="dash-card">
+                        <div class="dash-card__meta">From &ldquo;{{ r.session_title }}&rdquo; &middot; {{ r.created_at }}</div>
+                        <div>
+                            {% for p in r.products %}
+                            <div class="reco-prod">
+                                <span class="reco-prod__name">{{ p.name }}</span>
+                                <span class="reco-prod__cat">{{ p.category }}</span>
+                                <span class="reco-prod__price">${{ '{:,}'.format(p.price) }}</span>
+                            </div>
+                            {% else %}
+                            <div class="reco-prod"><span class="reco-prod__name">{{ r.product_ids | join(', ') }}</span></div>
+                            {% endfor %}
+                        </div>
+                        {% if r.summary %}<p class="dash-card__summary">{{ r.summary }}</p>{% endif %}
+                        <div class="reco-card__tags">
+                            {% for t in r.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+                            <form class="tag-form"
+                                  hx-post="/api/recommendations/{{ r.id }}/tags"
+                                  hx-swap="none"
+                                  hx-on::after-request="if(event.detail.successful) location.reload()">
+                                <input type="text" name="tag" placeholder="add tag" aria-label="Add preference tag" required>
+                                <button type="submit">+</button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="dock__empty">No saved recommendations yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

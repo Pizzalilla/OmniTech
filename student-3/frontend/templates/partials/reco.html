@@ -1,0 +1,41 @@
+<article class="reco-card" data-id="{{ r.id }}">
+    <div class="reco-card__main">
+        <div class="reco-card__head">
+            <div style="flex:1">
+                {% for p in r.products %}
+                <div class="reco-prod">
+                    <span class="reco-prod__name">{{ p.name }}</span>
+                    <span class="reco-prod__cat">{{ p.category }}</span>
+                    <span class="reco-prod__price">${{ '{:,}'.format(p.price) }}</span>
+                </div>
+                {% else %}
+                <div class="reco-prod"><span class="reco-prod__name">{{ r.product_ids | join(', ') }}</span></div>
+                {% endfor %}
+            </div>
+            <button class="btn-mini" onclick="this.closest('.reco-card').classList.add('confirming')">Remove</button>
+        </div>
+
+        {% if r.summary %}<p class="reco-card__summary">{{ r.summary }}</p>{% endif %}
+
+        <div class="reco-card__tags">
+            {% for t in r.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+            <form class="tag-form"
+                  hx-post="/api/recommendations/{{ r.id }}/tags"
+                  hx-target="closest .reco-card"
+                  hx-swap="outerHTML"
+                  hx-on::after-request="this.reset()">
+                <input type="text" name="tag" placeholder="add tag" aria-label="Add preference tag" required>
+                <button type="submit">+</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="reco-card__confirm">
+        Remove this saved recommendation?
+        <button class="btn-mini btn-mini--danger"
+                hx-delete="/api/recommendations/{{ r.id }}"
+                hx-target="closest .reco-card"
+                hx-swap="outerHTML">Remove</button>
+        <button class="btn-mini" onclick="this.closest('.reco-card').classList.remove('confirming')">Keep</button>
+    </div>
+</article>

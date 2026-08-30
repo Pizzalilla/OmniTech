@@ -1,0 +1,5 @@
+{% for r in recommendations %}
+    {% include "partials/reco.html" %}
+{% else %}
+<p class="dock__empty">No saved recommendations yet. Ask a question to generate one.</p>
+{% endfor %}
