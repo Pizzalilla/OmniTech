@@ -1,127 +1,199 @@
-import sqlite3
+"""
+Database layer for the AI Product Consultant microservice.
+
+This service has exclusive ownership of the three tables below. No other
+OmniTech service reads or writes them directly - access is only through the
+REST API in backend/main.py.
+
+Tables
+------
+ConsultationSessions
+    id          INTEGER  primary key           (session ID)
+    user_id     TEXT     owner of the session
+    title       TEXT     editable session title
+    created_at  TIMESTAMP
+    updated_at  TIMESTAMP
+
+ChatLogs
+    id            INTEGER  primary key          (message ID)
+    session_id    INTEGER  -> ConsultationSessions.id
+    sender        TEXT     'user' or 'ai'
+    message_text  TEXT
+    created_at    TIMESTAMP
+
+SavedRecommendations
+    id           INTEGER  primary key
+    session_id   INTEGER  -> ConsultationSessions.id
+    product_ids  TEXT     comma-separated catalog product ids
+    summary      TEXT     generated summary of why the products fit
+    tags         TEXT     comma-separated custom user tags
+    created_at   TIMESTAMP
+"""
+
 import os
+import sqlite3
 from datetime import datetime, timedelta
 
-DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(__file__), "consultant.db"))
+DB_PATH = os.getenv(
+    "DB_PATH", os.path.join(os.path.dirname(__file__), "consultant.db")
+)
+
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS ConsultationSessions (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    TEXT NOT NULL DEFAULT 'guest',
+    title      TEXT NOT NULL DEFAULT 'New Consultation',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS ChatLogs (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id   INTEGER NOT NULL,
+    sender       TEXT NOT NULL CHECK (sender IN ('user', 'ai')),
+    message_text TEXT NOT NULL,
+    created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES ConsultationSessions(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS SavedRecommendations (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id  INTEGER NOT NULL,
+    product_ids TEXT NOT NULL,
+    summary     TEXT NOT NULL DEFAULT '',
+    tags        TEXT NOT NULL DEFAULT '',
+    created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (session_id) REFERENCES ConsultationSessions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_chatlogs_session ON ChatLogs(session_id);
+CREATE INDEX IF NOT EXISTS idx_savedrecs_session ON SavedRecommendations(session_id);
+"""
 
 
 def get_db():
+    """Return a new SQLite connection with row access by column name.
+
+    The schema DDL is applied on every connection. `CREATE TABLE IF NOT EXISTS`
+    is a cheap no-op once the tables exist, and it means the service can never
+    hit a "no such table" error - even if the database file is missing, empty,
+    or was created by an older build.
+    """
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.executescript(SCHEMA)
     return conn
 
 
 def init_db():
-    conn = get_db()
-    conn.executescript("""
-        CREATE TABLE IF NOT EXISTS chat_sessions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL DEFAULT 'New Consultation',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-
-        CREATE TABLE IF NOT EXISTS chat_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id INTEGER NOT NULL,
-            role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
-            content TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
-        );
-
-        CREATE TABLE IF NOT EXISTS recommendation_logs (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            session_id INTEGER NOT NULL,
-            product_name TEXT NOT NULL,
-            category TEXT NOT NULL,
-            recommendation_text TEXT NOT NULL,
-            tags TEXT DEFAULT '',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (session_id) REFERENCES chat_sessions(id) ON DELETE CASCADE
-        );
-    """)
-    conn.commit()
-    conn.close()
+    """Ensure the schema exists (also done lazily by get_db)."""
+    get_db().close()
 
 
 def seed_db():
+    """Populate demo data once so the dashboard is not empty on first run.
+
+    At least 10 rows are inserted into each of the three tables.
+    """
     conn = get_db()
-    existing = conn.execute("SELECT COUNT(*) FROM chat_sessions").fetchone()[0]
-    if existing > 0:
+    if conn.execute("SELECT COUNT(*) FROM ConsultationSessions").fetchone()[0] > 0:
         conn.close()
         return
 
     now = datetime.now()
 
+    # --- ConsultationSessions: 10 rows across 3 users ---------------------- #
     sessions = [
-        ("Best laptop for video editing", now - timedelta(days=10)),
-        ("Budget smartphone under $300", now - timedelta(days=9)),
-        ("Gaming headset comparison", now - timedelta(days=8)),
-        ("4K TV for living room", now - timedelta(days=7)),
-        ("Wireless earbuds for running", now - timedelta(days=6)),
-        ("Smart home starter kit", now - timedelta(days=5)),
-        ("Mechanical keyboard for coding", now - timedelta(days=4)),
-        ("Tablet for university students", now - timedelta(days=3)),
-        ("Portable Bluetooth speaker", now - timedelta(days=2)),
-        ("Webcam for remote work", now - timedelta(days=1)),
+        ("u-1001", "Laptop for 4K video editing", 12),
+        ("u-1001", "Budget phone under $300", 11),
+        ("u-1001", "Noise-cancelling headphones for the train", 9),
+        ("u-1002", "Tablet for a first-year student", 8),
+        ("u-1002", "Colour-accurate monitor for photo work", 7),
+        ("u-1002", "Gaming headset with a clear mic", 6),
+        ("u-1003", "Compact camera for travel", 5),
+        ("u-1003", "Smartwatch for running", 4),
+        ("u-1003", "Portable speaker for the garden", 2),
+        ("u-1003", "Fast external drive for editing", 1),
     ]
-
-    for title, created_at in sessions:
-        ts = created_at.strftime("%Y-%m-%d %H:%M:%S")
+    for user_id, title, days_ago in sessions:
+        ts = (now - timedelta(days=days_ago)).strftime("%Y-%m-%d %H:%M:%S")
         conn.execute(
-            "INSERT INTO chat_sessions (title, created_at, updated_at) VALUES (?, ?, ?)",
-            (title, ts, ts),
+            "INSERT INTO ConsultationSessions (user_id, title, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?)",
+            (user_id, title, ts, ts),
         )
 
-    messages = [
-        (1, "user", "I need a laptop that can handle 4K video editing in Premiere Pro."),
-        (1, "assistant", "For 4K video editing in Premiere Pro, I recommend the Apple MacBook Pro 16\" with M3 Pro chip. It offers excellent sustained performance, a stunning Liquid Retina XDR display, and up to 22 hours of battery life. The 18GB unified memory handles multi-stream 4K timelines smoothly. Price: around $2,499."),
-        (2, "user", "What's the best phone I can get for under $300?"),
-        (2, "assistant", "The Google Pixel 7a is an excellent choice under $300. It features a 6.1\" OLED display, Google Tensor G2 chip, 8GB RAM, and a 64MP camera with Google's computational photography. You also get 5 years of security updates. Currently priced around $279."),
-        (3, "user", "I want a gaming headset with good surround sound and a clear mic."),
-        (3, "assistant", "The HyperX Cloud III is a top pick at $99. It delivers DTS Headphone:X spatial audio, a detachable noise-cancelling microphone, and memory foam ear cushions for long sessions. Compatible with PC, PS5, Xbox, and Switch via USB-C or 3.5mm."),
-        (4, "user", "Looking for a 55-inch 4K TV, mainly for movies and sports."),
-        (4, "assistant", "The LG C3 55\" OLED TV is ideal for movies and sports. Its self-lit OLED pixels deliver perfect blacks and infinite contrast. The 120Hz refresh rate with HDMI 2.1 keeps fast sports action smooth. Dolby Vision and Atmos support make it a home cinema powerhouse. Around $1,296."),
-        (5, "user", "Need earbuds that stay in during runs and are sweatproof."),
-        (5, "assistant", "The Jabra Elite 8 Active are built for runners. They have an IP68 dust and water rating, adaptive ANC, and Jabra ShakeGrip technology that keeps them locked in during movement. Battery life is 8 hours with ANC on, 32 hours total with the case. Price: $199."),
-        (6, "user", "I want to start automating my home. Where do I begin?"),
-        (6, "assistant", "Start with an Amazon Echo Hub as your central controller ($149). Add a few Philips Hue smart bulbs ($49 starter kit) and a Ring Video Doorbell ($99). This gives you voice-controlled lighting, a smart display dashboard, and front-door security — all working together via Alexa. Total: around $297."),
-        (7, "user", "Recommend a mechanical keyboard that's quiet enough for an office."),
-        (7, "assistant", "The Keychron Q1 Pro with Gateron Brown switches is excellent for office use. Brown switches give you tactile feedback without the loud click. It has a gasket-mount design for a softer typing feel, wireless Bluetooth, and a hot-swappable PCB for future switch changes. Around $199."),
-        (8, "user", "My daughter needs a tablet for uni — note-taking, reading, light multitasking."),
-        (8, "assistant", "The iPad Air M2 (11\") is perfect for university. Pair it with an Apple Pencil Pro for handwritten notes in apps like GoodNotes. The M2 chip handles multitasking easily, the 11\" Liquid Retina display is great for reading PDFs, and it lasts all day on a single charge. Starting at $599."),
-        (9, "user", "What portable speaker has the best sound for its size?"),
-        (9, "assistant", "The JBL Charge 5 delivers room-filling sound from a portable package. It has a dedicated tweeter and dual bass radiators, IP67 waterproof rating, 20 hours of playtime, and can charge your phone via USB. It also supports JBL PartyBoost to link multiple speakers. Price: $179."),
-        (10, "user", "I need a good webcam for Zoom calls. 1080p minimum."),
-        (10, "assistant", "The Logitech Brio 300 is a solid 1080p webcam at $69. It has auto light correction for dim rooms, a built-in privacy shutter, and a noise-reducing mono mic. It connects via USB-C and works with Zoom, Teams, and Google Meet out of the box."),
+    # --- ChatLogs: 2 rows per session (20 total) ------------------------- #
+    logs = [
+        (1, "user", "I need a laptop that can handle 4K timelines in a video editor."),
+        (1, "ai", "The Meridian Pro 16 (LAP-001) is built for that: 16-core CPU, "
+                  "32GB RAM and a 4K screen. Around $2,399."),
+        (2, "user", "What is the best phone I can get for under $300?"),
+        (2, "ai", "The Pulse 5 (PHN-003) fits under $300 with a big 5000mAh battery "
+                  "and a 90Hz screen. About $279."),
+        (3, "user", "I want headphones that block out train noise on my commute."),
+        (3, "ai", "The EchoStudio Over-Ear (AUD-002) has strong active noise "
+                  "cancellation and 40h of battery. Around $349."),
+        (4, "user", "My sibling starts university and needs a tablet for notes."),
+        (4, "ai", "The Slate 11 (TAB-001) has a 120Hz screen and stylus support, "
+                  "good for handwritten notes. About $599."),
+        (5, "user", "I edit photos and need an accurate monitor."),
+        (5, "ai", "The ClearView 27 4K (MON-001) covers 99% sRGB and has USB-C "
+                  "power delivery. Around $429."),
+        (6, "user", "Recommend a gaming headset with a good microphone."),
+        (6, "ai", "The FieldMic Headset (AUD-003) has a detachable boom mic and "
+                  "7.1 spatial audio. About $129."),
+        (7, "user", "I want a small camera for travelling light."),
+        (7, "ai", "The Vista X100 (CAM-001) is a compact APS-C camera with a fixed "
+                  "prime lens and 4K60 video. Around $899."),
+        (8, "user", "Which smartwatch is best for tracking runs?"),
+        (8, "ai", "The Tempo Watch 2 (WEAR-001) has dual-band GPS and a 7-day "
+                  "battery. About $329."),
+        (9, "user", "I need a speaker I can leave outside."),
+        (9, "ai", "The BoomBox Go (SPK-001) is IP67 rated with 24h of playtime. "
+                  "Around $149."),
+        (10, "user", "What is a fast drive for video editing scratch files?"),
+        (10, "ai", "The WarpDrive 2TB SSD (STOR-001) runs at 2000MB/s over USB-C. "
+                   "About $179."),
     ]
-
-    for session_id, role, content in messages:
+    for session_id, sender, text in logs:
         conn.execute(
-            "INSERT INTO chat_messages (session_id, role, content) VALUES (?, ?, ?)",
-            (session_id, role, content),
+            "INSERT INTO ChatLogs (session_id, sender, message_text) VALUES (?, ?, ?)",
+            (session_id, sender, text),
         )
 
-    recommendations = [
-        (1, "MacBook Pro 16\" M3 Pro", "Laptops", "Ideal for 4K video editing with sustained performance and long battery life.", "video-editing,apple,professional"),
-        (2, "Google Pixel 7a", "Smartphones", "Best sub-$300 phone with flagship camera and long software support.", "budget,google,photography"),
-        (3, "HyperX Cloud III", "Audio", "Versatile gaming headset with spatial audio and cross-platform support.", "gaming,headset,surround-sound"),
-        (4, "LG C3 55\" OLED", "Televisions", "Premium OLED TV with perfect blacks and smooth sports motion.", "4k,oled,home-cinema"),
-        (5, "Jabra Elite 8 Active", "Audio", "Durable running earbuds with IP68 rating and adaptive ANC.", "running,waterproof,anc"),
-        (6, "Amazon Echo Hub + Hue + Ring", "Smart Home", "Affordable smart home starter bundle with voice control and security.", "smart-home,alexa,starter-kit"),
-        (7, "Keychron Q1 Pro", "Peripherals", "Quiet mechanical keyboard with wireless connectivity and hot-swap switches.", "mechanical,office,wireless"),
-        (8, "iPad Air M2 11\"", "Tablets", "Versatile university tablet with Apple Pencil Pro support.", "tablet,student,apple"),
-        (9, "JBL Charge 5", "Audio", "Portable speaker with powerful sound, waterproofing, and phone charging.", "portable,waterproof,bluetooth"),
-        (10, "Logitech Brio 300", "Peripherals", "Affordable 1080p webcam with auto light correction.", "webcam,remote-work,1080p"),
+    # --- SavedRecommendations: 10 rows --------------------------------- #
+    recs = [
+        (1, "LAP-001", "Workstation laptop that handles 4K editing without throttling.",
+         "video-editing,work,priority"),
+        (2, "PHN-003,PHN-002", "Two budget-friendly phones; the Pulse 5 wins on "
+                               "battery, the Aura SE on screen quality.",
+         "budget,comparison"),
+        (3, "AUD-002,AUD-001", "Over-ear for maximum isolation, earbuds for a lighter "
+                               "carry.", "commute,noise-cancelling"),
+        (4, "TAB-001", "Student tablet with stylus support for handwritten notes.",
+         "student,notes"),
+        (5, "MON-001", "Colour-accurate 4K panel for photo editing.",
+         "photography,colour-accurate"),
+        (6, "AUD-003", "Gaming headset with a detachable broadcast-quality mic.",
+         "gaming,voice-chat"),
+        (7, "CAM-001", "Compact travel camera with a bright prime lens.",
+         "travel,photography"),
+        (8, "WEAR-001", "Running watch with dual-band GPS and week-long battery.",
+         "running,fitness"),
+        (9, "SPK-001", "Weatherproof portable speaker for outdoor use.",
+         "outdoor,durable"),
+        (10, "STOR-001", "Fast pocket SSD for editing scratch disks.",
+         "editing,storage"),
     ]
-
-    for session_id, product, category, text, tags in recommendations:
+    for session_id, product_ids, summary, tags in recs:
         conn.execute(
-            "INSERT INTO recommendation_logs (session_id, product_name, category, recommendation_text, tags) VALUES (?, ?, ?, ?, ?)",
-            (session_id, product, category, text, tags),
+            "INSERT INTO SavedRecommendations (session_id, product_ids, summary, tags) "
+            "VALUES (?, ?, ?, ?)",
+            (session_id, product_ids, summary, tags),
         )
 
     conn.commit()
