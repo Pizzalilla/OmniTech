@@ -14,6 +14,7 @@ raises - callers always receive a usable dict.
 """
 
 import json
+import logging
 import os
 import re
 
@@ -25,6 +26,18 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 MAX_REPROMPTS = 1
+
+# Every stage of the loop is logged here. See it on the server's stdout, or set
+# CONSULTANT_LOG=/path/to/agent.log to also write it to a file.
+log = logging.getLogger("consultant.agent")
+if not log.handlers:
+    log.setLevel(logging.INFO)
+    log.addHandler(logging.StreamHandler())
+    _logfile = os.getenv("CONSULTANT_LOG")
+    if _logfile:
+        log.addHandler(logging.FileHandler(_logfile))
+for _h in log.handlers:
+    _h.setFormatter(logging.Formatter("%(asctime)s  agent  %(message)s"))
 
 SYSTEM_INSTRUCTIONS = (
     "You are the OmniTech Marketplace AI Product Consultant for consumer "
@@ -225,8 +238,12 @@ def run_consultation(user_message, history=None):
         }
     """
     history = history or []
+    log.info("PLAN   query=%r", user_message[:120])
     plan_ctx = plan(user_message, history)
     valid_ids = set(plan_ctx["valid_ids"])
+    log.info("PLAN   %d relevant catalog items: %s",
+             len(plan_ctx["relevant_products"]),
+             [p["id"] for p in plan_ctx["relevant_products"]])
     meta = {
         "attempts": 0, "reprompts": 0, "used_fallback": False,
         "stage": "plan", "issues": [],
@@ -236,8 +253,10 @@ def run_consultation(user_message, history=None):
     try:
         meta["attempts"] += 1
         meta["stage"] = "act"
+        log.info("ACT    calling ollama model=%s (attempt 1)", OLLAMA_MODEL)
         raw = act(_build_prompt(plan_ctx, history, user_message))
     except requests.RequestException as exc:
+        log.warning("ACT    ollama unreachable (%s) -> catalog fallback", exc)
         meta.update(used_fallback=True, stage="fallback",
                     issues=[f"ollama unreachable: {exc}"])
         result = _fallback(user_message)
@@ -247,11 +266,15 @@ def run_consultation(user_message, history=None):
     # Observe
     meta["stage"] = "observe"
     ok, data, issues = observe(raw, valid_ids)
+    log.info("OBSERVE ok=%s ids=%s issues=%s",
+             ok, data["recommended_product_ids"] if data else None, issues)
 
     # Adapt
     while not ok and meta["reprompts"] < MAX_REPROMPTS:
         meta["reprompts"] += 1
         meta["stage"] = "adapt"
+        log.info("ADAPT  re-prompting (attempt %d) with: %s",
+                 meta["attempts"] + 1, "; ".join(issues))
         try:
             meta["attempts"] += 1
             raw = act(
@@ -264,13 +287,19 @@ def run_consultation(user_message, history=None):
             issues.append(f"re-prompt failed: {exc}")
             break
         ok, data, issues = observe(raw, valid_ids)
+        log.info("OBSERVE ok=%s ids=%s issues=%s",
+                 ok, data["recommended_product_ids"] if data else None, issues)
 
     if not ok or data is None or not data["reply"]:
+        log.warning("ADAPT  still invalid after %d attempt(s) -> catalog fallback",
+                    meta["attempts"])
         meta.update(used_fallback=True, stage="fallback", issues=issues)
         result = _fallback(user_message)
         result["meta"] = meta
         return result
 
     meta.update(stage="done", issues=issues)
+    log.info("DONE   attempts=%d reprompts=%d ids=%s",
+             meta["attempts"], meta["reprompts"], data["recommended_product_ids"])
     data["meta"] = meta
     return data
