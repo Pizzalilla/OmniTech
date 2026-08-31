@@ -113,6 +113,13 @@ PRODUCTS = [
         "specs": "External NVMe, 2000MB/s, USB-C, pocket size",
         "description": "Fast external SSD for editing scratch disks and backups.",
     },
+    {
+        "id": "SMH-001", "name": "HomeHub Starter Kit", "category": "Smart Home",
+        "brand": "OmniTech", "price": 249,
+        "specs": "hub, 3 smart bulbs, smart plug, motion sensor, app and voice control",
+        "description": "Everything to begin automating the lighting and power in "
+                       "one room; expandable later.",
+    },
 ]
 
 BY_ID = {p["id"]: p for p in PRODUCTS}
@@ -165,6 +172,15 @@ _CATEGORY_HINTS = {
     "speaker": "Speakers", "drive": "Storage", "ssd": "Storage", "storage": "Storage",
 }
 
+# Multi-word phrases that point at a category (checked against the raw query).
+_PHRASE_HINTS = {
+    "smart home": "Smart Home",
+    "home automation": "Smart Home",
+    "smart lighting": "Smart Home",
+    "smart bulb": "Smart Home",
+    "video doorbell": "Smart Home",
+}
+
 
 def search(query, limit=6):
     """Rank the catalog against a free-text query.
@@ -172,9 +188,14 @@ def search(query, limit=6):
     Deterministic keyword scoring - also used as the offline fallback answer
     when Ollama is unreachable, so the feature keeps working without a model.
     """
-    raw = [t.strip(".,!?;:$()'\"").lower() for t in (query or "").split()]
+    ql = (query or "").lower()
+    raw = [t.strip(".,!?;:$()'\"").lower() for t in ql.split()]
     tokens = {t for t in raw if len(t) > 2 and t not in _STOPWORDS}
     hinted = {_CATEGORY_HINTS[t] for t in raw if t in _CATEGORY_HINTS}
+    hinted |= {cat for phrase, cat in _PHRASE_HINTS.items() if phrase in ql}
+    # "smart home" must not also be read as "smartphone"
+    if "Smart Home" in hinted:
+        tokens.discard("smart")
 
     scored = []
     for product in PRODUCTS:
