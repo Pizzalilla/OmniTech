@@ -1,13 +1,16 @@
 """
 Agentic consultation loop for the AI Product Consultant.
 
-    Plan     Pull relevant catalog rows and build the context for the request.
+    Plan     Search the catalog with the whole recent conversation and take the
+             relevant shortlist - only those products are shown to the model.
     Act      Send a structured, contextual prompt to the local Ollama API.
-    Observe   Validate the model output - is it well-formed JSON, and does it
-              only recommend product ids that exist in the catalog?
-    Adapt     On failure, send one corrective re-prompt with the exact problems
-              and re-validate. If Ollama cannot be reached at all, fall back to a
-              deterministic catalog keyword match so the feature still responds.
+    Observe   Validate the output: well-formed JSON, and every recommended id is
+              in the shortlist (a real product from the wrong category is
+              rejected just like an invented id).
+    Adapt     On failure, send one corrective re-prompt naming the exact
+              problems and re-validate. If it still fails, or Ollama cannot be
+              reached, fall back to a deterministic catalog match on the same
+              conversation context so the answer stays on-topic.
 
 `run_consultation()` is the single entry point used by the Flask layer and never
 raises - callers always receive a usable dict.
@@ -47,30 +50,42 @@ SYSTEM_INSTRUCTIONS = (
     "1. Recommend ONLY products from the PRODUCT CATALOG below.\n"
     "2. Put the exact catalog id of every product you recommend in "
     "recommended_product_ids, and also mention it in reply.\n"
-    "3. Never invent products, brands, models or ids. Never write the word "
-    '"ID" literally - use real ids such as LAP-001 or AUD-002.\n'
+    "3. Recommend only products whose id appears in the PRODUCT CATALOG below. "
+    "Do not recommend anything from another category. Never invent ids and "
+    'never write "ID" literally.\n'
     "4. Answer with ONE JSON object and nothing else. Keys: reply (string), "
     "recommended_product_ids (array of catalog id strings), summary (string).\n"
     "5. recommended_product_ids may be empty only when you ask a clarifying "
     "question - put that question in reply.\n"
     "\n"
-    "Example of a good answer:\n"
-    '{"reply": "For 4K editing the Meridian Pro 16 (LAP-001) is the pick - '
-    '16-core CPU and 32GB RAM. If you also want portability, the Meridian Air '
-    '13 (LAP-002) is lighter.", "recommended_product_ids": ["LAP-001", '
-    '"LAP-002"], "summary": "A workstation laptop for heavy 4K timelines, with '
-    'a lighter alternative."}'
+    "The JSON shape (the ids here are placeholders - use the real ids from the "
+    "catalog above):\n"
+    '{"reply": "The <product name> (<its id>) fits because ...", '
+    '"recommended_product_ids": ["<its id>"], "summary": "<why it fits>"}'
 )
 
 
 # --------------------------------------------------------------------------- #
 # Plan
 # --------------------------------------------------------------------------- #
-def plan(user_message, history):
-    """Retrieve catalog context relevant to the request."""
-    relevant = catalog.search(user_message)
+def _context_query(user_message, history):
+    """Build the catalog search string from the recent *user* turns, so a
+    follow-up like "music in the gym" still carries the earlier "headphones"."""
+    turns = [t["message_text"] for t in (history or []) if t.get("sender") == "user"]
+    if user_message and (not turns or turns[-1] != user_message):
+        turns.append(user_message)
+    return " ".join(turns[-5:]) or (user_message or "")
+
+
+def plan(user_message, history=None):
+    """Retrieve the slice of the catalog relevant to the request. Only these
+    products are shown to the model and only these may be recommended."""
+    query = _context_query(user_message, history)
+    relevant = catalog.search(query)
     return {
+        "query": query,
         "relevant_products": relevant,
+        "relevant_ids": [p["id"] for p in relevant],
         "catalog_block": catalog.context_block(relevant),
         "valid_ids": sorted(catalog.VALID_IDS),
     }
@@ -97,9 +112,8 @@ def _build_prompt(plan_ctx, history, user_message, correction=None):
         lines.append("Return a corrected JSON object that fixes every problem.")
     lines.append("")
     lines.append(
-        'Answer with one JSON object: {"reply": "...", '
-        '"recommended_product_ids": ["LAP-001"], "summary": "..."}  '
-        "(use the real catalog ids that fit this customer)"
+        "Answer with one JSON object. recommended_product_ids must contain only "
+        "ids from the catalog above (" + ", ".join(plan_ctx["relevant_ids"]) + ")."
     )
     return "\n".join(lines)
 
@@ -147,8 +161,15 @@ def _extract_json(raw):
     return None
 
 
-def observe(raw_text, valid_ids):
+_PLACEHOLDERS = {"ID", "<ID>", "<ITS ID>", "XXX", "XXX-000"}
+
+
+def observe(raw_text, allowed_ids):
     """Validate a raw completion.
+
+    `allowed_ids` is the shortlist of catalog ids that were shown to the model
+    for this request. The answer may recommend ONLY from that set - a real
+    product from the wrong category is rejected just like an invented id.
 
     Returns (ok, data, issues). `data` is a normalised dict (or None if the
     output was not JSON at all); `issues` lists the problems found.
@@ -158,6 +179,7 @@ def observe(raw_text, valid_ids):
     if data is None:
         return False, None, ["output was not valid JSON in the required shape"]
 
+    allowed_ids = set(allowed_ids)
     reply = str(data.get("reply", "")).strip()
     summary = str(data.get("summary", "")).strip()
     ids = data.get("recommended_product_ids", [])
@@ -169,21 +191,29 @@ def observe(raw_text, valid_ids):
     if not reply:
         issues.append("the 'reply' field is missing or empty")
 
-    # The final recommendation set is the union of valid ids in the list and
-    # valid catalog ids the model named in the reply text - mentioning an id in
-    # prose counts as recommending it.
-    listed = [i for i in ids if i in valid_ids]
-    named = [i for i in sorted(valid_ids) if i in reply]
+    # Final set: allowed ids from the list, plus allowed ids the model named in
+    # the reply prose (mentioning one counts as recommending it).
+    listed = [i for i in ids if i in allowed_ids]
+    named = [i for i in sorted(allowed_ids) if i in reply]
     final_ids = list(dict.fromkeys(listed + named))
 
-    # A genuinely invented id is a hard error; the literal placeholder "ID"
-    # from the prompt template is just ignored.
-    invented = [i for i in ids if i not in valid_ids and i.upper() != "ID"]
-    if invented:
-        issues.append("these product ids are not in the catalog: " + ", ".join(invented))
+    # Anything in the list that is not allowed and is not an obvious template
+    # placeholder is a hard error - it forces a corrective re-prompt.
+    bad = [
+        i for i in ids
+        if i not in allowed_ids and i.upper() not in _PLACEHOLDERS
+    ]
+    if bad:
+        if any(i in catalog.VALID_IDS for i in bad):
+            issues.append(
+                "recommended " + ", ".join(bad)
+                + " - not among the products shown for this request; recommend "
+                "only from " + ", ".join(sorted(allowed_ids))
+            )
+        else:
+            issues.append("these product ids are not in the catalog: " + ", ".join(bad))
 
-    asks_question = "?" in reply
-    if not final_ids and not asks_question:
+    if not final_ids and "?" not in reply:
         issues.append("no catalog products were recommended")
 
     if not summary:
@@ -200,8 +230,8 @@ def observe(raw_text, valid_ids):
 # --------------------------------------------------------------------------- #
 # Fallback
 # --------------------------------------------------------------------------- #
-def _fallback(user_message):
-    picks = catalog.search(user_message, limit=3)[:2]
+def _fallback(query):
+    picks = catalog.search(query, limit=3)[:2]
     ids = [p["id"] for p in picks]
     if picks:
         bullets = "; ".join(
@@ -240,10 +270,10 @@ def run_consultation(user_message, history=None):
     history = history or []
     log.info("PLAN   query=%r", user_message[:120])
     plan_ctx = plan(user_message, history)
-    valid_ids = set(plan_ctx["valid_ids"])
-    log.info("PLAN   %d relevant catalog items: %s",
-             len(plan_ctx["relevant_products"]),
-             [p["id"] for p in plan_ctx["relevant_products"]])
+    allowed_ids = set(plan_ctx["relevant_ids"])
+    fallback_query = plan_ctx["query"]
+    log.info("PLAN   %d relevant catalog items (recommend only these): %s",
+             len(plan_ctx["relevant_ids"]), plan_ctx["relevant_ids"])
     meta = {
         "attempts": 0, "reprompts": 0, "used_fallback": False,
         "stage": "plan", "issues": [],
@@ -259,13 +289,13 @@ def run_consultation(user_message, history=None):
         log.warning("ACT    ollama unreachable (%s) -> catalog fallback", exc)
         meta.update(used_fallback=True, stage="fallback",
                     issues=[f"ollama unreachable: {exc}"])
-        result = _fallback(user_message)
+        result = _fallback(fallback_query)
         result["meta"] = meta
         return result
 
     # Observe
     meta["stage"] = "observe"
-    ok, data, issues = observe(raw, valid_ids)
+    ok, data, issues = observe(raw, allowed_ids)
     log.info("OBSERVE ok=%s ids=%s issues=%s",
              ok, data["recommended_product_ids"] if data else None, issues)
 
@@ -286,7 +316,7 @@ def run_consultation(user_message, history=None):
         except requests.RequestException as exc:
             issues.append(f"re-prompt failed: {exc}")
             break
-        ok, data, issues = observe(raw, valid_ids)
+        ok, data, issues = observe(raw, allowed_ids)
         log.info("OBSERVE ok=%s ids=%s issues=%s",
                  ok, data["recommended_product_ids"] if data else None, issues)
 
@@ -294,7 +324,7 @@ def run_consultation(user_message, history=None):
         log.warning("ADAPT  still invalid after %d attempt(s) -> catalog fallback",
                     meta["attempts"])
         meta.update(used_fallback=True, stage="fallback", issues=issues)
-        result = _fallback(user_message)
+        result = _fallback(fallback_query)
         result["meta"] = meta
         return result
 
