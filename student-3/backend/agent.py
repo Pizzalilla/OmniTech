@@ -32,13 +32,21 @@ SYSTEM_INSTRUCTIONS = (
     "budget and preferences.\n"
     "Rules:\n"
     "1. Recommend ONLY products from the PRODUCT CATALOG below.\n"
-    "2. Refer to every product by its exact catalog id (for example LAP-001).\n"
-    "3. Never invent products, brands, models or ids.\n"
-    "4. Reply with a single JSON object and nothing else, shaped exactly as:\n"
-    '   {"reply": "<friendly answer>", "recommended_product_ids": ["<id>", ...], '
-    '"summary": "<one or two sentence summary of why these fit>"}\n'
-    "5. recommended_product_ids may be empty if you need to ask a clarifying "
-    "question first - put that question in reply."
+    "2. Put the exact catalog id of every product you recommend in "
+    "recommended_product_ids, and also mention it in reply.\n"
+    "3. Never invent products, brands, models or ids. Never write the word "
+    '"ID" literally - use real ids such as LAP-001 or AUD-002.\n'
+    "4. Answer with ONE JSON object and nothing else. Keys: reply (string), "
+    "recommended_product_ids (array of catalog id strings), summary (string).\n"
+    "5. recommended_product_ids may be empty only when you ask a clarifying "
+    "question - put that question in reply.\n"
+    "\n"
+    "Example of a good answer:\n"
+    '{"reply": "For 4K editing the Meridian Pro 16 (LAP-001) is the pick - '
+    '16-core CPU and 32GB RAM. If you also want portability, the Meridian Air '
+    '13 (LAP-002) is lighter.", "recommended_product_ids": ["LAP-001", '
+    '"LAP-002"], "summary": "A workstation laptop for heavy 4K timelines, with '
+    'a lighter alternative."}'
 )
 
 
@@ -76,8 +84,9 @@ def _build_prompt(plan_ctx, history, user_message, correction=None):
         lines.append("Return a corrected JSON object that fixes every problem.")
     lines.append("")
     lines.append(
-        'JSON only: {"reply": "...", "recommended_product_ids": ["ID", ...], '
-        '"summary": "..."}'
+        'Answer with one JSON object: {"reply": "...", '
+        '"recommended_product_ids": ["LAP-001"], "summary": "..."}  '
+        "(use the real catalog ids that fit this customer)"
     )
     return "\n".join(lines)
 
@@ -147,28 +156,29 @@ def observe(raw_text, valid_ids):
     if not reply:
         issues.append("the 'reply' field is missing or empty")
 
-    bad = [i for i in ids if i not in valid_ids]
-    if bad:
-        issues.append(
-            "these product ids are not in the catalog: " + ", ".join(bad)
-        )
+    # The final recommendation set is the union of valid ids in the list and
+    # valid catalog ids the model named in the reply text - mentioning an id in
+    # prose counts as recommending it.
+    listed = [i for i in ids if i in valid_ids]
+    named = [i for i in sorted(valid_ids) if i in reply]
+    final_ids = list(dict.fromkeys(listed + named))
 
-    # Consistency: any catalog id named in the reply text must also be listed
-    # in recommended_product_ids.
-    named_in_reply = [i for i in valid_ids if i in reply]
-    unlisted = [i for i in named_in_reply if i not in ids]
-    if unlisted:
-        issues.append(
-            "reply mentions ids missing from recommended_product_ids: "
-            + ", ".join(unlisted)
-        )
+    # A genuinely invented id is a hard error; the literal placeholder "ID"
+    # from the prompt template is just ignored.
+    invented = [i for i in ids if i not in valid_ids and i.upper() != "ID"]
+    if invented:
+        issues.append("these product ids are not in the catalog: " + ", ".join(invented))
+
+    asks_question = "?" in reply
+    if not final_ids and not asks_question:
+        issues.append("no catalog products were recommended")
 
     if not summary:
         summary = reply[:200]
 
     clean = {
         "reply": reply,
-        "recommended_product_ids": [i for i in ids if i in valid_ids],
+        "recommended_product_ids": final_ids,
         "summary": summary,
     }
     return (len(issues) == 0), clean, issues

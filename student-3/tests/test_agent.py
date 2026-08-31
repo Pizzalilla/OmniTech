@@ -44,15 +44,30 @@ def test_observe_flags_hallucinated_ids():
     assert data["recommended_product_ids"] == []  # scrubbed
 
 
-def test_observe_flags_ids_named_in_reply_but_not_listed():
+def test_observe_salvages_ids_named_only_in_reply():
+    """Naming a catalog id in the prose counts as recommending it, even if the
+    list field is empty (small models often do this)."""
     raw = json.dumps({
         "reply": "LAP-001 is ideal for you.",
         "recommended_product_ids": [],
         "summary": "x",
     })
-    ok, _, issues = agent.observe(raw, VALID)
-    assert ok is False
-    assert any("missing from recommended_product_ids" in i for i in issues)
+    ok, data, issues = agent.observe(raw, VALID)
+    assert ok is True
+    assert data["recommended_product_ids"] == ["LAP-001"]
+
+
+def test_observe_ignores_literal_ID_placeholder():
+    """A model that copies the ["ID"] placeholder from the prompt still passes
+    when it named a real id in the reply."""
+    raw = json.dumps({
+        "reply": "The Meridian Air 13 (LAP-002) is a great light laptop.",
+        "recommended_product_ids": ["ID"],
+        "summary": "light laptop",
+    })
+    ok, data, issues = agent.observe(raw, VALID)
+    assert ok is True
+    assert data["recommended_product_ids"] == ["LAP-002"]
 
 
 def test_run_consultation_uses_fallback_when_ollama_down(monkeypatch):

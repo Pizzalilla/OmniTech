@@ -200,8 +200,15 @@ def test_chat_session_not_found(client):
     assert rv.status_code == 404
 
 
-def test_chat_offline_falls_back_but_still_answers(client):
-    """With no Ollama reachable the loop must still persist a reply."""
+def test_chat_persists_both_turns(client, monkeypatch):
+    """Whether the model answers or the offline fallback does, /api/chat must
+    always return a non-empty reply and persist the user + ai turns."""
+    import agent
+
+    def _down(prompt):
+        raise __import__("requests").ConnectionError("refused")
+    monkeypatch.setattr(agent, "act", _down)  # force the offline path deterministically
+
     before = len(json.loads(client.get("/api/sessions/2/messages").data))
     rv = client.post("/api/chat",
                      json={"session_id": 2, "message": "cheap phone for my mum"})
@@ -210,7 +217,7 @@ def test_chat_offline_falls_back_but_still_answers(client):
     assert body["reply"]
     assert body["meta"]["used_fallback"] is True
     after = len(json.loads(client.get("/api/sessions/2/messages").data))
-    assert after == before + 2  # user + ai persisted
+    assert after == before + 2
 
 
 def test_chat_valid_model_answer_saves_recommendation(client, fake_ollama):
