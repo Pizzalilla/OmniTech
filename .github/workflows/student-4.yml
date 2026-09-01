@@ -1,4 +1,4 @@
-﻿name: Student 4 CI Workflow
+﻿name: Student 4 CI Pipeline
 
 on:
   push:
@@ -10,14 +10,14 @@ on:
       - 'student-4/**'
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -27,20 +27,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install flask flask-cors requests openai pytest
 
-      - name: Initialize Database
+      - name: Initialize SQLite Database
         run: |
           python student-4/database/init_db.py
 
-      - name: Start Database Service
+      - name: Launch Database Microservice (Port 5004)
         run: |
           python student-4/database/app.py &
           sleep 3
 
-      - name: Start Backend Service
+      - name: Launch Backend Microservice (Port 5014)
         run: |
           python student-4/backend/app.py &
           sleep 3
 
-      - name: Run Test Suite
+      - name: Run Automated Pytest Suite
         run: |
           pytest student-4/tests/test_orders_api.py -v

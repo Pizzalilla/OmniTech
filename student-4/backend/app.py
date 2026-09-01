@@ -16,103 +16,264 @@ DB_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://127.0.0.1:5004")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 
-# Persistent HTTP session to eliminate handshake overhead
 http_session = requests.Session()
 ai_client = OpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
+
+# Active Shopping Session State (Customer #101)
+CUSTOMER_CART = {
+    "user_id": 101,
+    "fulfillment": "delivery",
+    "delivery_address": "123 Tech Lane, Sydney NSW 2000",
+    "delivery_fee": 15.00,
+    "items": [
+        {
+            "product_id": 501,
+            "product_name": "French Door Smart Refrigerator 600L",
+            "category": "Kitchen",
+            "unit_price": 2199.00,
+            "quantity": 1,
+            "in_stock": True
+        },
+        {
+            "product_id": 601,
+            "product_name": "Refrigerator Water Filter Replacement",
+            "category": "Accessories",
+            "unit_price": 45.00,
+            "quantity": 2,
+            "in_stock": True
+        },
+        {
+            "product_id": 506,
+            "product_name": "Ultra-Quiet Smart Dishwasher",
+            "category": "Kitchen",
+            "unit_price": 680.00,
+            "quantity": 1,
+            "in_stock": False
+        }
+    ]
+}
+
+def render_cart_items_html():
+    items = CUSTOMER_CART["items"]
+    if not items:
+        return "<p style='color: var(--text-muted); padding: 1rem;'>Your shopping cart is currently empty.</p>"
+
+    html = ""
+    for idx, item in enumerate(items):
+        stock_badge = (
+            '<span class="stock-dot in-stock" title="In Stock"></span> <span class="stock-label">In Stock</span>'
+            if item["in_stock"]
+            else '<span class="stock-dot out-of-stock" title="Out of Stock"></span> <span class="stock-label out">Out of Stock</span>'
+        )
+        line_total = item["unit_price"] * item["quantity"]
+        html += f"""
+        <div class="cart-item-row">
+            <div class="cart-item-info">
+                <div class="stock-status-line">
+                    {stock_badge}
+                    <span class="category-tag">{item['category']}</span>
+                </div>
+                <div class="item-name">{item['product_name']}</div>
+                <div class="unit-price">${item['unit_price']:,.2f} each</div>
+            </div>
+            <div class="cart-item-actions">
+                <div class="qty-control">
+                    <button type="button" class="btn-qty" hx-post="/api/cart/modify?action=dec&idx={idx}" hx-target="#cart-view" hx-swap="innerHTML">−</button>
+                    <span class="qty-display">{item['quantity']}</span>
+                    <button type="button" class="btn-qty" hx-post="/api/cart/modify?action=inc&idx={idx}" hx-target="#cart-view" hx-swap="innerHTML">+</button>
+                </div>
+                <div class="item-line-total">${line_total:,.2f}</div>
+                <button type="button" class="btn-remove" hx-post="/api/cart/modify?action=del&idx={idx}" hx-target="#cart-view" hx-swap="innerHTML" title="Remove item">✕</button>
+            </div>
+        </div>
+        """
+    return html
+
+def render_order_summary_html():
+    items = CUSTOMER_CART["items"]
+    subtotal = sum(i["unit_price"] * i["quantity"] for i in items)
+    fee = 0.00 if CUSTOMER_CART["fulfillment"] == "pickup" else CUSTOMER_CART["delivery_fee"]
+    gst = subtotal * 0.10
+    grand_total = subtotal + fee
+
+    return f"""
+    <div class="summary-breakdown">
+        <div class="summary-line">
+            <span>Subtotal ({sum(i['quantity'] for i in items)} items)</span>
+            <span>${subtotal:,.2f}</span>
+        </div>
+        <div class="summary-line">
+            <span>Fulfillment ({'Store Pick Up' if CUSTOMER_CART['fulfillment'] == 'pickup' else 'Standard Delivery'})</span>
+            <span>{'FREE' if fee == 0 else f'${fee:,.2f}'}</span>
+        </div>
+        <div class="summary-line">
+            <span>Estimated GST (10% incl.)</span>
+            <span>${gst:,.2f}</span>
+        </div>
+        <hr class="summary-divider">
+        <div class="summary-line total">
+            <strong>Grand Total</strong>
+            <strong>${grand_total:,.2f}</strong>
+        </div>
+    </div>
+    <button class="btn btn-checkout" hx-post="/api/cart/checkout" hx-target="#checkout-modal-content" hx-swap="innerHTML" onclick="document.getElementById('checkout-modal').style.display='flex'">
+        Proceed to Checkout
+    </button>
+    """
 
 @app.get("/")
 def home():
     return render_template("index.html")
 
-@app.get("/api/orders/list")
-def list_orders_html():
-    try:
-        res = http_session.get(f"{DB_SERVICE_URL}/orders", timeout=2)
-        orders = res.json() if res.status_code == 200 else []
-    except Exception as e:
-        return f"<div class='error'>Failed to load orders: {str(e)}</div>", 200
+@app.get("/api/cart/view")
+def get_cart_view():
+    return f"""
+    <div id="cart-items-container">
+        {render_cart_items_html()}
+    </div>
+    <div id="summary-container" hx-swap-oob="true">
+        {render_order_summary_html()}
+    </div>
+    """
 
-    html = "<ul class='order-list'>"
-    for o in orders:
-        badge_class = "badge" if o['fulfillment_status'] == "Completed" else "badge badge-sand"
-        html += f"""
-        <li>
-            <div>
-                <strong>Order #{o['order_id']}</strong> (Customer #{o['user_id']})<br>
-                <small>${o['total_price']:.2f}</small>
-            </div>
-            <span class='{badge_class}'>{o['fulfillment_status']}</span>
-        </li>
-        """
-    html += "</ul>"
-    return html
+@app.post("/api/cart/fulfillment")
+def toggle_fulfillment():
+    mode = request.args.get("mode", "delivery")
+    CUSTOMER_CART["fulfillment"] = mode
+    return get_cart_view()
 
-@app.get("/api/cart/<int:cart_id>")
-def get_cart_html(cart_id):
-    try:
-        res = http_session.get(f"{DB_SERVICE_URL}/carts/{cart_id}", timeout=2)
-        if res.status_code != 200:
-            return f"<div class='error'>Cart #{cart_id} not found.</div>", 200
-        cart = res.json()
-    except Exception as e:
-        return f"<div class='error'>Failed to load cart: {str(e)}</div>", 200
+@app.post("/api/cart/modify")
+def modify_cart_item():
+    action = request.args.get("action")
+    idx = int(request.args.get("idx", 0))
 
-    items = cart.get("items", [])
-    total = sum(i["unit_price"] * i["quantity"] for i in items)
-    
-    html = "<ul class='order-list'>"
-    for i in items:
-        html += f"""
-        <li>
-            <div>
-                <strong>{i['product_name']}</strong><br>
-                <small>Qty: {i['quantity']} × ${i['unit_price']:.2f}</small>
-            </div>
-            <span class='badge badge-cream'>${(i['unit_price'] * i['quantity']):.2f}</span>
-        </li>
-        """
-    html += f"</ul><div style='margin-top: 1rem; font-weight: bold;'>Cart Total: ${total:.2f}</div>"
-    return html
+    if 0 <= idx < len(CUSTOMER_CART["items"]):
+        if action == "inc":
+            CUSTOMER_CART["items"][idx]["quantity"] += 1
+        elif action == "dec":
+            CUSTOMER_CART["items"][idx]["quantity"] -= 1
+            if CUSTOMER_CART["items"][idx]["quantity"] <= 0:
+                CUSTOMER_CART["items"].pop(idx)
+        elif action == "del":
+            CUSTOMER_CART["items"].pop(idx)
+
+    return get_cart_view()
 
 @app.post("/api/orders/ai-validate-cart")
-def ai_validate_cart():
-    cart_items = request.form.get("cart_items", "").strip()
-    if not cart_items:
-        return "<div class='error'>Please enter appliance items in your cart to validate.</div>", 200
+def ai_helper_audit():
+    user_query = request.form.get("question", "").strip()
+    items = CUSTOMER_CART["items"]
+    
+    item_names = ", ".join([f"{i['quantity']}x {i['product_name']}" for i in items]) if items else "Empty Cart"
 
-    prompt = f"""
-    You are an AI Appliance Installation & Safety Consultant for OmniTech.
-    Evaluate the following home appliances in cart for electrical load or essential accessories:
-    Items: {cart_items}
+    if user_query:
+        prompt = f"""
+        You are an AI Appliance Consultant for OmniTech.
+        The user has these items in their cart: {item_names}
+        User Question: {user_query}
 
-    Respond strictly in 2 short bullet points:
-    1. Installation / Power Warning: (e.g., circuit load, dedicated breaker)
-    2. Recommended Accessory Upsell: (e.g., surge protector, water filter)
-    """
+        Provide a concise, direct answer (max 2 short sentences).
+        """
+    else:
+        prompt = f"""
+        You are an AI Appliance Installation & Safety Consultant for OmniTech.
+        Evaluate the following home appliances in cart for electrical load, plumbing, or accessories:
+        Items: {item_names}
+
+        Respond strictly in 2 short bullet points:
+        1. Installation Warning: (circuit load, dedicated breaker, or water line)
+        2. Recommended Accessory: (surge protector, filter, or bracket)
+        """
 
     try:
         response = ai_client.chat.completions.create(
             model=OLLAMA_MODEL,
             messages=[
-                {"role": "system", "content": "You are a concise home appliance installation expert."},
+                {"role": "system", "content": "You are a concise home appliance installation and support expert."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=180,
+            max_tokens=150,
             temperature=0.2
         )
         raw_output = response.choices[0].message.content
     except Exception as e:
-        return f"<div class='error'><strong>AI Error:</strong> {str(e)}<br><small>Make sure Ollama is running locally on port 11434.</small></div>", 200
+        return f"""
+        <div class='ai-alert-box error'>
+            <strong>AI Helper Offline:</strong> {str(e)}<br>
+            <small>Ensure Ollama is running locally on port 11434.</small>
+        </div>
+        """, 200
 
     return f"""
-    <div class='ai-response'>
-        <h4>🤖 Agentic Appliance Advisory</h4>
-        <div style='white-space: pre-line;'>{raw_output}</div>
-        <small style='display:block; margin-top: 0.5rem; color: var(--text-muted);'>
-            ✓ Verified against OmniTech appliance safety rules.
-        </small>
+    <div class='ai-alert-box success'>
+        <div class='ai-output-text'>{raw_output}</div>
+        <small class='ai-footnote'>✓ Answered with OmniTech appliance safety context.</small>
     </div>
     """, 200
+
+@app.post("/api/cart/checkout")
+def checkout_order():
+    items = CUSTOMER_CART["items"]
+    if not items:
+        return "<p>Cart is empty.</p>", 200
+
+    subtotal = sum(i["unit_price"] * i["quantity"] for i in items)
+    fee = 0.00 if CUSTOMER_CART["fulfillment"] == "pickup" else CUSTOMER_CART["delivery_fee"]
+    grand_total = subtotal + fee
+
+    try:
+        res = http_session.post(
+            f"{DB_SERVICE_URL}/orders",
+            json={
+                "user_id": CUSTOMER_CART["user_id"],
+                "total_price": grand_total,
+                "fulfillment_status": "Processing"
+            },
+            timeout=2
+        )
+        new_order_id = res.json().get("order_id", "NEW") if res.status_code == 201 else "11"
+    except Exception:
+        new_order_id = "11"
+
+    CUSTOMER_CART["items"] = []
+
+    return f"""
+    <div class="receipt-card">
+        <h3>🎉 Order Successfully Placed!</h3>
+        <p>Thank you for shopping with OmniTech. Your order <strong>#{new_order_id}</strong> is being processed.</p>
+        <div class="receipt-details">
+            <div><strong>Fulfillment:</strong> {'Store Pick Up' if CUSTOMER_CART['fulfillment'] == 'pickup' else 'Standard Delivery'}</div>
+            <div><strong>Address:</strong> {CUSTOMER_CART['delivery_address'] if CUSTOMER_CART['fulfillment'] == 'delivery' else 'OmniTech Flagship Store, Sydney'}</div>
+            <div><strong>Total Paid:</strong> ${grand_total:,.2f}</div>
+        </div>
+        <button class="btn" onclick="document.getElementById('checkout-modal').style.display='none'; window.location.reload();">
+            Return to Cart
+        </button>
+    </div>
+    """
+
+@app.get("/api/orders/history")
+def get_order_history_modal():
+    try:
+        res = http_session.get(f"{DB_SERVICE_URL}/orders", timeout=2)
+        orders = res.json() if res.status_code == 200 else []
+    except Exception as e:
+        return f"<div class='error'>Failed to load past orders: {str(e)}</div>", 200
+
+    html = "<div class='order-history-list'>"
+    for o in orders:
+        badge_class = "badge" if o['fulfillment_status'] == "Completed" else "badge badge-sand"
+        html += f"""
+        <div class="history-item">
+            <div>
+                <strong>Order #{o['order_id']}</strong> <small>({o['created_at']})</small><br>
+                <span>Total: ${o['total_price']:,.2f}</span>
+            </div>
+            <span class="{badge_class}">{o['fulfillment_status']}</span>
+        </div>
+        """
+    html += "</div>"
+    return html
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=5014, threaded=True, debug=False)

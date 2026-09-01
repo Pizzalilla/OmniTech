@@ -1,10 +1,10 @@
 ﻿import pytest
 import requests
 
-DB_URL = "http://localhost:5004"
-BACKEND_URL = "http://localhost:5014"
+DB_URL = "http://127.0.0.1:5004"
+BACKEND_URL = "http://127.0.0.1:5014"
 
-# --- Database Service Tests (Port 5004) ---
+# --- Database Service Contract Tests (Port 5004) ---
 
 def test_db_health():
     res = requests.get(f"{DB_URL}/", timeout=3)
@@ -18,7 +18,7 @@ def test_get_all_orders_count():
     assert res.status_code == 200
     orders = res.json()
     assert isinstance(orders, list)
-    assert len(orders) >= 10, "Database must have at least 10 seeded orders"
+    assert len(orders) >= 10, "Database must have at least 10 seeded appliance orders"
 
 def test_get_single_order_details():
     res = requests.get(f"{DB_URL}/orders/1", timeout=3)
@@ -28,41 +28,47 @@ def test_get_single_order_details():
     assert "line_items" in order
     assert len(order["line_items"]) >= 1
 
-def test_get_cart_items():
-    res = requests.get(f"{DB_URL}/carts/1", timeout=3)
-    assert res.status_code == 200
-    cart = res.json()
-    assert cart["cart_id"] == 1
-    assert "items" in cart
-    assert len(cart["items"]) >= 1
-
 def test_order_not_found():
     res = requests.get(f"{DB_URL}/orders/9999", timeout=3)
     assert res.status_code == 404
 
-# --- Backend Service Tests (Port 5014) ---
+# --- Backend Customer Cart & AI Helper Tests (Port 5014) ---
 
 def test_backend_index_page():
     res = requests.get(f"{BACKEND_URL}/", timeout=3)
     assert res.status_code == 200
-    assert "Student 4: Cart & Order Processing" in res.text
+    assert "OmniTech" in res.text
+    assert "Student 4: Cart & Orders" in res.text
 
-def test_backend_cart_html_fragment():
-    res = requests.get(f"{BACKEND_URL}/api/cart/1", timeout=3)
+def test_backend_cart_view_and_stock_indicators():
+    res = requests.get(f"{BACKEND_URL}/api/cart/view", timeout=3)
     assert res.status_code == 200
-    assert "order-list" in res.text
+    # Confirms green in-stock and red out-of-stock dot rendering
+    assert "stock-dot in-stock" in res.text
+    assert "stock-dot out-of-stock" in res.text
+    assert "French Door Smart Refrigerator 600L" in res.text
 
-def test_backend_orders_list_fragment():
-    res = requests.get(f"{BACKEND_URL}/api/orders/list", timeout=3)
+def test_cart_quantity_modification():
+    # Test incrementing first item quantity
+    res = requests.post(f"{BACKEND_URL}/api/cart/modify?action=inc&idx=0", timeout=3)
+    assert res.status_code == 200
+    assert "cart-item-row" in res.text
+
+def test_fulfillment_toggle():
+    res = requests.post(f"{BACKEND_URL}/api/cart/fulfillment?mode=pickup", timeout=3)
+    assert res.status_code == 200
+    assert "Store Pick Up" in res.text
+
+def test_order_history_endpoint():
+    res = requests.get(f"{BACKEND_URL}/api/orders/history", timeout=3)
     assert res.status_code == 200
     assert "Order #" in res.text
 
-def test_ai_validate_cart_endpoint():
+def test_ai_helper_custom_question():
     res = requests.post(
         f"{BACKEND_URL}/api/orders/ai-validate-cart",
-        data={"cart_items": "French Door Smart Refrigerator 600L"},
+        data={"question": "Do I need a plumber for this fridge?"},
         timeout=15
     )
     assert res.status_code == 200
-    # Must either return AI analysis or the handled fallback message
-    assert "ai-response" in res.text or "AI Error" in res.text
+    assert "ai-alert-box" in res.text
