@@ -2,7 +2,7 @@ name: Student 3 - AI Product Consultant
 
 on:
   push:
-    branches: [main]
+    branches: [main, student3-AIConsultation]
     paths:
       - "student-3/**"
       - ".github/workflows/student-3.yml"
