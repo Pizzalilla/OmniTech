@@ -1,23 +1,45 @@
 /* ==========================================================================
-   OmniTech - AI Product Consultant
-   Single stylesheet for the service. Palette tokens are the shared OmniTech
-   design-system values (vendored here so the container ships without the
-   shared/ tree). Everything below the tokens is layout for this service.
+   OmniTech - AI Product Consultant : single stylesheet for the service.
+
+   The :root block below is the OmniTech shared design system, copied verbatim
+   from  shared/frontend/css/styles.css  (kept in sync by hand). It is vendored
+   rather than linked because this service is containerised from ./student-3
+   only - the shared/ tree is not in the image - so a <link> to the shared file
+   would 404 in the deployed stack. The gateway landing page
+   (student-3/frontend/index.html) links the shared file directly.
+
+   Everything after :root is layout specific to this service.
    ========================================================================== */
 
 :root {
-    /* Shared OmniTech design-system tokens */
+    /* ---- OmniTech shared design system (source: shared/frontend/css/styles.css) ---- */
+    /* Color palette */
     --color-slate-blue: #81a6c6;
     --color-light-blue: #aacddc;
     --color-cream: #f3e3d0;
     --color-sandstone: #d2c4b4;
-    --primary: #81a6c6;
-    --primary-hover: #6a91b2;
+
+    /* Semantic tokens */
+    --bg-page: #fbf8f5;
+    --bg-surface: #ffffff;
+    --bg-surface-soft: #f3e3d0;
+    --bg-surface-alt: #d2c4b4;
     --text-primary: #1e293b;
     --text-muted: #64748b;
     --text-inverse: #ffffff;
+    --primary: #81a6c6;
+    --primary-hover: #6a91b2;
+    --secondary: #aacddc;
+    --secondary-hover: #93bed0;
+    --border: #d2c4b4;
+    --border-strong: #81a6c6;
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 2px 6px rgba(30, 41, 59, 0.05);
+    --shadow-md: 0 8px 24px rgba(30, 41, 59, 0.08);
 
-    /* UI surface scale for a clean, airy layout */
+    /* ---- service-specific UI scale, built on the palette above ---- */
     --frame: #eceefb;
     --surface: #ffffff;
     --surface-2: #f5f6fa;

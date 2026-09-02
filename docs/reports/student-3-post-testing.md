@@ -80,6 +80,14 @@ link, top-right. A single stylesheet, `frontend/static/style.css`, served at
   (the full schema DDL) on every connection, so the service cannot raise
   "no such table" even if the database file is missing, empty, or was written
   by an older build. Startup still seeds demo rows when the tables are empty.
+* **Shared CSS theme is vendored, not linked.** The service is containerised
+  from `./student-3` only, so `shared/frontend/css/styles.css` is not in the
+  image and a `<link>` to it would 404 in the stack. The full OmniTech design
+  system (palette + semantic tokens + radii + shadows) is therefore copied
+  verbatim into the `:root` block of `frontend/static/style.css`, kept in sync
+  by hand, and every rule is written against those tokens. The gateway landing
+  page (`student-3/frontend/index.html`), which is served as a static file and
+  can see the `shared/` tree, links the shared stylesheet directly.
 * **SQLite / single writer.** Fine for the assignment and the compose stack; a
   multi-instance deployment would need a server database.
 * **Auth is stubbed.** `user_id` defaults to `guest`; there is no session
