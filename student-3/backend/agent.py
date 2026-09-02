@@ -20,6 +20,7 @@ import json
 import logging
 import os
 import re
+import time
 
 import requests
 
@@ -126,6 +127,7 @@ def act(prompt):
 
     Raises requests.RequestException if the service cannot be reached.
     """
+    started = time.monotonic()
     resp = requests.post(
         f"{OLLAMA_HOST}/api/generate",
         json={
@@ -138,7 +140,10 @@ def act(prompt):
         timeout=OLLAMA_TIMEOUT,
     )
     resp.raise_for_status()
-    return resp.json().get("response", "")
+    text = resp.json().get("response", "")
+    log.info("ACT    ollama replied in %.1fs (%d chars)",
+             time.monotonic() - started, len(text))
+    return text
 
 
 # --------------------------------------------------------------------------- #
@@ -298,6 +303,8 @@ def run_consultation(user_message, history=None):
     ok, data, issues = observe(raw, allowed_ids)
     log.info("OBSERVE ok=%s ids=%s issues=%s",
              ok, data["recommended_product_ids"] if data else None, issues)
+    if not ok:
+        log.info("OBSERVE rejected raw output: %r", raw[:300])
 
     # Adapt
     while not ok and meta["reprompts"] < MAX_REPROMPTS:
