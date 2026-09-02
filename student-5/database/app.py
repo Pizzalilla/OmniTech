@@ -30,12 +30,37 @@ def get_tickets():
 @app.get("/tickets/<int:customer_id>")
 def get_tickets_by_customer_id(customer_id):
     conn = get_db_connection()
-    ticket = conn.execute(
+    tickets = conn.execute(
         "SELECT * FROM tickets where customer_id = ?", (customer_id,),
     ).fetchall()
     conn.close()
 
-    if ticket is None:
+    if tickets is None:
         return jsonify({"error", "You have no warranty tickets!"})
 
-    return jsonify([dict(t) for t in ticket])
+    return jsonify([dict(ticket) for ticket in tickets])
+
+@app.get("/tickets/<int:ticket_id>")
+def get_ticket_by_ticket_id(ticket_id):
+    conn = get_db_connection()
+    ticket = conn.execute(
+        "SELECT * FROM tickets where ticket_id = ?", (ticket_id,),
+    ).fetchone()
+    conn.close()
+
+    return jsonify(dict(ticket))
+
+@app.post("/tickets/<int:ticket_id>/update")
+def update_ticket(ticket_id):
+    ticket = get_ticket_by_ticket_id(ticket_id)
+    # 
+    conn = get_db_connection()
+    conn.execute("""
+        UPDATE tickets 
+        SET ticket_status = ?, ai_decision = ?, ai_reasoning = ?, ai_reviewed_date = CURRENT_TIMESTAMP
+        WHERE ticket_id = ?
+    """, (the rest to be created ,ticket_id))
+    conn.commit()
+    conn.close()
+
+    # return some message in the ui
