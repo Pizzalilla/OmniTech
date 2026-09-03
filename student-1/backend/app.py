@@ -9,14 +9,19 @@ if str(ROOT) not in sys.path:
 from database.db import (
     create_category,
     create_product,
+    create_specification,
     delete_category,
     delete_product,
+    delete_specification,
     get_category,
     get_product,
+    get_specification,
     list_categories,
     list_products,
+    list_specifications,
     update_category,
     update_product,
+    update_specification,
 )
 from database.init_db import init_db
 from dotenv import load_dotenv
@@ -178,6 +183,56 @@ def api_product(product_id):
     except IntegrityError:
         return jsonify({"error": "invalid category_id"}), 400
     return jsonify(updated)
+
+
+def _parse_spec_payload(data: dict) -> tuple[dict | None, tuple | None]:
+    spec_name = (data.get("spec_name") or "").strip()
+    spec_value = (data.get("spec_value") or "").strip()
+    if not spec_name or not spec_value:
+        return {"error": "spec_name and spec_value are required"}, None
+    return None, (spec_name, spec_value)
+
+
+# GET = all specs for a product, POST = add one
+@app.route("/api/products/<int:product_id>/specifications", methods=["GET", "POST"])
+def api_specifications(product_id):
+    if get_product(product_id) is None:
+        return jsonify({"error": "product not found"}), 404
+
+    if request.method == "GET":
+        return jsonify(list_specifications(product_id))
+
+    data = request.get_json(silent=True) or {}
+    error, values = _parse_spec_payload(data)
+    if error:
+        return jsonify(error), 400
+
+    return jsonify(create_specification(product_id, *values)), 201
+
+
+@app.route(
+    "/api/products/<int:product_id>/specifications/<int:spec_id>",
+    methods=["GET", "PUT", "DELETE"],
+)
+def api_specification(product_id, spec_id):
+    spec = get_specification(spec_id)
+    # reject a spec id that belongs to a different product
+    if spec is None or spec["product_id"] != product_id:
+        return jsonify({"error": "specification not found"}), 404
+
+    if request.method == "GET":
+        return jsonify(spec)
+
+    if request.method == "DELETE":
+        delete_specification(spec_id)
+        return "", 204
+
+    data = request.get_json(silent=True) or {}
+    error, values = _parse_spec_payload(data)
+    if error:
+        return jsonify(error), 400
+
+    return jsonify(update_specification(spec_id, *values))
 
 
 if __name__ == "__main__":

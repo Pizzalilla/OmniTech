@@ -181,3 +181,65 @@ def delete_product(product_id: int) -> bool:
         cursor = conn.execute("DELETE FROM products WHERE id = ?", (product_id,))
         conn.commit()
         return cursor.rowcount > 0
+
+
+def list_specifications(product_id: int) -> list[dict]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, product_id, spec_name, spec_value
+            FROM product_specifications
+            WHERE product_id = ?
+            ORDER BY spec_name
+            """,
+            (product_id,),
+        ).fetchall()
+    return [row_to_dict(row) for row in rows]
+
+
+def get_specification(spec_id: int) -> dict | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            """
+            SELECT id, product_id, spec_name, spec_value
+            FROM product_specifications
+            WHERE id = ?
+            """,
+            (spec_id,),
+        ).fetchone()
+    return row_to_dict(row)
+
+
+def create_specification(product_id: int, spec_name: str, spec_value: str) -> dict:
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO product_specifications (product_id, spec_name, spec_value)
+            VALUES (?, ?, ?)
+            """,
+            (product_id, spec_name, spec_value),
+        )
+        conn.commit()
+        spec_id = cursor.lastrowid
+    return get_specification(spec_id)
+
+
+def update_specification(spec_id: int, spec_name: str, spec_value: str) -> dict | None:
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "UPDATE product_specifications SET spec_name = ?, spec_value = ? WHERE id = ?",
+            (spec_name, spec_value, spec_id),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return None
+    return get_specification(spec_id)
+
+
+def delete_specification(spec_id: int) -> bool:
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "DELETE FROM product_specifications WHERE id = ?", (spec_id,)
+        )
+        conn.commit()
+        return cursor.rowcount > 0
