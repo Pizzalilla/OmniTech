@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!-- <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -10,5 +10,164 @@
     <h1>{{ service_name }} Microservice</h1>
     <p>This is the starter template. Build your service here.</p>
     <a href="http://localhost:8080">&larr; Back to Home</a>
+</body>
+</html> -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniTech - Warranty Support</title>
+    <!-- <link rel="stylesheet" href="../../shared/frontend/css/styles.css"> -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<div class="container">
+        <header class="header">
+            <h1>OmniTech</h1>
+            <p>Warranty Support</p>
+        </header>
+
+        <main class="ticket-section">
+
+            <div class="ticket-input-card">
+
+                <h2>AI Warranty Evaluation</h2>
+
+                <p class="description">
+                    Enter a ticket ID to have the AI evaluate the warranty claim
+                    according to the company's warranty policies.
+                </p>
+
+                <div class="input-group">
+                    <label for="ticketId">Ticket ID</label>
+
+                    <input
+                        type="number"
+                        id="ticketId"
+                        placeholder="Enter ticket ID"
+                        min="1"
+                    >
+
+                    <button id="evaluateButton" onclick="evaluateTicket()">
+                        Evaluate Ticket
+                    </button>
+                </div>
+
+            </div>
+
+            <div id="loading" class="status-card hidden">
+                <div class="spinner"></div>
+                <p>AI is evaluating the warranty claim...</p>
+            </div>
+
+            <div id="errorCard" class="error-card hidden">
+                <h3>Evaluation Failed</h3>
+                <p id="errorMessage"></p>
+            </div>
+
+            <div id="resultCard" class="result-card hidden">
+
+                <div class="result-header">
+                    <h2>AI Decision</h2>
+                    <span id="ticketNumber"></span>
+                </div>
+
+
+                <div class="decision-box">
+
+                    <h3>Decision</h3>
+
+                    <div id="decision"></div>
+
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+
+    <script>
+
+        async function evaluateTicket() {
+            const ticketId = document.getElementById("ticketId").value;
+            const evaluateButton =
+                document.getElementById("evaluateButton");
+            const loading =
+                document.getElementById("loading");
+            const resultCard =
+                document.getElementById("resultCard");
+            const errorCard =
+                document.getElementById("errorCard");
+            const errorMessage =
+                document.getElementById("errorMessage");
+            const decision =
+                document.getElementById("decision");
+            const ticketNumber =
+                document.getElementById("ticketNumber");
+
+            if (!ticketId) {
+                errorMessage.textContent =
+                    "Please enter a ticket ID.";
+                errorCard.classList.remove("hidden");
+                resultCard.classList.add("hidden");
+                return;
+            }
+
+            errorCard.classList.add("hidden");
+            resultCard.classList.add("hidden");
+            loading.classList.remove("hidden");
+            evaluateButton.disabled = true;
+
+            try {
+                const response = await fetch(
+                    `/api/tickets/${ticketId}/evaluate`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.error || "AI Evaluation failed."
+                    );
+                }
+
+                ticketNumber.textContent =
+                    `Ticket #${data.ticket_id}`;
+                decision.textContent =
+                    data.decision;
+                resultCard.classList.remove("hidden");
+
+            }
+
+            catch (error) {
+                console.error(error);
+                errorMessage.textContent =
+                    error.message;
+                errorCard.classList.remove("hidden");
+
+            }
+
+            finally {
+                loading.classList.add("hidden");
+                evaluateButton.disabled = false;
+            }
+        }
+
+        document
+            .getElementById("ticketId")
+            .addEventListener("keydown", function(event) {
+                if (event.key === "Enter") {
+                    evaluateTicket();
+                }
+            });
+    </script>
 </body>
 </html>

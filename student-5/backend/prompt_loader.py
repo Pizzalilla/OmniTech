@@ -1,9 +1,11 @@
-from pathlib import Path
+import os
 
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-PROMPT_DIR = BASE_DIR / "student-5" / "prompts"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROMPTS_DIR = os.path.join(BASE_DIR, "prompts")
 
 
 def load_prompt(filename):
-    return (PROMPT_DIR / filename).read_text(encoding="utf-8").strip()
+    path = os.path.join(PROMPTS_DIR, filename)
+
+    with open(path, "r", encoding="utf-8") as file:
+        return file.read()

@@ -2,10 +2,9 @@ import os
 
 from openai import OpenAI
 
-from backend.prompt_loader import load_prompt
 
-
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434/v1")
+# OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://host.docker.internal:11434/v1")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 
 client = OpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
