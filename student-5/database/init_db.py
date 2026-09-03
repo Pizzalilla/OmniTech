@@ -51,51 +51,51 @@ def init_db():
 
     # Seed data for tickets
     ticket_data = [
-        (1, 1, 1, "CPU", "The CPU pins were bent upon arrival and opening.", "Pending"),
-        (2, 2, 1, "CPU", "The CPU doesn't work.", "Pending"),
-        (3, 3, 2, "GPU", "The GPU blew up.", "Pending"),
-        (4, 4, 3, "PC Case", "The case came in with the front corner of the case being chipped.", "Pending"),
-        (5, 5, 4, "Motherboard", "It doesn't work.", "Pending"),
-        (6, 6, 2, "GPU", "The GPU came in chipped, upon use, the GPU was overheating and eventually blew up most likely due to the chip and fans not spinning as fast.", "Pending"),
-        (7, 7, 4, "Motherboard", "The motherboard has faulty LED lighting and also visible rust on the metal CPU clipping.", "Pending"),
-        (8, 8, 3, "PC Case", "The case looks ugly.", "Pending"),
-        (9, 9, 5, "Hard Drive", "Hard drive is faulty and is corrupted, it is unusable.", "Pending"),
-        (10, 10, 5, "Hard Drive", "It is slow.", "Pending")
+        (1, 1, "CPU", "The CPU pins were bent upon arrival and opening.", "Pending"),
+        (2, 1, "CPU", "The CPU doesn't work.", "Pending"),
+        (3, 2, "GPU", "The GPU blew up.", "Pending"),
+        (4, 3, "PC Case", "The case came in with the front corner of the case being chipped.", "Pending"),
+        (5, 4, "Motherboard", "It doesn't work.", "Pending"),
+        (6, 2, "GPU", "The GPU came in chipped, upon use, the GPU was overheating and eventually blew up most likely due to the chip and fans not spinning as fast.", "Pending"),
+        (7, 4, "Motherboard", "The motherboard has faulty LED lighting and also visible rust on the metal CPU clipping.", "Pending"),
+        (8, 3, "PC Case", "The case looks ugly.", "Pending"),
+        (9, 5, "Hard Drive", "Hard drive is faulty and is corrupted, it is unusable.", "Pending"),
+        (10, 5, "Hard Drive", "It is slow.", "Pending")
     ]
     cursor.executemany("""
-        INSERT INTO tickets (ticket_id, customer_id, product_id, product_category, ticket_claim, ticket_status)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO tickets (customer_id, product_id, product_category, ticket_claim, ticket_status)
+        VALUES (?, ?, ?, ?, ?)
     """, ticket_data)
 
     # Seed data for products
     product_data = [
-        (1, "Ryzen 5 3600", "CPU", 200.00, "Ultra fast CPU", 2),
-        (2, "Nvidia RTX 5060", "GPU", 400.00, "Ultra fast GPU", 2),
-        (3, "DeepCool ATX Case", "PC Case", 50.00, "RGB PC Case", 2),
-        (4, "Asus ATX X470 Motherboard", "Motherboard", 150.00, "AMD compatible motherboard", 4),
-        (5, "1TB Samsuung HD", "Hard Drive", 75.00, "1TB storage hd", 2)
+        ("Ryzen 5 3600", "CPU", 200.00, "Ultra fast CPU", 2),
+        ("Nvidia RTX 5060", "GPU", 400.00, "Ultra fast GPU", 2),
+        ("DeepCool ATX Case", "PC Case", 50.00, "RGB PC Case", 2),
+        ("Asus ATX X470 Motherboard", "Motherboard", 150.00, "AMD compatible motherboard", 4),
+        ("1TB Samsuung HD", "Hard Drive", 75.00, "1TB storage hd", 2)
     ]
     cursor.executemany("""
-        INSERT INTO products (product_id, product_name, product_category, product_price, product_description, product_warranty_years)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO products (product_name, product_category, product_price, product_description, product_warranty_years)
+        VALUES (?, ?, ?, ?, ?)
     """, product_data)
 
     # Seed data for orders
     order_data = [
-        (1, 1, 1, 200.00, "Completed", "2024-9-11 10:43:23"),
-        (2, 2, 1, 200.00, "Completed", "2024-9-11 10:43:23"),
-        (3, 3, 2, 400.00, "Completed", "2024-9-11 10:43:23"),
-        (4, 4, 3, 50.00, "Completed", "2024-9-11 10:43:23"),
-        (5, 5, 4, 150.00, "Completed", "2024-9-11 10:43:23"),
-        (6, 6, 2, 400.00, "Completed", "2022-9-11 10:43:23"),
-        (7, 7, 4, 150.00, "Completed", "2024-9-11 10:43:23"),
-        (8, 8, 3, 50.00, "Completed", "2024-9-11 10:43:23"),
-        (9, 9, 5, 75.00, "Completed", "2024-9-11 10:43:23"),
-        (10, 10, 5, 75.00, "Completed", "2024-9-11 10:43:23")
+        (1, 1, 200.00, "Completed", "2024-9-11 10:43:23"),
+        (2, 1, 200.00, "Completed", "2024-9-11 10:43:23"),
+        (3, 2, 400.00, "Completed", "2024-9-11 10:43:23"),
+        (4, 3, 50.00, "Completed", "2024-9-11 10:43:23"),
+        (5, 4, 150.00, "Completed", "2024-9-11 10:43:23"),
+        (6, 2, 400.00, "Completed", "2022-9-11 10:43:23"),
+        (7, 4, 150.00, "Completed", "2024-9-11 10:43:23"),
+        (8, 3, 50.00, "Completed", "2024-9-11 10:43:23"),
+        (9, 5, 75.00, "Completed", "2024-9-11 10:43:23"),
+        (10, 5, 75.00, "Completed", "2024-9-11 10:43:23")
     ]
     cursor.executemany("""
-        INSERT INTO orders (order_id, customer_id, product_id, order_price, order_status, order_date)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO orders (customer_id, product_id, order_price, order_status, order_date)
+        VALUES (?, ?, ?, ?, ?)
     """, order_data)
 
     conn.commit()
