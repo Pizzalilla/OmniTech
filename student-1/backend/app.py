@@ -29,7 +29,7 @@ from flask import Flask, jsonify, render_template, request
 from sqlite3 import IntegrityError
 
 load_dotenv()
-init_db()  # create tables + seed if the DB is empty
+init_db()
 
 app = Flask(
     __name__,
@@ -50,7 +50,6 @@ def index():
     return render_template("index.html", service_name="Product Catalog")
 
 
-# GET = list all categories, POST = add a new one
 @app.route("/api/categories", methods=["GET", "POST"])
 def api_categories():
     if request.method == "GET":
@@ -68,7 +67,6 @@ def api_categories():
     return jsonify(category), 201
 
 
-# GET one, PUT to edit, DELETE to remove
 @app.route("/api/categories/<int:category_id>", methods=["GET", "PUT", "DELETE"])
 def api_category(category_id):
     category = get_category(category_id)
@@ -99,7 +97,6 @@ def api_category(category_id):
 
 
 def _parse_product_payload(data: dict) -> tuple[dict | None, tuple | None]:
-    """Validate product JSON. Returns (error_response, values) where one is None."""
     name = (data.get("name") or "").strip()
     brand = (data.get("brand") or "").strip()
     if not name or not brand:
@@ -130,7 +127,6 @@ def _parse_product_payload(data: dict) -> tuple[dict | None, tuple | None]:
     return None, values
 
 
-# GET = list/filter products, POST = add a product
 @app.route("/api/products", methods=["GET", "POST"])
 def api_products():
     if request.method == "GET":
@@ -159,7 +155,6 @@ def api_products():
     return jsonify(product), 201
 
 
-# GET one, PUT to edit, DELETE to remove
 @app.route("/api/products/<int:product_id>", methods=["GET", "PUT", "DELETE"])
 def api_product(product_id):
     product = get_product(product_id)
@@ -193,7 +188,6 @@ def _parse_spec_payload(data: dict) -> tuple[dict | None, tuple | None]:
     return None, (spec_name, spec_value)
 
 
-# GET = all specs for a product, POST = add one
 @app.route("/api/products/<int:product_id>/specifications", methods=["GET", "POST"])
 def api_specifications(product_id):
     if get_product(product_id) is None:

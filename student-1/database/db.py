@@ -2,12 +2,10 @@ import os
 import sqlite3
 from pathlib import Path
 
-# student-1/data/catalog.db
 DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "catalog.db"
 
 
 def get_db_path() -> Path:
-    # Docker can override this with DATABASE_PATH
     return Path(os.getenv("DATABASE_PATH", str(DEFAULT_DB_PATH)))
 
 
@@ -15,7 +13,7 @@ def get_connection() -> sqlite3.Connection:
     db_path = get_db_path()
     db_path.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row  # rows act like dicts: row["name"]
+    conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
@@ -62,7 +60,7 @@ def update_category(category_id: int, name: str, description: str | None) -> dic
         )
         conn.commit()
         if cursor.rowcount == 0:
-            return None  # no row with that id
+            return None
     return get_category(category_id)
 
 

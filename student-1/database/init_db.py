@@ -1,4 +1,4 @@
-"""Create tables and insert starter rows if the database is empty."""
+# Create tables and insert starter rows if the database is empty.
 
 from pathlib import Path
 import sys
@@ -45,7 +45,7 @@ def init_db(seed: bool = True) -> None:
         if not seed:
             return
 
-        # only seed once — skip if categories already exist
+        # don't re-seed on every restart
         existing = conn.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
         if existing > 0:
             return
@@ -60,7 +60,7 @@ def init_db(seed: bool = True) -> None:
             categories,
         )
 
-        # category_id: 1=Refrigerators, 2=Washing Machines, 3=Air Conditioners
+        # category_id follows the insert order above
         products = [
             (
                 "CoolBreeze 5000",
@@ -99,7 +99,6 @@ def init_db(seed: bool = True) -> None:
             products,
         )
 
-        # (product_id, spec_name, spec_value)
         specs = [
             (1, "Cooling Capacity", "12000 BTU"),
             (1, "Energy Rating", "4 stars"),
