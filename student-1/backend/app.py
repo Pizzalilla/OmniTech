@@ -61,7 +61,7 @@ def health():
 def _filters_from_request() -> dict:
     return {
         "category_id": request.args.get("category_id", type=int),
-        "brand": request.args.get("brand") or None,
+        "brands": [value for value in request.args.getlist("brand") if value],
         "min_price": request.args.get("min_price", type=float),
         "max_price": request.args.get("max_price", type=float),
         "search": (request.args.get("search") or "").strip() or None,

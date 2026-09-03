@@ -30,22 +30,30 @@
                 <label for="spec_keyword">Specification keyword</label>
                 <input type="search" id="spec_keyword" name="spec_keyword" placeholder="e.g. 12000 BTU">
             </div>
-            <div>
-                <label for="brand">Brand</label>
-                <select id="brand" name="brand">
-                    <option value="">All brands</option>
-                    {% for brand in brands %}
-                    <option value="{{ brand }}">{{ brand }}</option>
-                    {% endfor %}
-                </select>
+            <div class="filter-dropdown">
+                <span class="filter-dropdown__caption">Brand</span>
+                <details>
+                    <summary>
+                        <span id="brand-dropdown-label">Any</span>
+                    </summary>
+                    <div class="filter-dropdown__panel brand-panel">
+                        {% for brand in brands %}
+                        <label class="check-row">
+                            <input type="checkbox" name="brand" value="{{ brand }}">
+                            <span class="check-row__box" aria-hidden="true"></span>
+                            <span>{{ brand }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </details>
             </div>
-            <div class="price-dropdown">
-                <span class="price-dropdown__caption">Price</span>
+            <div class="filter-dropdown">
+                <span class="filter-dropdown__caption">Price</span>
                 <details>
                     <summary>
                         <span id="price-dropdown-label">Any</span>
                     </summary>
-                <div class="price-dropdown__panel">
+                <div class="filter-dropdown__panel">
                     <div class="price-slider" data-max="{{ slider_max }}">
                         <div class="price-slider__track" aria-hidden="true"></div>
                         <input type="range" id="min_price_slider" min="0" max="{{ slider_max }}"
@@ -77,7 +85,53 @@
         var maxSlide = document.getElementById("max_price_slider");
         var track = document.querySelector(".price-slider__track");
         var label = document.getElementById("price-dropdown-label");
-        var menu = document.querySelector(".price-dropdown details");
+        var brandLabel = document.getElementById("brand-dropdown-label");
+        var brandBoxes = document.querySelectorAll('input[name="brand"]');
+        var menus = document.querySelectorAll(".filter-dropdown details");
+
+        function paintBrand() {
+            var picked = [];
+            brandBoxes.forEach(function (box) {
+                if (box.checked) {
+                    picked.push(box.value);
+                }
+            });
+            if (!brandLabel) {
+                return;
+            }
+            if (picked.length === 0) {
+                brandLabel.textContent = "Any";
+            } else if (picked.length === 1) {
+                brandLabel.textContent = picked[0];
+            } else {
+                brandLabel.textContent = picked.length + " brands";
+            }
+        }
+
+        brandBoxes.forEach(function (box) {
+            box.addEventListener("change", paintBrand);
+        });
+        menus.forEach(function (menu) {
+            menu.addEventListener("toggle", function () {
+                if (!menu.open) {
+                    return;
+                }
+                menus.forEach(function (other) {
+                    if (other !== menu) {
+                        other.removeAttribute("open");
+                    }
+                });
+            });
+        });
+        document.addEventListener("click", function (event) {
+            menus.forEach(function (menu) {
+                if (menu.open && !menu.contains(event.target)) {
+                    menu.removeAttribute("open");
+                }
+            });
+        });
+        paintBrand();
+
         if (!minBox || !maxBox || !minSlide || !maxSlide) {
             return;
         }
@@ -132,11 +186,6 @@
         maxSlide.addEventListener("input", fromSlider);
         minBox.addEventListener("input", fromBoxes);
         maxBox.addEventListener("input", fromBoxes);
-        document.addEventListener("click", function (event) {
-            if (menu && menu.open && !menu.contains(event.target)) {
-                menu.removeAttribute("open");
-            }
-        });
         paint();
     })();
 </script>
