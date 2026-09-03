@@ -47,17 +47,23 @@ def request_timeout() -> int:
         return DEFAULT_TIMEOUT
 
 
-def generate(prompt: str) -> str:
+def generate(prompt: str, json_only: bool = False) -> str:
+    payload = {
+        "model": model_name(),
+        "prompt": prompt,
+        "stream": False,
+        # a low temperature keeps the model close to the supplied specs
+        "options": {"temperature": 0.2},
+    }
+    if json_only:
+        # ollama constrains the decoder to valid json, which small models
+        # otherwise wrap in prose or code fences
+        payload["format"] = "json"
+
     try:
         response = requests.post(
             f"{ollama_host()}/api/generate",
-            json={
-                "model": model_name(),
-                "prompt": prompt,
-                "stream": False,
-                # a low temperature keeps the model close to the supplied specs
-                "options": {"temperature": 0.2},
-            },
+            json=payload,
             timeout=request_timeout(),
         )
         response.raise_for_status()

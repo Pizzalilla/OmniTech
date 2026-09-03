@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from pathlib import Path
@@ -6,6 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from backend import agent
 from backend.ai import AIUnavailable, summarise_product
 from database.db import (
     create_category,
@@ -32,6 +34,9 @@ from sqlite3 import IntegrityError
 
 load_dotenv()
 init_db()
+
+# the agentic loop logs each stage here, so it shows up in docker compose logs
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
 
 app = Flask(
     __name__,
@@ -96,25 +101,20 @@ def product_detail(product_id):
     )
 
 
-@app.route("/products/<int:product_id>/ai-summary", methods=["POST"])
-def product_ai_summary(product_id):
+@app.route("/products/<int:product_id>/ai-review", methods=["POST"])
+def product_ai_review(product_id):
     product = get_product(product_id)
     if product is None:
         abort(404)
 
-    specifications = list_specifications(product_id)
     try:
-        result = summarise_product(product, specifications)
+        result = agent.run(product, list_specifications(product_id))
     except AIUnavailable as exc:
         # htmx ignores the body of an error response, so the failure is
         # rendered as a normal 200 fragment instead
-        return render_template("partials/ai_summary.html", error=str(exc))
+        return render_template("partials/ai_review.html", error=str(exc))
 
-    return render_template(
-        "partials/ai_summary.html",
-        result=result,
-        spec_count=len(specifications),
-    )
+    return render_template("partials/ai_review.html", result=result)
 
 
 @app.route("/api/categories", methods=["GET", "POST"])
@@ -295,6 +295,20 @@ def api_product_ai_summary(product_id):
         result = summarise_product(product, list_specifications(product_id))
     except AIUnavailable as exc:
         return jsonify({"error": "ai summary unavailable", "detail": str(exc)}), 503
+
+    return jsonify(result)
+
+
+@app.route("/api/products/<int:product_id>/ai-review", methods=["POST"])
+def api_product_ai_review(product_id):
+    product = get_product(product_id)
+    if product is None:
+        return jsonify({"error": "product not found"}), 404
+
+    try:
+        result = agent.run(product, list_specifications(product_id))
+    except AIUnavailable as exc:
+        return jsonify({"error": "ai review unavailable", "detail": str(exc)}), 503
 
     return jsonify(result)
 

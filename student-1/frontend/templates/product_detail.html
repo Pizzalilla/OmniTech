@@ -26,6 +26,22 @@
         color: var(--text-muted);
         font-size: 0.9rem;
     }
+
+    .review-findings h4 {
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .review-findings .finding-label {
+        font-weight: 600;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+
+    .review-findings ul {
+        margin: 0.25rem 0 0 1.25rem;
+        font-size: 0.9rem;
+    }
 </style>
 {% endblock %}
 
@@ -87,17 +103,21 @@
 
 <section class="card">
     <h2>AI Specification Summary</h2>
-    <p>Ask the local model to turn these specifications into a short, plain-English paragraph.</p>
+    <p>
+        The local model writes a shopper-friendly paragraph, then a second review pass
+        checks it against the specifications above and reports anything missing,
+        conflicting, or unsupported.
+    </p>
 
     <div class="ai-controls">
-        <button hx-post="{{ url_for('product_ai_summary', product_id=product.id) }}"
-                hx-target="#ai-summary"
+        <button hx-post="{{ url_for('product_ai_review', product_id=product.id) }}"
+                hx-target="#ai-review"
                 hx-disabled-elt="this">
             Summarise specifications
         </button>
-        <span class="ai-waiting htmx-indicator">Asking the model, this takes a few seconds&hellip;</span>
+        <span class="ai-waiting htmx-indicator">Writing and reviewing, this takes a few seconds&hellip;</span>
     </div>
 
-    <div id="ai-summary"></div>
+    <div id="ai-review"></div>
 </section>
 {% endblock %}
