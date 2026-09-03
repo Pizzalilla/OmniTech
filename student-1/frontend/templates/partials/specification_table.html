@@ -1,0 +1,72 @@
+{# every button in here swaps this whole block, so the targets are set once on the wrapper #}
+<div id="specification-admin" hx-target="#specification-admin" hx-swap="outerHTML show:#specification-admin:top">
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form hx-post="{{ url_for('admin_specifications', product_id=product.id) }}">
+        <div class="grid-2">
+            <div>
+                <label for="new-spec-name">Specification</label>
+                <input id="new-spec-name" name="spec_name" required
+                       placeholder="e.g. Noise level" value="{{ values.spec_name if values else '' }}">
+            </div>
+            <div>
+                <label for="new-spec-value">Value</label>
+                <input id="new-spec-value" name="spec_value" required
+                       placeholder="e.g. 38 dB" value="{{ values.spec_value if values else '' }}">
+            </div>
+        </div>
+        <button type="submit">Add specification</button>
+    </form>
+
+    {% if specifications %}
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Specification</th>
+                <th>Value</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for spec in specifications %}
+            {% if spec.id == editing_id %}
+            <tr>
+                <td><input name="spec_name" value="{{ spec.spec_name }}" aria-label="Specification name"></td>
+                <td><input name="spec_value" value="{{ spec.spec_value }}" aria-label="Specification value"></td>
+                <td>
+                    {# a form cannot wrap table cells, so the row is gathered by selector instead #}
+                    <button hx-put="{{ url_for('admin_specification', product_id=product.id, spec_id=spec.id) }}"
+                            hx-include="closest tr">
+                        Save
+                    </button>
+                    <button class="btn-secondary"
+                            hx-get="{{ url_for('admin_specification_rows', product_id=product.id) }}">
+                        Cancel
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td><strong>{{ spec.spec_name }}</strong></td>
+                <td>{{ spec.spec_value }}</td>
+                <td>
+                    <button class="btn-secondary"
+                            hx-get="{{ url_for('admin_specification_edit', product_id=product.id, spec_id=spec.id) }}">
+                        Edit
+                    </button>
+                    <button hx-delete="{{ url_for('admin_specification', product_id=product.id, spec_id=spec.id) }}"
+                            hx-confirm="Delete {{ spec.spec_name }}?">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: var(--text-muted);">No specifications recorded for this product yet.</p>
+    {% endif %}
+</div>

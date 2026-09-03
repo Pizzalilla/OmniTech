@@ -1,4 +1,14 @@
 services:
+  home:
+    image: nginx:alpine
+    container_name: omnitech-home
+    ports:
+      - "8080:80"
+    volumes:
+      - ./shared/frontend:/usr/share/nginx/html:ro
+    networks:
+      - omnitech-net
+
   student-1:
     build: ./student-1
     container_name: student-1

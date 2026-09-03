@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }}{% endblock %}
+{% block heading %}{{ product.name }}{% endblock %}
+{% block subheading %}{{ product.brand }} &middot; {{ product.category_name }}{% endblock %}
+
+{% block page_css %}
+<style>
+    .detail-nav {
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="detail-nav">
+    <a class="btn btn-secondary btn-back" href="{{ url_for('catalog') }}">
+        <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M11.7 15.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4l4.6-4.6a1 1 0 1 1 1.4 1.4L7.8 10l3.9 3.9a1 1 0 0 1 0 1.4z" clip-rule="evenodd" />
+        </svg>
+        Back to catalogue
+    </a>
+</div>
+
+<div class="grid-2">
+    <section class="card">
+        <h2>Overview</h2>
+
+        {% if product.image_url %}
+        <img src="{{ product.image_url }}" alt="{{ product.name }}"
+             style="width: 100%; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+        {% endif %}
+
+        <p>{{ product.description or 'No description available.' }}</p>
+
+        <div class="panel">
+            <p><strong>Price:</strong> ${{ '%.2f' | format(product.price) }}</p>
+            <p>
+                <strong>Availability:</strong>
+                {% if product.stock == 0 %}
+                <span class="badge badge-cream">Out of stock</span>
+                {% elif product.stock < 5 %}
+                <span class="badge badge-sand">Low stock &mdash; {{ product.stock }} left</span>
+                {% else %}
+                <span class="badge">In stock &mdash; {{ product.stock }} available</span>
+                {% endif %}
+            </p>
+        </div>
+    </section>
+
+    <section class="card">
+        <h2>Specifications</h2>
+
+        {% if specifications %}
+        <table class="data-table">
+            <tbody>
+                {% for spec in specifications %}
+                <tr>
+                    <th style="width: 45%;">{{ spec.spec_name }}</th>
+                    <td>{{ spec.spec_value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: var(--text-muted);">No specifications recorded for this product yet.</p>
+        {% endif %}
+    </section>
+</div>
+
+<section class="card">
+    <h2>AI Specification Summary</h2>
+    <p>
+        The local model writes a shopper-friendly paragraph, then a second review pass
+        checks it against the specifications above and reports anything missing,
+        conflicting, or unsupported.
+    </p>
+
+    {% include "partials/ai_review_launcher.html" %}
+</section>
+{% endblock %}
