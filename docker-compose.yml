@@ -59,7 +59,8 @@ services:
     build: ./student-4
     container_name: student-4
     ports:
-      - "5004:5000"
+      - "5004:5004"
+      - "5014:5014"
     volumes:
       - ./student-4:/app
     environment:

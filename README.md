@@ -49,7 +49,7 @@ This starts 7 containers on a shared network (`omnitech-net`):
 | Student 1      | http://localhost:5001       |
 | Student 2      | http://localhost:5002       |
 | Student 3      | http://localhost:5003       |
-| Student 4      | http://localhost:5004       |
+| Student 4      | http://localhost:5014 (UI) / http://localhost:5004 (DB API) |
 | Student 5      | http://localhost:5005       |
 | Ollama (AI)    | http://localhost:11434      |
 

@@ -1,5 +1,6 @@
-﻿flask==3.0.3
+flask==3.0.3
 flask-cors==4.0.1
 requests==2.31.0
 openai==1.14.1
+httpx<0.28
 pytest==8.1.1
