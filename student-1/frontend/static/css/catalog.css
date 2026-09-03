@@ -46,36 +46,45 @@ body {
 }
 
 .rail {
-    width: 74px;
+    width: 88px;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 14px;
-    padding: 20px 0;
+    gap: 12px;
+    padding: 20px 8px;
     border-right: 1px solid var(--line);
+    position: relative;
+    z-index: 4;
+    overflow: visible;
 }
 
-.rail__logo,
-.rail__btn {
+.rail__logo {
     width: 44px;
     height: 44px;
     border-radius: 12px;
     border: none;
     display: grid;
     place-items: center;
-    color: inherit;
     text-decoration: none;
-}
-
-.rail__logo {
+    position: relative;
     background: linear-gradient(140deg, var(--color-slate-blue), var(--color-light-blue));
     color: #fff;
 }
 
 .rail__btn {
+    width: 100%;
+    height: auto;
+    padding: 10px 6px 8px;
+    border-radius: 14px;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
     background: var(--surface-2);
     color: var(--ink-dim);
+    text-decoration: none;
 }
 
 .rail__btn:hover,
@@ -88,6 +97,39 @@ body {
 .rail__logo svg {
     width: 20px;
     height: 20px;
+}
+
+.rail__label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    line-height: 1.1;
+    text-align: center;
+}
+
+.rail__logo::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(100% + 12px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: var(--shadow-soft);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 5;
+}
+
+.rail__logo:hover::after,
+.rail__logo:focus-visible::after {
+    opacity: 1;
 }
 
 .rail__spacer {
@@ -332,4 +374,12 @@ input, select, textarea {
     font-size: 0.9rem;
     font-weight: 600;
     margin-bottom: 12px;
+}
+
+.stat-box {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    padding: 1rem;
+    margin-top: 1rem;
 }
