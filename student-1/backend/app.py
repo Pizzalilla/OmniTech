@@ -71,11 +71,16 @@ def _filters_from_request() -> dict:
 
 @app.route("/")
 def catalog():
+    products = list_products()
+    prices = [float(product["price"]) for product in products]
+    ceiling = max(prices) if prices else 2000
+    slider_max = max(2000, int((ceiling + 99) // 100 * 100))
     return render_template(
         "catalog.html",
-        products=list_products(),
+        products=products,
         categories=list_categories(),
         brands=list_brands(),
+        slider_max=slider_max,
     )
 
 

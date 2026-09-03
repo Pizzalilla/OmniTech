@@ -149,7 +149,7 @@
                 </div>
 
                 <div class="stage__body">
-                    <header class="service-header">
+                    <header class="service-header" id="page-top">
                         <h1>{% block heading %}Product Catalog{% endblock %}</h1>
                         <p>{% block subheading %}Browse OmniTech appliances, specifications, and stock{% endblock %}</p>
                     </header>
@@ -158,5 +158,17 @@
             </div>
         </div>
     </div>
+    <script>
+        document.body.addEventListener("htmx:afterSwap", function (event) {
+            var trigger = event.detail.elt;
+            if (!trigger || !trigger.closest || !trigger.closest("#product-admin")) {
+                return;
+            }
+            var scroller = document.querySelector(".stage__body");
+            if (scroller) {
+                scroller.scrollTo({ top: 0 });
+            }
+        });
+    </script>
 </body>
 </html>
