@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Product Catalog{% endblock %} - OmniTech</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <style>
+        .page-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .btn-back {
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-back svg {
+            width: 1rem;
+            height: 1rem;
+            transition: transform 0.2s ease;
+        }
+
+        .btn-back:hover svg {
+            transform: translateX(-3px);
+        }
+
+        .page-nav .service-tag {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <nav class="page-nav" aria-label="Service navigation">
+            <a class="btn btn-secondary btn-back" href="{{ home_url }}">
+                <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M11.7 15.3a1 1 0 0 1-1.4 0l-4.6-4.6a1 1 0 0 1 0-1.4l4.6-4.6a1 1 0 1 1 1.4 1.4L7.8 10l3.9 3.9a1 1 0 0 1 0 1.4z" clip-rule="evenodd" />
+                </svg>
+                Back to Home
+            </a>
+            <span class="service-tag">Student 1 &middot; Product Catalog</span>
+        </nav>
+
+        <header class="service-header">
+            <h1>{% block heading %}Product Catalog{% endblock %}</h1>
+            <p>{% block subheading %}Browse OmniTech appliances, specifications, and stock{% endblock %}</p>
+        </header>
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

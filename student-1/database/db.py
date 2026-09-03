@@ -82,6 +82,8 @@ def list_products(
     brand: str | None = None,
     min_price: float | None = None,
     max_price: float | None = None,
+    search: str | None = None,
+    spec_keyword: str | None = None,
 ) -> list[dict]:
     query = f"""
         SELECT {PRODUCT_COLUMNS}
@@ -103,12 +105,32 @@ def list_products(
     if max_price is not None:
         query += " AND p.price <= ?"
         params.append(max_price)
+    if search:
+        query += " AND (p.name LIKE ? OR p.brand LIKE ? OR p.description LIKE ?)"
+        params.extend([f"%{search}%"] * 3)
+    if spec_keyword:
+        query += """
+            AND EXISTS (
+                SELECT 1 FROM product_specifications s
+                WHERE s.product_id = p.id
+                  AND (s.spec_name LIKE ? OR s.spec_value LIKE ?)
+            )
+        """
+        params.extend([f"%{spec_keyword}%"] * 2)
 
     query += " ORDER BY p.name"
 
     with get_connection() as conn:
         rows = conn.execute(query, params).fetchall()
     return [row_to_dict(row) for row in rows]
+
+
+def list_brands() -> list[str]:
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT DISTINCT brand FROM products ORDER BY brand"
+        ).fetchall()
+    return [row["brand"] for row in rows]
 
 
 def get_product(product_id: int) -> dict | None:

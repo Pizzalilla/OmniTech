@@ -16,6 +16,7 @@ from database.db import (
     get_category,
     get_product,
     get_specification,
+    list_brands,
     list_categories,
     list_products,
     list_specifications,
@@ -25,7 +26,7 @@ from database.db import (
 )
 from database.init_db import init_db
 from dotenv import load_dotenv
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, abort, jsonify, render_template, request
 from sqlite3 import IntegrityError
 
 load_dotenv()
@@ -39,15 +40,61 @@ app = Flask(
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
+# the unified home page
+HOME_URL = os.getenv("HOME_URL", "http://localhost:8080")
+
+
+@app.context_processor
+def inject_home_url():
+    return {"home_url": HOME_URL}
+
 
 @app.route("/health")
 def health():
     return jsonify({"status": "ok", "service": "product-catalog"})
 
 
+def _filters_from_request() -> dict:
+    return {
+        "category_id": request.args.get("category_id", type=int),
+        "brand": request.args.get("brand") or None,
+        "min_price": request.args.get("min_price", type=float),
+        "max_price": request.args.get("max_price", type=float),
+        "search": (request.args.get("search") or "").strip() or None,
+        "spec_keyword": (request.args.get("spec_keyword") or "").strip() or None,
+    }
+
+
 @app.route("/")
-def index():
-    return render_template("index.html", service_name="Product Catalog")
+def catalog():
+    return render_template(
+        "catalog.html",
+        products=list_products(),
+        categories=list_categories(),
+        brands=list_brands(),
+    )
+
+
+# htmx swaps this fragment into the page whenever a filter changes
+@app.route("/products/grid")
+def product_grid():
+    return render_template(
+        "partials/product_grid.html",
+        products=list_products(**_filters_from_request()),
+    )
+
+
+@app.route("/products/<int:product_id>")
+def product_detail(product_id):
+    product = get_product(product_id)
+    if product is None:
+        abort(404)
+
+    return render_template(
+        "product_detail.html",
+        product=product,
+        specifications=list_specifications(product_id),
+    )
 
 
 @app.route("/api/categories", methods=["GET", "POST"])
@@ -130,18 +177,7 @@ def _parse_product_payload(data: dict) -> tuple[dict | None, tuple | None]:
 @app.route("/api/products", methods=["GET", "POST"])
 def api_products():
     if request.method == "GET":
-        category_id = request.args.get("category_id", type=int)
-        brand = request.args.get("brand")
-        min_price = request.args.get("min_price", type=float)
-        max_price = request.args.get("max_price", type=float)
-        return jsonify(
-            list_products(
-                category_id=category_id,
-                brand=brand,
-                min_price=min_price,
-                max_price=max_price,
-            )
-        )
+        return jsonify(list_products(**_filters_from_request()))
 
     data = request.get_json(silent=True) or {}
     error, values = _parse_product_payload(data)
