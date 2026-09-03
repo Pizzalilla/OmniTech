@@ -249,6 +249,42 @@ def init_db(seed: bool = True) -> None:
                 "250 L electric storage tank for a family home.",
                 "https://placehold.co/400x300?text=Storage+HW",
             ),
+            (
+                "PolarAir Window 12",
+                "PolarAir",
+                3,
+                699.00,
+                10,
+                "Window air conditioner for apartments that cannot fit a split unit.",
+                "https://placehold.co/400x300?text=Window+AC",
+            ),
+            (
+                "PolarAir Compact 7",
+                "PolarAir",
+                3,
+                429.00,
+                16,
+                "Small through-window cooler for bedrooms and studies.",
+                "https://placehold.co/400x300?text=Compact+AC",
+            ),
+            (
+                "GlacierCool French 480",
+                "GlacierCool",
+                1,
+                1199.00,
+                6,
+                "French-door fridge with a water dispenser and ice maker.",
+                "https://placehold.co/400x300?text=French+Fridge",
+            ),
+            (
+                "GlacierCool Compact 90",
+                "GlacierCool",
+                1,
+                379.00,
+                19,
+                "Undercounter fridge for offices and studio kitchens.",
+                "https://placehold.co/400x300?text=Compact+Fridge",
+            ),
         ]
         conn.executemany(
             """
@@ -320,6 +356,18 @@ def init_db(seed: bool = True) -> None:
             (20, "Capacity", "250 L"),
             (20, "Fuel", "Electric"),
             (20, "Recovery", "4 hours"),
+            (21, "Cooling Capacity", "12000 BTU"),
+            (21, "Energy Rating", "3 stars"),
+            (21, "Noise Level", "46 dB"),
+            (22, "Cooling Capacity", "7000 BTU"),
+            (22, "Coverage", "18 sqm"),
+            (22, "Noise Level", "44 dB"),
+            (23, "Capacity", "480 L"),
+            (23, "Energy Rating", "4 stars"),
+            (23, "Features", "Water dispenser, ice maker"),
+            (24, "Capacity", "90 L"),
+            (24, "Energy Rating", "3 stars"),
+            (24, "Noise Level", "36 dB"),
         ]
         conn.executemany(
             """

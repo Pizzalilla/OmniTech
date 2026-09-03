@@ -1,5 +1,3 @@
-{# every button in here swaps this whole block, so the targets are set once on the wrapper.
-   after a swap, base.html scrolls the page body so Manage Catalogue stays in view #}
 <div id="product-admin" hx-target="#product-admin" hx-swap="outerHTML">
     {% if error %}
     <p class="error">{{ error }}</p>
