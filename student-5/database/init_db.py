@@ -49,6 +49,9 @@ def init_db():
     cursor.execute("DELETE FROM products")
     cursor.execute("DELETE FROM orders")
 
+    # Reset integer primary key autoincrement
+    cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('tickets', 'products', 'orders')")
+
     # Seed data for tickets
     ticket_data = [
         (1, 1, "CPU", "The CPU pins were bent upon arrival and opening.", "Pending"),

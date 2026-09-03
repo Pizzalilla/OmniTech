@@ -28,7 +28,7 @@ def get_tickets():
     conn.close()
     return jsonify([dict(ticket) for ticket in tickets])
 
-@app.get("/tickets/<int:customer_id>")
+@app.get("/tickets/customer/<int:customer_id>")
 def get_tickets_by_customer_id(customer_id):
     conn = get_db_connection()
     tickets = conn.execute(
@@ -48,7 +48,9 @@ def get_ticket_by_ticket_id(ticket_id):
         "SELECT * FROM tickets where ticket_id = ?", (ticket_id,),
     ).fetchone()
     conn.close()
-
+    if not ticket:
+        return jsonify({"error", "Warranty ticket not found"}), 404
+    
     return jsonify(dict(ticket))
 
 # @app.post("/tickets/<int:ticket_id>/update")
