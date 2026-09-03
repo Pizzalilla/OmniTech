@@ -270,7 +270,7 @@
         .ai-input-row {
             display: flex;
             gap: 0.5rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.4rem;
         }
         .ai-input-row input {
             flex: 1;
@@ -301,6 +301,26 @@
             border-radius: 4px;
             font-weight: 600;
             cursor: pointer;
+        }
+        .quick-queries {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+        .quick-btn {
+            background: var(--bg-surface);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.72rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .quick-btn:hover {
+            border-color: var(--color-slate-blue);
+            color: var(--color-slate-blue);
         }
         .ai-alert-box {
             font-size: 0.84rem;
@@ -391,7 +411,7 @@
 <body hx-get="/api/cart/view" hx-trigger="load" hx-target="#cart-view">
     <div class="app-container">
         
-        <!-- OmniTech Brand & Service Header -->
+        <!-- OmniTech Brand Header -->
         <header class="brand-header">
             <div class="brand-logo-group">
                 <div class="brand-icon">⚡</div>
@@ -453,12 +473,28 @@
                     </div>
                     
                     <form hx-post="/api/orders/ai-validate-cart" hx-target="#ai-helper-result" class="ai-input-row">
-                        <input type="text" name="question" placeholder="Ask about power, plumbing, or accessories..." required>
+                        <input type="text" id="ai-question-input" name="question" placeholder="Ask about fridge dimensions (cm), weight (kg), or wattage..." required>
                         <button type="submit" class="btn-ai-ask">Ask AI</button>
                     </form>
 
+                    <!-- Quick Sample Questions Using Australian Metric & Power Standards -->
+                    <div class="quick-queries">
+                        <button type="button" class="quick-btn" onclick="setPrompt('What are the dimensions of a 500L fridge in cm and ventilation space needed?')">
+                            📏 Dimensions (cm)
+                        </button>
+                        <button type="button" class="quick-btn" onclick="setPrompt('What is the estimated weight in kg for this 500L fridge for delivery?')">
+                            ⚖️ Weight (kg)
+                        </button>
+                        <button type="button" class="quick-btn" onclick="setPrompt('Can I plug the 2000W induction and 1000W microwave into a standard Australian 10A socket?')">
+                            ⚡ AU Power (240V/10A)
+                        </button>
+                        <button type="button" class="quick-btn" onclick="setPrompt('What is the Australian Energy Star rating and annual kWh for a 500L Samsung fridge?')">
+                            ⭐ Energy Stars
+                        </button>
+                    </div>
+
                     <div id="ai-helper-result">
-                        <small style="color: var(--text-muted);">Type a question or click "Auto Audit Cart" for safety recommendations.</small>
+                        <small style="color: var(--text-muted);">Click a metric prompt above or click "Auto Audit Cart" for Australian safety checks.</small>
                     </div>
                 </div>
             </section>
@@ -495,6 +531,12 @@
         function setFulfillment(mode) {
             document.getElementById('btn-delivery').classList.toggle('active', mode === 'delivery');
             document.getElementById('btn-pickup').classList.toggle('active', mode === 'pickup');
+        }
+
+        function setPrompt(text) {
+            const input = document.getElementById('ai-question-input');
+            input.value = text;
+            input.focus();
         }
     </script>
 </body>

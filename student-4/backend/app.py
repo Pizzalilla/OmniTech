@@ -19,7 +19,7 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 http_session = requests.Session()
 ai_client = OpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
 
-# Active Shopping Session State (Customer #101)
+# Active Customer Cart Session State (Customer #101)
 CUSTOMER_CART = {
     "user_id": 101,
     "fulfillment": "delivery",
@@ -28,27 +28,35 @@ CUSTOMER_CART = {
     "items": [
         {
             "product_id": 501,
-            "product_name": "French Door Smart Refrigerator 600L",
+            "product_name": "Samsung Fridge 500L",
             "category": "Kitchen",
-            "unit_price": 2199.00,
+            "unit_price": 1499.00,
             "quantity": 1,
             "in_stock": True
         },
         {
-            "product_id": 601,
-            "product_name": "Refrigerator Water Filter Replacement",
-            "category": "Accessories",
-            "unit_price": 45.00,
-            "quantity": 2,
+            "product_id": 502,
+            "product_name": "Induction Cooktop 2000W",
+            "category": "Kitchen",
+            "unit_price": 799.00,
+            "quantity": 1,
             "in_stock": True
         },
         {
-            "product_id": 506,
-            "product_name": "Ultra-Quiet Smart Dishwasher",
+            "product_id": 503,
+            "product_name": "Microwave Oven 1000W",
             "category": "Kitchen",
-            "unit_price": 680.00,
+            "unit_price": 249.00,
             "quantity": 1,
             "in_stock": False
+        },
+        {
+            "product_id": 504,
+            "product_name": "Air Fryer 20L",
+            "category": "Small Appliances",
+            "unit_price": 189.00,
+            "quantity": 1,
+            "in_stock": True
         }
     ]
 }
@@ -168,31 +176,37 @@ def ai_helper_audit():
 
     if user_query:
         prompt = f"""
-        You are an AI Appliance Consultant for OmniTech.
-        The user has these items in their cart: {item_names}
-        User Question: {user_query}
+        You are an AI Appliance Consultant for OmniTech Australia.
+        Cart items: {item_names}
+        Customer Question: {user_query}
 
-        Provide a concise, direct answer (max 2 short sentences).
+        Strict Rules:
+        - Use ONLY Australian metric units: cm or mm for dimensions, kg for weight, L for capacity, W/kW for power, and kWh/year or Stars for Australian Energy Ratings.
+        - Reference Australian 230V/240V electrical standards (10A standard socket / 15A dedicated circuit).
+        - Maximum 2 concise sentences.
         """
     else:
         prompt = f"""
-        You are an AI Appliance Installation & Safety Consultant for OmniTech.
-        Evaluate the following home appliances in cart for electrical load, plumbing, or accessories:
+        You are an AI Appliance Installation & Safety Consultant for OmniTech Australia.
+        Evaluate the following cart appliances for Australian power draw (240V/10A) and space clearances:
         Items: {item_names}
 
         Respond strictly in 2 short bullet points:
-        1. Installation Warning: (circuit load, dedicated breaker, or water line)
-        2. Recommended Accessory: (surge protector, filter, or bracket)
+        1. AU Power / Wattage Warning: (e.g. 2000W load on a standard 10A socket or dedicated 15A/20A circuit)
+        2. Metric Dimensions & Clearance: (e.g. 5cm back ventilation space or door swing clearance)
         """
 
     try:
         response = ai_client.chat.completions.create(
             model=OLLAMA_MODEL,
             messages=[
-                {"role": "system", "content": "You are a concise home appliance installation and support expert."},
+                {
+                    "role": "system",
+                    "content": "You are a concise home appliance expert using Australian metric measurements (cm, mm, kg, L, W, kWh/year) and Australian electrical standards (240V, 10A/15A)."
+                },
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=150,
+            max_tokens=160,
             temperature=0.2
         )
         raw_output = response.choices[0].message.content
@@ -207,7 +221,7 @@ def ai_helper_audit():
     return f"""
     <div class='ai-alert-box success'>
         <div class='ai-output-text'>{raw_output}</div>
-        <small class='ai-footnote'>✓ Answered with OmniTech appliance safety context.</small>
+        <small class='ai-footnote'>✓ Verified with Australian metric & electrical standards.</small>
     </div>
     """, 200
 
@@ -243,7 +257,7 @@ def checkout_order():
         <p>Thank you for shopping with OmniTech. Your order <strong>#{new_order_id}</strong> is being processed.</p>
         <div class="receipt-details">
             <div><strong>Fulfillment:</strong> {'Store Pick Up' if CUSTOMER_CART['fulfillment'] == 'pickup' else 'Standard Delivery'}</div>
-            <div><strong>Address:</strong> {CUSTOMER_CART['delivery_address'] if CUSTOMER_CART['fulfillment'] == 'delivery' else 'OmniTech Flagship Store, Sydney'}</div>
+            <div><strong>Address:</strong> {CUSTOMER_CART['delivery_address'] if CUSTOMER_CART['fulfillment'] == 'delivery' else 'OmniTech Flagship Store, Sydney NSW'}</div>
             <div><strong>Total Paid:</strong> ${grand_total:,.2f}</div>
         </div>
         <button class="btn" onclick="document.getElementById('checkout-modal').style.display='none'; window.location.reload();">

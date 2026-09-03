@@ -43,13 +43,11 @@ def test_backend_index_page():
 def test_backend_cart_view_and_stock_indicators():
     res = requests.get(f"{BACKEND_URL}/api/cart/view", timeout=3)
     assert res.status_code == 200
-    # Confirms green in-stock and red out-of-stock dot rendering
     assert "stock-dot in-stock" in res.text
     assert "stock-dot out-of-stock" in res.text
-    assert "French Door Smart Refrigerator 600L" in res.text
+    assert "Samsung Fridge 500L" in res.text
 
 def test_cart_quantity_modification():
-    # Test incrementing first item quantity
     res = requests.post(f"{BACKEND_URL}/api/cart/modify?action=inc&idx=0", timeout=3)
     assert res.status_code == 200
     assert "cart-item-row" in res.text
@@ -67,7 +65,7 @@ def test_order_history_endpoint():
 def test_ai_helper_custom_question():
     res = requests.post(
         f"{BACKEND_URL}/api/orders/ai-validate-cart",
-        data={"question": "Do I need a plumber for this fridge?"},
+        data={"question": "What are the dimensions of a 500L fridge in cm and ventilation space needed?"},
         timeout=15
     )
     assert res.status_code == 200
