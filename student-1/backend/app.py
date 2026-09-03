@@ -96,6 +96,27 @@ def product_detail(product_id):
     )
 
 
+@app.route("/products/<int:product_id>/ai-summary", methods=["POST"])
+def product_ai_summary(product_id):
+    product = get_product(product_id)
+    if product is None:
+        abort(404)
+
+    specifications = list_specifications(product_id)
+    try:
+        result = summarise_product(product, specifications)
+    except AIUnavailable as exc:
+        # htmx ignores the body of an error response, so the failure is
+        # rendered as a normal 200 fragment instead
+        return render_template("partials/ai_summary.html", error=str(exc))
+
+    return render_template(
+        "partials/ai_summary.html",
+        result=result,
+        spec_count=len(specifications),
+    )
+
+
 @app.route("/api/categories", methods=["GET", "POST"])
 def api_categories():
     if request.method == "GET":

@@ -90,3 +90,39 @@ def test_summary_reports_when_ollama_is_down(client, first_product, monkeypatch)
 
     assert response.status_code == 503
     assert response.get_json()["error"] == "ai summary unavailable"
+
+
+def test_product_page_offers_a_summary_button(client, first_product):
+    page = client.get(f"/products/{first_product['id']}").get_data(as_text=True)
+
+    assert f"/products/{first_product['id']}/ai-summary" in page
+
+
+def test_summary_fragment_shows_the_paragraph_and_model(
+    client, first_product, sent_prompts
+):
+    response = client.post(f"/products/{first_product['id']}/ai-summary")
+
+    assert response.status_code == 200
+    fragment = response.get_data(as_text=True)
+    assert STUB_SUMMARY in fragment
+    assert "ai-response" in fragment
+
+
+def test_summary_fragment_explains_an_outage_without_failing(
+    client, first_product, monkeypatch
+):
+    def refuse(prompt):
+        raise backend.ai.AIUnavailable("connection refused")
+
+    monkeypatch.setattr(backend.ai, "generate", refuse)
+
+    response = client.post(f"/products/{first_product['id']}/ai-summary")
+
+    # a 200 is deliberate, otherwise htmx would leave the panel empty
+    assert response.status_code == 200
+    assert "unavailable" in response.get_data(as_text=True)
+
+
+def test_summary_fragment_for_unknown_product(client):
+    assert client.post("/products/999999/ai-summary").status_code == 404
