@@ -41,10 +41,11 @@ cd OmniTech
 docker-compose up --build
 ```
 
-This starts 6 containers on a shared network (`omnitech-net`):
+This starts 7 containers on a shared network (`omnitech-net`):
 
 | Service        | URL                        |
 |----------------|----------------------------|
+| Home           | http://localhost:8080       |
 | Student 1      | http://localhost:5001       |
 | Student 2      | http://localhost:5002       |
 | Student 3      | http://localhost:5003       |
@@ -69,7 +70,7 @@ Or pull a different model (e.g. `qwen2.5`, `deepseek-r1`):
 
 ### 4. Open the Home Page
 
-Open `shared/frontend/index.html` in your browser to see the unified dashboard with links to every microservice.
+Open [http://localhost:8080](http://localhost:8080). It lists the five student services. The old design-system demo is at [http://localhost:8080/ui-reference.html](http://localhost:8080/ui-reference.html).
 
 ## Connecting to Ollama from Your Flask App
 

@@ -1,0 +1,188 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniTech - Home Appliances UI Reference</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Directory Navigation Bar */
+        .student-nav {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+            padding: 0.85rem 1rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+        }
+        .nav-label {
+            font-weight: 700;
+            color: var(--text-main);
+            align-self: center;
+            margin-right: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .nav-link {
+            text-decoration: none;
+            padding: 0.4rem 0.85rem;
+            background-color: var(--bg-surface-soft);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .nav-link:hover {
+            background-color: var(--color-light-blue);
+            border-color: var(--color-slate-blue);
+            transform: translateY(-1px);
+        }
+        .nav-link.active {
+            background-color: var(--color-slate-blue);
+            color: var(--text-inverse);
+            border-color: var(--color-slate-blue);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        
+        <!-- Navigation to All Student Microservices -->
+        <nav class="student-nav" aria-label="Microservice Navigation">
+            <span class="nav-label">Services:</span>
+            <a href="/" class="nav-link">Home</a>
+            <a href="/ui-reference.html" class="nav-link active">UI Reference</a>
+            <a href="http://localhost:5001" class="nav-link">Student 1 (Catalog)</a>
+            <a href="http://localhost:5002" class="nav-link">Student 2 (Users)</a>
+            <a href="http://localhost:5003" class="nav-link">Student 3 (Inventory)</a>
+            <a href="http://localhost:5004" class="nav-link">Student 4 (Orders & Cart)</a>
+            <a href="http://localhost:5005" class="nav-link">Student 5 (Support)</a>
+        </nav>
+
+        <!-- Service Header Banner -->
+        <header class="service-header">
+            <h1>OmniTech Home Appliances UI System</h1>
+            <p>Unified design standard for Smart Kitchen, Laundry, Climate Control & Living Appliances</p>
+        </header>
+
+        <!-- Palette Showcase -->
+        <section class="card">
+            <h2>Shared Design System Tokens</h2>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+                <div style="background: #81A6C6; color: #fff; padding: 1.25rem 1rem; border-radius: 8px; text-align: center;">
+                    <strong>#81A6C6</strong><br><small>Slate Blue (Primary)</small>
+                </div>
+                <div style="background: #AACDDC; color: #1e293b; padding: 1.25rem 1rem; border-radius: 8px; text-align: center;">
+                    <strong>#AACDDC</strong><br><small>Light Blue (Accent)</small>
+                </div>
+                <div style="background: #F3E3D0; color: #1e293b; padding: 1.25rem 1rem; border-radius: 8px; text-align: center; border: 1px solid #D2C4B4;">
+                    <strong>#F3E3D0</strong><br><small>Warm Cream (Base Surface)</small>
+                </div>
+                <div style="background: #D2C4B4; color: #1e293b; padding: 1.25rem 1rem; border-radius: 8px; text-align: center;">
+                    <strong>#D2C4B4</strong><br><small>Sandstone (Border)</small>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2-Column Responsive Layout -->
+        <div class="grid-2">
+            
+            <!-- Left Card: Search & Filtering -->
+            <section class="card">
+                <h2>Appliance Catalog Search</h2>
+                <form onsubmit="event.preventDefault();">
+                    <label for="sample-input">Search Appliance / Model SKU</label>
+                    <input type="text" id="sample-input" placeholder="e.g. RF-900 French Door or SKU-WM84">
+
+                    <label for="sample-select">Appliance Category</label>
+                    <select id="sample-select">
+                        <option>Kitchen (Refrigerators, Dishwashers, Ovens)</option>
+                        <option>Laundry (Washers, Dryers, Steamers)</option>
+                        <option>Small Appliances (Air Fryers, Espresso Machines)</option>
+                        <option>Cleaning & Climate (Robotic Vacuums, Air Purifiers)</option>
+                    </select>
+
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem;">
+                        <button type="submit" class="btn">Filter Appliances</button>
+                        <button type="button" class="btn btn-secondary">Reset Filters</button>
+                        <button type="button" class="btn btn-sand">Export List</button>
+                    </div>
+                </form>
+
+                <div class="panel">
+                    <p style="color: var(--text-muted); font-size: 0.9rem;">
+                        HTMX fragment target container (for dynamic catalog rendering).
+                    </p>
+                </div>
+            </section>
+
+            <!-- Right Card: AI Appliance Installation Validator -->
+            <section class="card">
+                <h2>AI Appliance Compatibility & Upsell</h2>
+                <label for="sample-prompt">Selected Setup & Power Load</label>
+                <textarea id="sample-prompt" rows="3">Smart French Door Refrigerator, Countertop Air Fryer (1800W), Espresso Machine (1450W)</textarea>
+                <button type="button" class="btn">Run Installation & Compatibility Check</button>
+
+                <!-- AI Response Preview -->
+                <div class="ai-response">
+                    <h4>🤖 Local Ollama Analysis</h4>
+                    <p>• <strong>Electrical Requirement:</strong> High concurrent wattage (3250W); recommend separate kitchen circuits for heating elements.</p>
+                    <p>• <strong>Recommended Accessory:</strong> Heavy-duty appliance surge protector and water filter replacement cartridge kit.</p>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Home Appliance Data Grid -->
+        <section class="card">
+            <h2>Featured Home Appliances</h2>
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Model SKU</th>
+                        <th>Appliance Name</th>
+                        <th>Category</th>
+                        <th>Price</th>
+                        <th>Stock Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>#HA-101</strong></td>
+                        <td>French Door Smart Refrigerator (600L)</td>
+                        <td>Kitchen Appliances</td>
+                        <td>$2,199.00</td>
+                        <td><span class="badge">In Stock</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>#HA-102</strong></td>
+                        <td>Front Load Washer & Heat Pump Dryer</td>
+                        <td>Laundry</td>
+                        <td>$1,450.00</td>
+                        <td><span class="badge badge-sand">Low Stock</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>#HA-103</strong></td>
+                        <td>Robotic Vacuum & Sonic Mop Station</td>
+                        <td>Cleaning</td>
+                        <td>$899.00</td>
+                        <td><span class="badge">In Stock</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>#HA-104</strong></td>
+                        <td>Smart Convection Air Fryer Oven (12L)</td>
+                        <td>Small Kitchen</td>
+                        <td>$249.99</td>
+                        <td><span class="badge badge-cream">Pre-Order</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </div>
+</body>
+</html>
