@@ -1,10 +1,24 @@
 <div class="ai-controls">
-    <button hx-post="{{ url_for('product_ai_review', product_id=product.id) }}"
+    <button class="ai-review-btn"
+            hx-post="{{ url_for('product_ai_review', product_id=product.id) }}"
             hx-target="#ai-review"
+            hx-indicator="#ai-output"
             hx-disabled-elt="this">
-        {{ button_label | default('Summarise specifications') }}
+        <span class="ai-btn-idle">{{ button_label | default('Summarise specifications') }}</span>
+        <span class="ai-btn-busy">Generating&hellip;</span>
     </button>
-    <span class="ai-waiting htmx-indicator">Writing and reviewing, this takes a few seconds&hellip;</span>
 </div>
 
-<div id="ai-review"></div>
+<div id="ai-output">
+    <div id="ai-waiting" class="ai-waiting-panel" role="status" aria-live="polite">
+        <span class="ai-spinner" aria-hidden="true"></span>
+        <div>
+            <strong>Generating a summary</strong>
+            <p>
+                The model is writing a shopper paragraph, then a review pass checks
+                it against the stored specifications. This often takes 10 to 20 seconds.
+            </p>
+        </div>
+    </div>
+    <div id="ai-review"></div>
+</div>

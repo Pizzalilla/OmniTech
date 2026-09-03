@@ -175,6 +175,8 @@ def test_product_page_offers_the_review_button(client, first_product):
     page = client.get(f"/products/{first_product['id']}").get_data(as_text=True)
 
     assert f"/products/{first_product['id']}/ai-review" in page
+    assert "Generating a summary" in page
+    assert "hx-indicator" in page
 
 
 def test_review_fragment_shows_the_summary(client, first_product, model):

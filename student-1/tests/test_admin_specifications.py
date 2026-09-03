@@ -37,6 +37,7 @@ def test_page_offers_the_ai_review_to_the_admin(client):
 
     assert "AI Review" in body
     assert f"/products/{product['id']}/ai-review" in body
+    assert "Generating a summary" in body
 
 
 def test_page_for_an_unknown_product_is_not_found(client):
