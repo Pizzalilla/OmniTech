@@ -54,7 +54,7 @@ Product list filters (query string): `category_id`, `brand`, `min_price`, `max_p
 
 | Method | Path | Notes |
 |--------|------|--------|
-| GET | `/health` | `{"status": "ok"}` |
+| GET | `/health` | `{\"status\": \"ok\", \"service\": \"product-catalog\"}` |
 | GET, POST | `/api/categories` | Duplicate names return 409 |
 | GET, PUT, DELETE | `/api/categories/<id>` | Delete returns 409 if products still use it |
 | GET, POST | `/api/products` | |
