@@ -1,0 +1,271 @@
+﻿/* ==========================================================================
+   OmniTech Shared Design System
+   Palette Tokens:
+     - Primary Slate Blue: #81A6C6 (rgb: 129, 166, 198)
+     - Light Accent Blue:  #AACDDC (rgb: 170, 205, 220)
+     - Warm Cream Base:    #F3E3D0 (rgb: 243, 227, 208)
+     - Sandstone Surface:  #D2C4B4 (rgb: 210, 196, 180)
+   ========================================================================== */
+
+:root {
+    /* Color Palette */
+    --color-slate-blue: #81a6c6;
+    --color-light-blue: #aacddc;
+    --color-cream: #f3e3d0;
+    --color-sandstone: #d2c4b4;
+
+    /* Semantic Tokens */
+    --bg-page: #fbf8f5;
+    --bg-surface: #ffffff;
+    --bg-surface-soft: #f3e3d0;
+    --bg-surface-alt: #d2c4b4;
+    
+    --text-primary: #1e293b;
+    --text-muted: #64748b;
+    --text-inverse: #ffffff;
+
+    --primary: #81a6c6;
+    --primary-hover: #6a91b2;
+    --secondary: #aacddc;
+    --secondary-hover: #93bed0;
+    
+    --border: #d2c4b4;
+    --border-strong: #81a6c6;
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    
+    --shadow-sm: 0 2px 6px rgba(30, 41, 59, 0.05);
+    --shadow-md: 0 8px 24px rgba(30, 41, 59, 0.08);
+}
+
+/* Base Reset & Typography */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6;
+    padding: 2rem 1.5rem;
+    min-height: 100vh;
+}
+
+/* App Shell & Layouts */
+.app-container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.service-header {
+    background: linear-gradient(135deg, var(--color-slate-blue), var(--color-light-blue));
+    color: var(--text-inverse);
+    padding: 1.75rem 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    margin-bottom: 2rem;
+}
+
+.service-header h1 {
+    font-size: 1.85rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.service-header p {
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+}
+
+.grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Cards & Panels */
+.card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 1.5rem;
+}
+
+.card h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-bottom: 2px solid var(--color-light-blue);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.panel {
+    background: var(--bg-surface-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-top: 1rem;
+    min-height: 48px;
+}
+
+/* Forms & Inputs */
+label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background-color: #ffffff;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 3px rgba(129, 166, 198, 0.25);
+}
+
+/* Buttons */
+.btn, button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background-color: var(--primary);
+    color: var(--text-inverse);
+    border: none;
+    padding: 0.6rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.btn:hover, button:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+    background-color: var(--color-light-blue);
+    color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-hover);
+}
+
+.btn-sand {
+    background-color: var(--color-sandstone);
+    color: var(--text-primary);
+}
+
+.btn-sand:hover {
+    background-color: #c2b4a3;
+}
+
+/* AI Feedback & Status Cards */
+.ai-response {
+    background: #ffffff;
+    border-left: 4px solid var(--color-slate-blue);
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+    margin-top: 1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.ai-response h4 {
+    color: var(--color-slate-blue);
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.error {
+    background-color: #fde8e8;
+    color: #9b1c1c;
+    border-left: 4px solid #f05252;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius-sm);
+    margin-top: 0.85rem;
+}
+
+/* Badges & Tables */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    background-color: var(--color-light-blue);
+    color: var(--text-primary);
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.badge-sand {
+    background-color: var(--color-sandstone);
+    color: var(--text-primary);
+}
+
+.badge-cream {
+    background-color: var(--color-cream);
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+}
+
+.data-table th, .data-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+}
+
+.data-table th {
+    background-color: var(--bg-surface-soft);
+    font-weight: 600;
+}
+
+.data-table tr:hover {
+    background-color: rgba(243, 227, 208, 0.35);
+}
+
+/* Itemized Lists */
+.order-list {
+    list-style: none;
+}
+
+.order-list li {
+    padding: 0.65rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-list li:last-child {
+    border-bottom: none;
+}
