@@ -256,7 +256,7 @@ def apply_tags():
     conn.close()
 
     html = "<div class='panel'>"
-    html += "<h4>Successfully Applied Suggestions</h4>"
+    html += "<h4>Applied Suggestions to Profile</h4>"
     html += "<p style='font-size:0.9rem; margin-top:0.35rem;'><strong>Active Profile Preference Tags:</strong></p><p style='margin-top:0.25rem;'>"
 
     for tag in updated_tags:
