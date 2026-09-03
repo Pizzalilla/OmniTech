@@ -117,6 +117,81 @@ def product_ai_review(product_id):
     return render_template("partials/ai_review.html", result=result)
 
 
+@app.route("/admin")
+def admin():
+    return render_template("admin.html", categories=list_categories())
+
+
+def _category_fragment(editing_id=None, error=None, values=None):
+    return render_template(
+        "partials/category_table.html",
+        categories=list_categories(),
+        editing_id=editing_id,
+        error=error,
+        values=values,
+    )
+
+
+def _form_value(field: str) -> str:
+    return (request.form.get(field) or "").strip()
+
+
+@app.route("/admin/categories", methods=["GET", "POST"])
+def admin_categories():
+    if request.method == "GET":
+        return _category_fragment()
+
+    name = _form_value("name")
+    if not name:
+        return _category_fragment(error="name is required", values=request.form)
+
+    try:
+        create_category(name, _form_value("description") or None)
+    except IntegrityError:
+        return _category_fragment(
+            error=f"a category named {name} already exists", values=request.form
+        )
+
+    return _category_fragment()
+
+
+@app.route("/admin/categories/<int:category_id>/edit")
+def admin_category_edit(category_id):
+    if get_category(category_id) is None:
+        abort(404)
+
+    return _category_fragment(editing_id=category_id)
+
+
+@app.route("/admin/categories/<int:category_id>", methods=["PUT", "DELETE"])
+def admin_category(category_id):
+    category = get_category(category_id)
+    if category is None:
+        abort(404)
+
+    if request.method == "DELETE":
+        try:
+            delete_category(category_id)
+        except IntegrityError:
+            return _category_fragment(
+                error=f"{category['name']} still has products, so it cannot be deleted"
+            )
+        return _category_fragment()
+
+    name = _form_value("name")
+    if not name:
+        return _category_fragment(editing_id=category_id, error="name is required")
+
+    try:
+        update_category(category_id, name, _form_value("description") or None)
+    except IntegrityError:
+        return _category_fragment(
+            editing_id=category_id, error=f"a category named {name} already exists"
+        )
+
+    return _category_fragment()
+
+
 @app.route("/api/categories", methods=["GET", "POST"])
 def api_categories():
     if request.method == "GET":

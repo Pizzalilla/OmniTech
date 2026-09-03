@@ -1,0 +1,67 @@
+{# every button in here swaps this whole block, so the targets are set once on the wrapper #}
+<div id="category-admin" hx-target="#category-admin" hx-swap="outerHTML">
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <form hx-post="{{ url_for('admin_categories') }}">
+        <div class="grid-2">
+            <div>
+                <label for="new-category-name">Name</label>
+                <input id="new-category-name" name="name" required
+                       placeholder="e.g. Dryers" value="{{ values.name if values else '' }}">
+            </div>
+            <div>
+                <label for="new-category-description">Description</label>
+                <input id="new-category-description" name="description"
+                       placeholder="Optional" value="{{ values.description if values else '' }}">
+            </div>
+        </div>
+        <button type="submit">Add category</button>
+    </form>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for category in categories %}
+            {% if category.id == editing_id %}
+            <tr>
+                <td><input name="name" value="{{ category.name }}" aria-label="Category name"></td>
+                <td><input name="description" value="{{ category.description or '' }}" aria-label="Category description"></td>
+                <td>
+                    {# a form cannot wrap table cells, so the row is gathered by selector instead #}
+                    <button hx-put="{{ url_for('admin_category', category_id=category.id) }}"
+                            hx-include="closest tr">
+                        Save
+                    </button>
+                    <button class="btn-secondary" hx-get="{{ url_for('admin_categories') }}">
+                        Cancel
+                    </button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td>{{ category.name }}</td>
+                <td>{{ category.description or '&mdash;' | safe }}</td>
+                <td>
+                    <button class="btn-secondary"
+                            hx-get="{{ url_for('admin_category_edit', category_id=category.id) }}">
+                        Edit
+                    </button>
+                    <button hx-delete="{{ url_for('admin_category', category_id=category.id) }}"
+                            hx-confirm="Delete {{ category.name }}?">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
