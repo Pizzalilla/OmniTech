@@ -1,4 +1,4 @@
-﻿import os
+import os
 import requests
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
@@ -13,7 +13,8 @@ app = Flask(
 CORS(app)
 
 DB_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://127.0.0.1:5004")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434/v1")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", f"{OLLAMA_HOST}/v1")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 
 http_session = requests.Session()
@@ -290,4 +291,4 @@ def get_order_history_modal():
     return html
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5014, threaded=True, debug=False)
+    app.run(host="0.0.0.0", port=5014, threaded=True, debug=False)

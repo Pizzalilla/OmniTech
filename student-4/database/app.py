@@ -1,4 +1,4 @@
-﻿import sqlite3
+import sqlite3
 import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
@@ -59,4 +59,4 @@ def get_cart(cart_id):
     return jsonify(res), 200
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5004, threaded=True, debug=False)
+    app.run(host="0.0.0.0", port=5004, threaded=True, debug=False)
