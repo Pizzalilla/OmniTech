@@ -119,7 +119,12 @@ def product_ai_review(product_id):
 
 @app.route("/admin")
 def admin():
-    return render_template("admin.html", categories=list_categories())
+    return render_template(
+        "admin.html",
+        products=list_products(),
+        categories=list_categories(),
+        form={},
+    )
 
 
 def _category_fragment(editing_id=None, error=None, values=None):
@@ -190,6 +195,68 @@ def admin_category(category_id):
         )
 
     return _category_fragment()
+
+
+def _product_fragment(editing_id=None, error=None, form=None):
+    return render_template(
+        "partials/product_table.html",
+        products=list_products(),
+        categories=list_categories(),
+        editing_id=editing_id,
+        error=error,
+        form=form or {},
+    )
+
+
+@app.route("/admin/products", methods=["GET", "POST"])
+def admin_products():
+    if request.method == "GET":
+        return _product_fragment()
+
+    error, values = _parse_product_payload(request.form)
+    if error:
+        return _product_fragment(error=error["error"], form=request.form)
+
+    try:
+        create_product(*values)
+    except IntegrityError:
+        return _product_fragment(error="that category no longer exists", form=request.form)
+
+    return _product_fragment()
+
+
+@app.route("/admin/products/<int:product_id>/edit")
+def admin_product_edit(product_id):
+    product = get_product(product_id)
+    if product is None:
+        abort(404)
+
+    return _product_fragment(editing_id=product_id, form=product)
+
+
+@app.route("/admin/products/<int:product_id>", methods=["PUT", "DELETE"])
+def admin_product(product_id):
+    if get_product(product_id) is None:
+        abort(404)
+
+    if request.method == "DELETE":
+        delete_product(product_id)
+        return _product_fragment()
+
+    error, values = _parse_product_payload(request.form)
+    if error:
+        return _product_fragment(
+            editing_id=product_id, error=error["error"], form=request.form
+        )
+
+    try:
+        update_product(product_id, *values)
+    except IntegrityError:
+        return _product_fragment(
+            editing_id=product_id, error="that category no longer exists", form=request.form
+        )
+
+    return _product_fragment()
 
 
 @app.route("/api/categories", methods=["GET", "POST"])

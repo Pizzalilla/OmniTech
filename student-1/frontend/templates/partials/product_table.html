@@ -1,0 +1,102 @@
+{# every button in here swaps this whole block, so the targets are set once on the wrapper #}
+<div id="product-admin" hx-target="#product-admin" hx-swap="outerHTML">
+    {% if error %}
+    <p class="error">{{ error }}</p>
+    {% endif %}
+
+    <h3>{{ "Edit product" if editing_id else "Add a product" }}</h3>
+
+    {# seven fields are too many for inline row inputs, so editing fills this form instead #}
+    <form {% if editing_id %}hx-put="{{ url_for('admin_product', product_id=editing_id) }}"
+          {% else %}hx-post="{{ url_for('admin_products') }}"{% endif %}>
+        <div class="grid-2">
+            <div>
+                <label for="product-name">Name</label>
+                <input id="product-name" name="name" required
+                       placeholder="e.g. CoolBreeze 7000 Split" value="{{ form.get('name', '') }}">
+
+                <label for="product-brand">Brand</label>
+                <input id="product-brand" name="brand" required
+                       placeholder="e.g. CoolBreeze" value="{{ form.get('brand', '') }}">
+
+                <label for="product-category">Category</label>
+                <select id="product-category" name="category_id" required>
+                    <option value="">Choose a category</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}"
+                            {% if form.get('category_id') | string == category.id | string %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <label for="product-image">Image URL</label>
+                <input id="product-image" name="image_url"
+                       placeholder="Optional" value="{{ form.get('image_url') or '' }}">
+            </div>
+
+            <div>
+                <label for="product-price">Price</label>
+                <input id="product-price" name="price" type="number" min="0" step="0.01" required
+                       placeholder="0.00" value="{{ form.get('price', '') }}">
+
+                <label for="product-stock">Stock</label>
+                <input id="product-stock" name="stock" type="number" min="0" required
+                       value="{{ form.get('stock', 0) }}">
+
+                <label for="product-description">Description</label>
+                <textarea id="product-description" name="description" rows="5"
+                          placeholder="Optional">{{ form.get('description') or '' }}</textarea>
+            </div>
+        </div>
+
+        <button type="submit">{{ "Save changes" if editing_id else "Add product" }}</button>
+        {% if editing_id %}
+        <button type="button" class="btn-secondary" hx-get="{{ url_for('admin_products') }}">
+            Cancel
+        </button>
+        {% endif %}
+    </form>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Brand</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td><strong>{{ product.name }}</strong></td>
+                <td>{{ product.brand }}</td>
+                <td>{{ product.category_name }}</td>
+                <td>${{ '%.2f' | format(product.price) }}</td>
+                <td>
+                    {% if product.stock == 0 %}
+                    <span class="badge badge-cream">Out of stock</span>
+                    {% elif product.stock < 5 %}
+                    <span class="badge badge-sand">Low stock ({{ product.stock }})</span>
+                    {% else %}
+                    <span class="badge">In stock ({{ product.stock }})</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <button class="btn-secondary"
+                            hx-get="{{ url_for('admin_product_edit', product_id=product.id) }}">
+                        Edit
+                    </button>
+                    <button hx-delete="{{ url_for('admin_product', product_id=product.id) }}"
+                            hx-confirm="Delete {{ product.name }}? Its specifications go too.">
+                        Delete
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
