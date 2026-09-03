@@ -11,7 +11,7 @@ database tables that no other microservice touches directly.
 | Backend   | Python 3.11, Flask (REST API + HTMX fragments)      |
 | Frontend  | HTML + HTMX 2, shared OmniTech CSS design system    |
 | Database  | SQLite (`consultant.db`), raw SQL, no ORM           |
-| AI        | Local Ollama HTTP API (`qwen2.5:0.5b` by default)   |
+| AI        | Local Ollama HTTP API (`llama3.2` by default)       |
 
 ## Layout
 
@@ -59,7 +59,7 @@ so the UI still works.
 | Variable        | Default                  | Purpose                         |
 |-----------------|--------------------------|---------------------------------|
 | `OLLAMA_HOST`   | `http://localhost:11434` | Ollama base URL                 |
-| `OLLAMA_MODEL`  | `qwen2.5:0.5b`           | Model name                      |
+| `OLLAMA_MODEL`  | `llama3.2`               | Model name (team default)       |
 | `OLLAMA_TIMEOUT`| `120`                    | Per-request timeout (seconds)   |
 | `DB_PATH`       | `database/consultant.db` | SQLite file location            |
 | `PORT`          | `5000`                   | HTTP port                       |

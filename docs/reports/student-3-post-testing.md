@@ -69,10 +69,11 @@ link, top-right. A single stylesheet, `frontend/static/style.css`, served at
   Category is always correct, but the "best" pick within a category may not
   reflect a stated budget. This path is a graceful degradation, not the intended
   experience.
-* **Model quality depends on the pulled model.** The default `qwen2.5:0.5b` is
-  small; it occasionally needs the one corrective re-prompt to return valid
-  JSON. Larger models remove almost all re-prompts. Only one re-prompt is
-  attempted before falling back, to bound latency.
+* **Model quality depends on the pulled model.** The default is `llama3.2`
+  (the team-wide model, matching `ai-services/ai-mode/pull-model.sh`), which
+  answers correctly first try in testing. A very small model such as
+  `qwen2.5:0.5b` often needs the one corrective re-prompt or falls back. Only
+  one re-prompt is attempted before falling back, to bound latency.
 * **Destructive actions use an inline two-step confirm** (a "Delete / Keep" row),
   not the browser's native `confirm()` dialog, which is silently suppressed in
   some embedded webviews.
