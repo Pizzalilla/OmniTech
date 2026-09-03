@@ -210,3 +210,126 @@ input, select, textarea {
 .ai-response {
     border-radius: var(--r-md);
 }
+
+.composer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: var(--shadow-soft);
+    margin-bottom: 14px;
+}
+
+.composer input[type="search"] {
+    flex: 1;
+    margin: 0;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    font-size: 0.95rem;
+}
+
+.composer input[type="search"]:focus {
+    box-shadow: none;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    cursor: pointer;
+}
+
+.chip input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.chip:has(input:checked) {
+    background: var(--ink);
+    color: #fff;
+    border-color: var(--ink);
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.filter-row label {
+    margin-bottom: 0.2rem;
+}
+
+.filter-row input,
+.filter-row select {
+    margin-bottom: 0;
+}
+
+.product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+}
+
+.product-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 18px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+}
+
+.product-card h3 {
+    font-size: 1.02rem;
+    font-weight: 700;
+}
+
+.muted {
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+}
+
+.product-card .muted {
+    font-size: 0.85rem;
+}
+
+.product-card .price {
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-top: auto;
+}
+
+.grid-count {
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
