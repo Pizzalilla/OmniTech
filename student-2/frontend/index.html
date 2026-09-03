@@ -64,15 +64,7 @@
                     <div id="students-result" hx-get="/customers" hx-trigger="load, refreshCustomers from:body"></div>
                 </section>
 
-                <section class="card">
-                    <h2>Find Profile by ID</h2>
-                    <form hx-get="/customers/by-id" hx-target="#student-result">
-                        <label for="student_id">Customer ID</label>
-                        <input id="student_id" name="customer_id" type="number" min="1" placeholder="Enter ID" required>
-                        <button type="submit" class="btn">Lookup Profile</button>
-                    </form>
-                    <div id="student-result" class="panel"></div>
-                </section>
+
             </div>
 
 
@@ -88,6 +80,16 @@
 
 
                     <div id="context-result"></div>
+                </section>
+
+                <section class="card">
+                    <h2>Find Profile by ID</h2>
+                    <form hx-get="/customers/by-id" hx-target="#student-result">
+                        <label for="student_id">Customer ID</label>
+                        <input id="student_id" name="customer_id" type="number" min="1" placeholder="Enter ID" required>
+                        <button type="submit" class="btn">Lookup Profile</button>
+                    </form>
+                    <div id="student-result" class="panel"></div>
                 </section>
             </div>
         </div>
