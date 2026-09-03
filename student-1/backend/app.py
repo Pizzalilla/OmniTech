@@ -1,13 +1,19 @@
 import os
+import sys
+from pathlib import Path
 
-from db import (
+ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from database.db import (
     create_category,
     delete_category,
     get_category,
-    init_db,
     list_categories,
     update_category,
 )
+from database.init_db import init_db
 from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from sqlite3 import IntegrityError
@@ -15,7 +21,11 @@ from sqlite3 import IntegrityError
 load_dotenv()
 init_db()  # create tables + seed if the DB is empty
 
-app = Flask(__name__, template_folder="../templates", static_folder="../static")
+app = Flask(
+    __name__,
+    template_folder=str(ROOT / "frontend" / "templates"),
+    static_folder=str(ROOT / "frontend" / "static"),
+)
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
