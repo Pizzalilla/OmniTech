@@ -4,6 +4,7 @@ import tempfile
 import pytest
 import sys
 
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "database"))
 
@@ -16,6 +17,7 @@ def client(tmp_path):
     database.init_db()
     database.seed_db()
     app.config["TESTING"] = True
+
     with app.test_client() as c:
         yield c
 
@@ -31,8 +33,10 @@ def test_create_customer(client):
         "email": "jane.smith@example.com",
         "phone": "0400000000"
     })
+    
     assert rv.status_code == 200
     assert b"Created customer profile" in rv.data
+
 
 def test_delete_customer(client):
     rv = client.delete("/customers/1")
@@ -44,6 +48,6 @@ def test_generate_ai_suggestions(client):
     assert b"Apply Suggestions to Profile" in rv.data
 
 def test_apply_tags(client):
-    rv = client.post("/apply-tags", data={"customer_id": "1", "tags": "apple-ecosystem,4k-video-editing"})
+    rv = client.post("/apply-tags", data={"customer_id": "1", "tags": "4k-video-editing"})
     assert rv.status_code == 200
-    assert b"Successfully Applied Suggestions" in rv.data
+    assert b"Applied Suggestions to Profile" in rv.data

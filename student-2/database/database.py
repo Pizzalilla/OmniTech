@@ -121,6 +121,7 @@ def seed_db():
         (9, "photographer", "ai_agent"),
         (10, "apple-ecosystem", "user")
     ]
+
     for cid, tg, src in tags:
         conn.execute(
             "INSERT OR IGNORE INTO PreferenceTags (customer_id, tag_name, source) VALUES (?, ?, ?)",

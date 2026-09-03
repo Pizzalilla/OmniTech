@@ -61,7 +61,7 @@
 
                 <section class="card">
                     <h2>View Customer Accounts</h2>
-                    <div id="students-result" hx-get="/customers" hx-trigger="load"></div>
+                    <div id="students-result" hx-get="/customers" hx-trigger="load, refreshCustomers from:body"></div>
                 </section>
 
                 <section class="card">

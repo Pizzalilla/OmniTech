@@ -20,7 +20,6 @@ app = Flask(
 def index():
     return render_template("index.html")
 
-# --- HTMX CONTROLLER ROUTES ---
 
 @app.route("/customers", methods=["GET"])
 def get_all_customers():
@@ -83,9 +82,13 @@ def create_customer_profile():
         cid = cur.lastrowid
         conn.close()
         
-        resp = app.make_response(f"<div class='panel' style='background:#d1fae5; color:#065f46;'><strong>Success:</strong> Created customer profile #{cid}.</div>")
+        resp = app.make_response(f"<div class='panel'><strong>Success:</strong> Created customer profile #{cid}.</div>")
         resp.headers["HX-Trigger"] = "refreshCustomers"
+
+        # updated_table_html = get_all_customers()
+        # html += f"<div id='students-result' hx-swap-oob='true'>{updated_table_html}</div>"
         return resp
+        
     except Exception:
         conn.close()
         return "<div class='error'>Failed to create account</div>"
