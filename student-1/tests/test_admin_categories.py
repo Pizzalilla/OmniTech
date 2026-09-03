@@ -23,8 +23,12 @@ def test_admin_page_lists_existing_categories(client):
 
 
 def test_only_the_admin_page_is_badged_as_admin_view(client):
-    assert "Admin View" in client.get("/admin").get_data(as_text=True)
-    assert "Admin View" not in client.get("/").get_data(as_text=True)
+    admin = client.get("/admin").get_data(as_text=True)
+    catalogue = client.get("/").get_data(as_text=True)
+
+    assert "Admin View" in admin
+    assert "Shopper view" in admin
+    assert "Admin View" not in catalogue
 
 
 def test_adding_a_category_returns_the_updated_table(client):
