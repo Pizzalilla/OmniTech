@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template
 
 load_dotenv()
-init_db()
+init_db()  # create tables + seed if the DB is empty
 
 app = Flask(__name__, template_folder="../templates", static_folder="../static")
 

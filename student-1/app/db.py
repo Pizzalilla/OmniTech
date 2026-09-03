@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS product_specifications (
 
 
 def get_db_path() -> Path:
+    # Docker can override this with DATABASE_PATH
     return Path(os.getenv("DATABASE_PATH", str(DEFAULT_DB_PATH)))
 
 
@@ -53,6 +54,7 @@ def init_db(seed: bool = True) -> None:
         if not seed:
             return
 
+        # only seed once — skip if categories already exist
         existing = conn.execute("SELECT COUNT(*) FROM categories").fetchone()[0]
         if existing > 0:
             return
@@ -67,6 +69,7 @@ def init_db(seed: bool = True) -> None:
             categories,
         )
 
+        # category_id: 1=Refrigerators, 2=Washing Machines, 3=Air Conditioners
         products = [
             (
                 "CoolBreeze 5000",
@@ -105,6 +108,7 @@ def init_db(seed: bool = True) -> None:
             products,
         )
 
+        # (product_id, spec_name, spec_value)
         specs = [
             (1, "Cooling Capacity", "12000 BTU"),
             (1, "Energy Rating", "4 stars"),
