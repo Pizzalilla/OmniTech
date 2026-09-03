@@ -10,6 +10,7 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         service: [student-1, student-2, student-3, student-4, student-5]
     steps:
@@ -23,4 +24,12 @@ jobs:
         run: pip install -r ${{ matrix.service }}/requirements.txt
 
       - name: Check syntax
-        run: python -m py_compile ${{ matrix.service }}/app/main.py
+        run: |
+          if [ -f "${{ matrix.service }}/backend/app.py" ]; then
+            python -m compileall -q "${{ matrix.service }}/backend" "${{ matrix.service }}/database"
+          elif [ -f "${{ matrix.service }}/app/main.py" ]; then
+            python -m py_compile "${{ matrix.service }}/app/main.py"
+          else
+            echo "No Python entry point found for ${{ matrix.service }}"
+            exit 1
+          fi
