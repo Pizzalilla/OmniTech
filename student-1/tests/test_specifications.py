@@ -1,8 +1,14 @@
-def test_seeded_specifications_are_listed(client):
-    response = client.get("/api/products/1/specifications")
-    assert response.status_code == 200
-    names = [spec["spec_name"] for spec in response.get_json()]
-    assert names == ["Cooling Capacity", "Energy Rating", "Noise Level"]
+def test_every_seeded_product_has_specifications(client):
+    products = client.get("/api/products").get_json()
+    for product in products:
+        specs = client.get(f"/api/products/{product['id']}/specifications").get_json()
+        assert specs, f"{product['name']} has no specifications"
+
+
+def test_specifications_are_listed_alphabetically(client):
+    specs = client.get("/api/products/1/specifications").get_json()
+    names = [spec["spec_name"] for spec in specs]
+    assert names == sorted(names)
 
 
 def test_create_update_and_delete_specification(client):
@@ -44,12 +50,13 @@ def test_specification_cannot_be_reached_through_another_product(client):
 
 
 def test_deleting_product_removes_its_specifications(client):
+    category_id = client.get("/api/categories").get_json()[0]["id"]
     created = client.post(
         "/api/products",
         json={
             "name": "Temp Heater",
             "brand": "WarmCo",
-            "category_id": 3,
+            "category_id": category_id,
             "price": 59.0,
             "stock": 1,
         },

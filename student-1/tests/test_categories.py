@@ -4,24 +4,27 @@ def test_health(client):
     assert response.get_json()["status"] == "ok"
 
 
-def test_seeded_categories_are_listed(client):
-    response = client.get("/api/categories")
-    assert response.status_code == 200
-    names = [category["name"] for category in response.get_json()]
-    assert names == ["Air Conditioners", "Refrigerators", "Washing Machines"]
+def test_seed_meets_minimum_record_count(client):
+    categories = client.get("/api/categories").get_json()
+    assert len(categories) >= 10
+
+
+def test_categories_are_listed_alphabetically(client):
+    names = [category["name"] for category in client.get("/api/categories").get_json()]
+    assert names == sorted(names)
 
 
 def test_create_update_and_delete_category(client):
     created = client.post(
         "/api/categories",
-        json={"name": "Dishwashers", "description": "Kitchen cleaning"},
+        json={"name": "Garment Steamers", "description": "Handheld steaming"},
     )
     assert created.status_code == 201
     category_id = created.get_json()["id"]
 
     updated = client.put(
         f"/api/categories/{category_id}",
-        json={"name": "Dishwashers", "description": "Updated blurb"},
+        json={"name": "Garment Steamers", "description": "Updated blurb"},
     )
     assert updated.status_code == 200
     assert updated.get_json()["description"] == "Updated blurb"
@@ -36,10 +39,12 @@ def test_create_category_requires_name(client):
 
 
 def test_duplicate_category_name_is_rejected(client):
-    response = client.post("/api/categories", json={"name": "Refrigerators"})
+    existing = client.get("/api/categories").get_json()[0]["name"]
+    response = client.post("/api/categories", json={"name": existing})
     assert response.status_code == 409
 
 
 def test_category_in_use_cannot_be_deleted(client):
-    response = client.delete("/api/categories/1")
+    in_use = client.get("/api/products").get_json()[0]["category_id"]
+    response = client.delete(f"/api/categories/{in_use}")
     assert response.status_code == 409

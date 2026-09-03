@@ -1,47 +1,72 @@
-NEW_PRODUCT = {
-    "name": "Desk Fan 200",
-    "brand": "BreezeCo",
-    "category_id": 3,
-    "price": 99.5,
-    "stock": 5,
-    "description": "Small desk fan",
-}
+import pytest
 
 
-def test_seeded_products_are_listed(client):
+@pytest.fixture()
+def new_product(client):
+    category_id = client.get("/api/categories").get_json()[0]["id"]
+    return {
+        "name": "Desk Fan 200",
+        "brand": "BreezeCo",
+        "category_id": category_id,
+        "price": 99.5,
+        "stock": 5,
+        "description": "Small desk fan",
+    }
+
+
+def test_seed_meets_minimum_record_count(client):
     response = client.get("/api/products")
     assert response.status_code == 200
-    assert len(response.get_json()) == 3
+    assert len(response.get_json()) >= 10
 
 
-def test_product_includes_category_name(client):
+def test_product_includes_its_category_name(client):
     product = client.get("/api/products/1").get_json()
-    assert product["category_name"] == "Air Conditioners"
+    category = client.get(f"/api/categories/{product['category_id']}").get_json()
+    assert product["category_name"] == category["name"]
 
 
 def test_filter_by_category(client):
-    products = client.get("/api/products?category_id=1").get_json()
-    assert [p["name"] for p in products] == ["FreshKeep XL"]
+    category_id = client.get("/api/products").get_json()[0]["category_id"]
+    products = client.get(f"/api/products?category_id={category_id}").get_json()
+    assert products
+    assert all(p["category_id"] == category_id for p in products)
 
 
 def test_filter_by_brand_ignores_case(client):
-    products = client.get("/api/products?brand=coolbreeze").get_json()
-    assert [p["name"] for p in products] == ["CoolBreeze 5000"]
+    brand = client.get("/api/products").get_json()[0]["brand"]
+    products = client.get(f"/api/products?brand={brand.lower()}").get_json()
+    assert products
+    assert all(p["brand"].lower() == brand.lower() for p in products)
 
 
 def test_filter_by_price_range(client):
-    products = client.get("/api/products?min_price=700&max_price=800").get_json()
-    assert [p["name"] for p in products] == ["SpinMaster Pro 10"]
+    products = client.get("/api/products?min_price=500&max_price=900").get_json()
+    assert products
+    assert all(500 <= p["price"] <= 900 for p in products)
 
 
-def test_create_update_and_delete_product(client):
-    created = client.post("/api/products", json=NEW_PRODUCT)
+def test_search_matches_product_name(client):
+    name = client.get("/api/products").get_json()[0]["name"]
+    products = client.get(f"/api/products?search={name[:6]}").get_json()
+    assert any(p["name"] == name for p in products)
+
+
+def test_filter_by_spec_keyword(client):
+    specs = client.get("/api/products/1/specifications").get_json()
+    keyword = specs[0]["spec_value"]
+    products = client.get(f"/api/products?spec_keyword={keyword}").get_json()
+    assert any(p["id"] == 1 for p in products)
+
+
+def test_create_update_and_delete_product(client, new_product):
+    created = client.post("/api/products", json=new_product)
     assert created.status_code == 201
     product_id = created.get_json()["id"]
 
     updated = client.put(
         f"/api/products/{product_id}",
-        json={**NEW_PRODUCT, "price": 120.0, "stock": 2},
+        json={**new_product, "price": 120.0, "stock": 2},
     )
     assert updated.status_code == 200
     assert updated.get_json()["price"] == 120.0
@@ -50,16 +75,16 @@ def test_create_update_and_delete_product(client):
     assert client.get(f"/api/products/{product_id}").status_code == 404
 
 
-def test_create_product_requires_name_and_brand(client):
-    response = client.post("/api/products", json={**NEW_PRODUCT, "brand": ""})
+def test_create_product_requires_name_and_brand(client, new_product):
+    response = client.post("/api/products", json={**new_product, "brand": ""})
     assert response.status_code == 400
 
 
-def test_create_product_rejects_unknown_category(client):
-    response = client.post("/api/products", json={**NEW_PRODUCT, "category_id": 999})
+def test_create_product_rejects_unknown_category(client, new_product):
+    response = client.post("/api/products", json={**new_product, "category_id": 999})
     assert response.status_code == 400
 
 
-def test_create_product_rejects_negative_price(client):
-    response = client.post("/api/products", json={**NEW_PRODUCT, "price": -1})
+def test_create_product_rejects_negative_price(client, new_product):
+    response = client.post("/api/products", json={**new_product, "price": -1})
     assert response.status_code == 400
