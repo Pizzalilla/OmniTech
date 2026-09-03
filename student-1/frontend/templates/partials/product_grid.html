@@ -1,0 +1,45 @@
+{% if products %}
+<section class="card">
+    <h2>{{ products | length }} product{{ '' if products | length == 1 else 's' }}</h2>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Brand</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Stock</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('product_detail', product_id=product.id) }}">
+                        <strong>{{ product.name }}</strong>
+                    </a>
+                </td>
+                <td>{{ product.brand }}</td>
+                <td>{{ product.category_name }}</td>
+                <td>${{ '%.2f' | format(product.price) }}</td>
+                <td>
+                    {% if product.stock == 0 %}
+                    <span class="badge badge-cream">Out of stock</span>
+                    {% elif product.stock < 5 %}
+                    <span class="badge badge-sand">Low stock ({{ product.stock }})</span>
+                    {% else %}
+                    <span class="badge">In stock ({{ product.stock }})</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% else %}
+<section class="card">
+    <h2>No products found</h2>
+    <p style="color: var(--text-muted);">Try clearing a filter or searching for a different term.</p>
+</section>
+{% endif %}

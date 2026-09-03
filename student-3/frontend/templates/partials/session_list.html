@@ -1,0 +1,11 @@
+{% for session in sessions %}
+<div class="session-item{% if active_id and session.id == active_id %} active{% endif %}"
+     data-id="{{ session.id }}" onclick="loadSession({{ session.id }})">
+    <div class="session-item__title">{{ session.title }}</div>
+    <div class="session-item__meta">{{ session.created_at }}</div>
+    <button class="session-item__del" title="Delete consultation"
+            onclick="askDeleteSession({{ session.id }}, event)">&times;</button>
+</div>
+{% else %}
+<div class="session-list__empty">No consultations yet. Start one above.</div>
+{% endfor %}
