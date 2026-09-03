@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from backend.ai import AIUnavailable, summarise_product
 from database.db import (
     create_category,
     create_product,
@@ -37,8 +38,6 @@ app = Flask(
     template_folder=str(ROOT / "frontend" / "templates"),
     static_folder=str(ROOT / "frontend" / "static"),
 )
-
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
 # the unified home page
 HOME_URL = os.getenv("HOME_URL", "http://localhost:8080")
@@ -263,6 +262,20 @@ def api_specification(product_id, spec_id):
         return jsonify(error), 400
 
     return jsonify(update_specification(spec_id, *values))
+
+
+@app.route("/api/products/<int:product_id>/ai-summary", methods=["POST"])
+def api_product_ai_summary(product_id):
+    product = get_product(product_id)
+    if product is None:
+        return jsonify({"error": "product not found"}), 404
+
+    try:
+        result = summarise_product(product, list_specifications(product_id))
+    except AIUnavailable as exc:
+        return jsonify({"error": "ai summary unavailable", "detail": str(exc)}), 503
+
+    return jsonify(result)
 
 
 if __name__ == "__main__":
