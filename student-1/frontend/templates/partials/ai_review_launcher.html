@@ -1,0 +1,10 @@
+<div class="ai-controls">
+    <button hx-post="{{ url_for('product_ai_review', product_id=product.id) }}"
+            hx-target="#ai-review"
+            hx-disabled-elt="this">
+        {{ button_label | default('Summarise specifications') }}
+    </button>
+    <span class="ai-waiting htmx-indicator">Writing and reviewing, this takes a few seconds&hellip;</span>
+</div>
+
+<div id="ai-review"></div>

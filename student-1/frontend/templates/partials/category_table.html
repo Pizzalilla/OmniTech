@@ -1,5 +1,5 @@
 {# every button in here swaps this whole block, so the targets are set once on the wrapper #}
-<div id="category-admin" hx-target="#category-admin" hx-swap="outerHTML">
+<div id="category-admin" hx-target="#category-admin" hx-swap="outerHTML show:#category-admin:top">
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}

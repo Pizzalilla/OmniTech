@@ -9,39 +9,6 @@
     .detail-nav {
         margin-bottom: 1.5rem;
     }
-
-    .ai-meta {
-        color: var(--text-muted);
-        font-size: 0.85rem;
-        margin-top: 0.75rem;
-    }
-
-    .ai-controls {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .ai-waiting {
-        color: var(--text-muted);
-        font-size: 0.9rem;
-    }
-
-    .review-findings h4 {
-        font-size: 0.95rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .review-findings .finding-label {
-        font-weight: 600;
-        font-size: 0.85rem;
-        margin-top: 0.5rem;
-    }
-
-    .review-findings ul {
-        margin: 0.25rem 0 0 1.25rem;
-        font-size: 0.9rem;
-    }
 </style>
 {% endblock %}
 
@@ -109,15 +76,6 @@
         conflicting, or unsupported.
     </p>
 
-    <div class="ai-controls">
-        <button hx-post="{{ url_for('product_ai_review', product_id=product.id) }}"
-                hx-target="#ai-review"
-                hx-disabled-elt="this">
-            Summarise specifications
-        </button>
-        <span class="ai-waiting htmx-indicator">Writing and reviewing, this takes a few seconds&hellip;</span>
-    </div>
-
-    <div id="ai-review"></div>
+    {% include "partials/ai_review_launcher.html" %}
 </section>
 {% endblock %}

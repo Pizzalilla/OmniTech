@@ -1,12 +1,12 @@
-{# every button in here swaps this whole block, so the targets are set once on the wrapper #}
-<div id="product-admin" hx-target="#product-admin" hx-swap="outerHTML">
+{# every button in here swaps this whole block, so the targets are set once on the wrapper.
+   the block is tall, so the swap is anchored to its top rather than left to the browser #}
+<div id="product-admin" hx-target="#product-admin" hx-swap="outerHTML show:#product-admin:top">
     {% if error %}
     <p class="error">{{ error }}</p>
     {% endif %}
 
     <h3>{{ "Edit product" if editing_id else "Add a product" }}</h3>
 
-    {# seven fields are too many for inline row inputs, so editing fills this form instead #}
     <form {% if editing_id %}hx-put="{{ url_for('admin_product', product_id=editing_id) }}"
           {% else %}hx-post="{{ url_for('admin_products') }}"{% endif %}>
         <div class="grid-2">
@@ -86,6 +86,10 @@
                     {% endif %}
                 </td>
                 <td>
+                    <a class="btn btn-sand"
+                       href="{{ url_for('admin_product_specifications', product_id=product.id) }}">
+                        Specs
+                    </a>
                     <button class="btn-secondary"
                             hx-get="{{ url_for('admin_product_edit', product_id=product.id) }}">
                         Edit

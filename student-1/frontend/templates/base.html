@@ -37,7 +37,44 @@
             letter-spacing: 0.04em;
             text-transform: uppercase;
         }
+
+        /* the ai review block appears on both the product and admin pages */
+        .ai-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .ai-waiting {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .ai-meta {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.75rem;
+        }
+
+        .review-findings h4 {
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .review-findings .finding-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        .review-findings ul {
+            margin: 0.25rem 0 0 1.25rem;
+            font-size: 0.9rem;
+        }
     </style>
+
+    {# styles.css is a copy of the shared theme, so page rules go here instead #}
+    {% block page_css %}{% endblock %}
 </head>
 <body>
     <div class="app-container">

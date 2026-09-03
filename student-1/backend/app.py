@@ -259,6 +259,95 @@ def admin_product(product_id):
     return _product_fragment()
 
 
+def _specification_fragment(product, editing_id=None, error=None, values=None):
+    return render_template(
+        "partials/specification_table.html",
+        product=product,
+        specifications=list_specifications(product["id"]),
+        editing_id=editing_id,
+        error=error,
+        values=values,
+    )
+
+
+def _owned_specification(product_id, spec_id):
+    spec = get_specification(spec_id)
+    # a spec id belonging to another product must not be editable from this page
+    if spec is None or spec["product_id"] != product_id:
+        return None
+    return spec
+
+
+@app.route("/admin/products/<int:product_id>/specifications")
+def admin_product_specifications(product_id):
+    product = get_product(product_id)
+    if product is None:
+        abort(404)
+
+    return render_template(
+        "admin_specifications.html",
+        product=product,
+        specifications=list_specifications(product_id),
+    )
+
+
+@app.route("/admin/products/<int:product_id>/specifications/rows")
+def admin_specification_rows(product_id):
+    product = get_product(product_id)
+    if product is None:
+        abort(404)
+
+    return _specification_fragment(product)
+
+
+@app.route("/admin/products/<int:product_id>/specifications", methods=["POST"])
+def admin_specifications(product_id):
+    product = get_product(product_id)
+    if product is None:
+        abort(404)
+
+    error, values = _parse_spec_payload(request.form)
+    if error:
+        return _specification_fragment(
+            product, error=error["error"], values=request.form
+        )
+
+    create_specification(product_id, *values)
+    return _specification_fragment(product)
+
+
+@app.route("/admin/products/<int:product_id>/specifications/<int:spec_id>/edit")
+def admin_specification_edit(product_id, spec_id):
+    product = get_product(product_id)
+    if product is None or _owned_specification(product_id, spec_id) is None:
+        abort(404)
+
+    return _specification_fragment(product, editing_id=spec_id)
+
+
+@app.route(
+    "/admin/products/<int:product_id>/specifications/<int:spec_id>",
+    methods=["PUT", "DELETE"],
+)
+def admin_specification(product_id, spec_id):
+    product = get_product(product_id)
+    if product is None or _owned_specification(product_id, spec_id) is None:
+        abort(404)
+
+    if request.method == "DELETE":
+        delete_specification(spec_id)
+        return _specification_fragment(product)
+
+    error, values = _parse_spec_payload(request.form)
+    if error:
+        return _specification_fragment(
+            product, editing_id=spec_id, error=error["error"]
+        )
+
+    update_specification(spec_id, *values)
+    return _specification_fragment(product)
+
+
 @app.route("/api/categories", methods=["GET", "POST"])
 def api_categories():
     if request.method == "GET":
