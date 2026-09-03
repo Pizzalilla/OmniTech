@@ -71,3 +71,113 @@ def delete_category(category_id: int) -> bool:
         cursor = conn.execute("DELETE FROM categories WHERE id = ?", (category_id,))
         conn.commit()
         return cursor.rowcount > 0
+
+
+PRODUCT_COLUMNS = """
+    p.id, p.name, p.brand, p.category_id, c.name AS category_name,
+    p.price, p.stock, p.description, p.image_url
+"""
+
+
+def list_products(
+    category_id: int | None = None,
+    brand: str | None = None,
+    min_price: float | None = None,
+    max_price: float | None = None,
+) -> list[dict]:
+    query = f"""
+        SELECT {PRODUCT_COLUMNS}
+        FROM products p
+        JOIN categories c ON c.id = p.category_id
+        WHERE 1=1
+    """
+    params: list = []
+
+    if category_id is not None:
+        query += " AND p.category_id = ?"
+        params.append(category_id)
+    if brand:
+        query += " AND LOWER(p.brand) = LOWER(?)"
+        params.append(brand)
+    if min_price is not None:
+        query += " AND p.price >= ?"
+        params.append(min_price)
+    if max_price is not None:
+        query += " AND p.price <= ?"
+        params.append(max_price)
+
+    query += " ORDER BY p.name"
+
+    with get_connection() as conn:
+        rows = conn.execute(query, params).fetchall()
+    return [row_to_dict(row) for row in rows]
+
+
+def get_product(product_id: int) -> dict | None:
+    with get_connection() as conn:
+        row = conn.execute(
+            f"""
+            SELECT {PRODUCT_COLUMNS}
+            FROM products p
+            JOIN categories c ON c.id = p.category_id
+            WHERE p.id = ?
+            """,
+            (product_id,),
+        ).fetchone()
+    return row_to_dict(row)
+
+
+def create_product(
+    name: str,
+    brand: str,
+    category_id: int,
+    price: float,
+    stock: int,
+    description: str | None,
+    image_url: str | None,
+) -> dict:
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            INSERT INTO products
+                (name, brand, category_id, price, stock, description, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (name, brand, category_id, price, stock, description, image_url),
+        )
+        conn.commit()
+        product_id = cursor.lastrowid
+    return get_product(product_id)
+
+
+def update_product(
+    product_id: int,
+    name: str,
+    brand: str,
+    category_id: int,
+    price: float,
+    stock: int,
+    description: str | None,
+    image_url: str | None,
+) -> dict | None:
+    with get_connection() as conn:
+        cursor = conn.execute(
+            """
+            UPDATE products
+            SET name = ?, brand = ?, category_id = ?, price = ?,
+                stock = ?, description = ?, image_url = ?
+            WHERE id = ?
+            """,
+            (name, brand, category_id, price, stock, description, image_url, product_id),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return None
+    return get_product(product_id)
+
+
+def delete_product(product_id: int) -> bool:
+    with get_connection() as conn:
+        cursor = conn.execute("DELETE FROM products WHERE id = ?", (product_id,))
+        conn.commit()
+        return cursor.rowcount > 0
