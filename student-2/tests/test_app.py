@@ -37,6 +37,23 @@ def test_create_customer(client):
     assert rv.status_code == 200
     assert b"Created customer profile" in rv.data
 
+def test_update_customer(client):
+    rv = client.put("/customers/1", data={
+        "first_name": "John",
+        "last_name": "Doe",
+        "email": "john.doe@example.com"
+    })
+    assert rv.status_code == 200
+    assert b"John Doe" in rv.data
+
+    rv_invalid = client.put("/customers/1", data={
+        "first_name": "",
+        "last_name": "Doe",
+        "email": "alexander.mercer@example.com"
+    })
+    assert rv_invalid.status_code == 200
+    assert "showValidationAlert" in rv_invalid.headers.get("HX-Trigger", "")
+
 
 def test_delete_customer(client):
     rv = client.delete("/customers/1")
@@ -51,3 +68,17 @@ def test_apply_tags(client):
     rv = client.post("/apply-tags", data={"customer_id": "1", "tags": "4k-video-editing"})
     assert rv.status_code == 200
     assert b"Applied Suggestions to Profile" in rv.data
+
+def test_delete_preference_tag(client):
+    client.post("/apply-tags", data={"customer_id": "1", "tags": "4k-video-editing"})
+
+    conn = database.get_db()
+    tag = conn.execute("SELECT id FROM PreferenceTags WHERE customer_id = 1 AND tag_name = '4k-video-editing'").fetchone()
+    conn.close()
+
+    assert tag is not None
+    tag_id = tag["id"]
+
+    rv = client.delete(f"/customers/1/tags/{tag_id}")
+    assert rv.status_code == 200
+    assert b"4k-video-editing" not in rv.data
