@@ -19,7 +19,14 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 
+
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO
+)
+
 log = logging.getLogger("users.agent")
+log.setLevel(logging.INFO)
 
 SYSTEM_PROMPT = f"""
 You are an AI Profile Preference Agent for OmniTech Marketplace.
@@ -37,13 +44,19 @@ Rules:
 
 def plan(customer, preferences):
     pref_summary = [f"Ecosystem: {p['ecosystem']}, Budget: {p['budget_tier']}, Notes: {p['notes']}" for p in preferences]
-    return {
+    plan_data = {
         "customer_id": customer["id"],
         "name": f"{customer['first_name']} {customer['last_name']}",
         "preferences_text": " | ".join(pref_summary) or "No specified preferences."
     }
 
+    log.info(f"PLAN Context retrieved for Customer #{plan_data['customer_id']} ({plan_data['name']})")
+    log.info(f"PLAN Preferences Summary: {plan_data['preferences_text']}")
+    return plan_data
+
 def act(prompt):
+    log.info(f"ACT Prompting Ollama ({OLLAMA_MODEL}) at {OLLAMA_HOST}...")
+
     resp = requests.post(
         f"{OLLAMA_HOST}/api/generate",
         json={
@@ -59,6 +72,7 @@ def act(prompt):
     return resp.json().get("response", "")
 
 def observe(raw_text):
+    log.info(f"OBSERVE Inspecting output payload against allowed system categories")
     if not raw_text:
         return False, None, ["empty completion response"]
     
@@ -95,11 +109,15 @@ def observe(raw_text):
     reasoning = str(data.get("reasoning", "")).strip() or "Generated from profile data."
     
     if cleaned_tags:
+        log.info(f"OBSERVE Validation Passed Validated Tags: {cleaned_tags}")
         return True, {"recommended_tags": cleaned_tags, "reasoning": reasoning}, []
     
     return False, None, issues or ["No valid system categories found"]
 
+
 def fallback_plan(plan_ctx):
+    log.info("ADAPT Triggering deterministic rule-based fallback pathway")
+
     text = plan_ctx["preferences_text"].lower()
     found = set()
     if "apple" in text: found.add("apple-ecosystem")
@@ -114,11 +132,14 @@ def fallback_plan(plan_ctx):
     if not found:
         found.add("budget-conscious")
 
-    return {
+    res = {
         "recommended_tags": list(found),
         "reasoning": "Offline rule-based tag extraction based on preference keywords.",
         "meta": {"used_fallback": True}
     }
+
+    log.info(f"ADAPT Fallback Done Extracted Tags: {res['recommended_tags']}")
+    return res
 
 def generate_user_tags(customer, preferences):
     plan_ctx = plan(customer, preferences)
