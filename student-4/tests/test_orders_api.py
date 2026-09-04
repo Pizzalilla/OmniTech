@@ -1,10 +1,10 @@
-﻿import pytest
+import pytest
 import requests
 
-DB_URL = "http://127.0.0.1:5004"
-BACKEND_URL = "http://127.0.0.1:5014"
+DB_URL = "http://127.0.0.1:5014"
+BACKEND_URL = "http://127.0.0.1:5004"
 
-# --- Database Service Contract Tests (Port 5004) ---
+# --- Database Service Contract Tests (Port 5014) ---
 
 def test_db_health():
     res = requests.get(f"{DB_URL}/", timeout=3)
@@ -32,7 +32,7 @@ def test_order_not_found():
     res = requests.get(f"{DB_URL}/orders/9999", timeout=3)
     assert res.status_code == 404
 
-# --- Backend Customer Cart & AI Helper Tests (Port 5014) ---
+# --- Backend Customer Cart & AI Helper Tests (Port 5004) ---
 
 def test_backend_index_page():
     res = requests.get(f"{BACKEND_URL}/", timeout=3)

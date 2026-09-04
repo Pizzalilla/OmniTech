@@ -1,8 +1,8 @@
-﻿FROM python:3.11-slim
+FROM python:3.11-slim
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN python init_db.py
-EXPOSE 5004
+EXPOSE 5014
 CMD ["python", "app.py"]
