@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -426,12 +426,12 @@
         <!-- Cross-Microservice Navigation -->
         <nav class="student-nav" aria-label="Microservice Navigation">
             <span class="nav-label">Services:</span>
-            <a href="../../shared/frontend/index.html" class="nav-link">Shared Demo</a>
-            <a href="../../student-1/frontend/index.html" class="nav-link">Student 1 (Catalog)</a>
-            <a href="../../student-2/frontend/index.html" class="nav-link">Student 2 (Users)</a>
-            <a href="../../student-3/frontend/index.html" class="nav-link">Student 3 (Inventory)</a>
-            <a href="../../student-4/frontend/index.html" class="nav-link active">Student 4 (Cart & Orders)</a>
-            <a href="../../student-5/frontend/index.html" class="nav-link">Student 5 (Support)</a>
+            <a href="http://localhost:8080" class="nav-link">Home</a>
+            <a href="http://localhost:5001" class="nav-link">Student 1 (Catalog)</a>
+            <a href="http://localhost:5002" class="nav-link">Student 2 (Users)</a>
+            <a href="http://localhost:5003" class="nav-link">Student 3 (Inventory)</a>
+            <a href="http://localhost:5004" class="nav-link active">Student 4 (Cart & Orders)</a>
+            <a href="http://localhost:5005" class="nav-link">Student 5 (Support)</a>
             <button class="btn btn-secondary" style="margin-left: auto; padding: 0.3rem 0.7rem; font-size: 0.8rem;" hx-get="/api/orders/history" hx-target="#history-modal-content" onclick="document.getElementById('history-modal').style.display='flex'">
                 📋 My Order History
             </button>
