@@ -18,7 +18,7 @@ def health_check():
     return jsonify({
         "service": "student-4-database",
         "status": "healthy",
-        "port": 5004
+        "port": 5014
     })
 
 @app.get("/orders")
@@ -59,4 +59,4 @@ def get_cart(cart_id):
     return jsonify(res), 200
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5004, threaded=True, debug=False)
+    app.run(host="0.0.0.0", port=5014, threaded=True, debug=False)

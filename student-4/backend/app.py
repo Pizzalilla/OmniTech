@@ -12,7 +12,7 @@ app = Flask(
 )
 CORS(app)
 
-DB_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://127.0.0.1:5004")
+DB_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://127.0.0.1:5014")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", f"{OLLAMA_HOST}/v1")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
@@ -291,4 +291,4 @@ def get_order_history_modal():
     return html
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5014, threaded=True, debug=False)
+    app.run(host="0.0.0.0", port=5004, threaded=True, debug=False)
