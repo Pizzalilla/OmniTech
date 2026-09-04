@@ -19,7 +19,7 @@
     transition: 0.2s ease;
 }
 
-.ai-button:hover {
+.ai-navigation-button:hover {
     transform: translateY(-2px);
     opacity: 0.9;
 }
@@ -156,4 +156,48 @@
     line-height: 1.6;
     color: #444;
     white-space: pre-wrap;
+}
+
+/* Home Page */
+.home-card,
+.policy-card {
+    background-color: white;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    padding: 25px;
+    margin-top: 25px;
+}
+
+.home-card {
+    text-align: center;
+}
+
+.home-card h2,
+.policy-card h2 {
+    color: #81a6c6;
+    margin-top: 0;
+}
+
+.home-card p {
+    color: #444;
+    margin-bottom: 25px;
+}
+
+.home-card .ai-navigation-button {
+    display: inline-flex;
+}
+
+.policy-card h3 {
+    color: #81a6c6;
+    margin-top: 25px;
+}
+
+.policy-card ul {
+    padding-left: 20px;
+    color: #444;
+}
+
+.policy-card li {
+    margin-bottom: 8px;
+    line-height: 1.5;
 }

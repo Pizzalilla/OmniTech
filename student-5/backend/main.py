@@ -1,7 +1,9 @@
 import os
 import sys
+
 STUDENT5_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, STUDENT5_DIR)
+
 from flask import Flask, render_template, jsonify, send_from_directory
 from llm_client import OLLAMA_MODEL, create_chat_completion
 from prompt_loader import load_prompt
@@ -9,11 +11,6 @@ from database.app import get_db_connection
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# app = Flask(
-#     __name__,
-#     template_folder=os.path.join(BASE_DIR, "frontend", "templates"),
-#     static_folder=os.path.join(os.path.dirname(BASE_DIR), "shared", "frontend", "css")
-# )
 app = Flask(
     __name__,
     template_folder=os.path.join(BASE_DIR, "frontend", "templates"),
@@ -24,6 +21,11 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
 @app.route("/")
 def index():
+    return render_template("index.html")
+
+
+@app.route("/tickets")
+def tickets():
     conn = get_db_connection()
 
     tickets = conn.execute(
@@ -33,7 +35,7 @@ def index():
     conn.close()
 
     return render_template(
-        "index.html",
+        "ai_tickets.html",
         tickets=tickets
     )
 

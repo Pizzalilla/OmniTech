@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniTech - Warranty Support</title>
+    <link rel="stylesheet" href="{{ url_for('shared_css', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="container">
+        <header class="header">
+            <h1>OmniTech</h1>
+            <p>Warranty Support</p>
+        </header>
+        <div class="ticket-table-container">
+            <table class="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Ticket ID</th>
+                        <th>Category</th>
+                        <th>Claim</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td>{{ ticket["ticket_id"] }}</td>
+                        <td>{{ ticket["product_category"] }}</td>
+                        <td>{{ ticket["ticket_claim"] }}</td>
+                        <td>
+                            <button
+                                class="evaluate-button"
+                                data-ticket-id="{{ ticket['ticket_id'] }}"
+                                onclick="evaluateTicket(this.dataset.ticketId)"
+                            >
+                                Evaluate
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <main class="ticket-section">
+
+            <div id="loading" class="status-card hidden">
+                <div class="spinner"></div>
+                <p>AI is evaluating the warranty claim...</p>
+            </div>
+
+            <div id="errorCard" class="error-card hidden">
+                <h3>Evaluation Failed</h3>
+                <p id="errorMessage"></p>
+            </div>
+
+            <div id="resultCard" class="result-card hidden">
+
+                <div class="result-header">
+                    <h2>AI Evaluation Result</h2>
+                    <span id="ticketNumber"></span>
+                </div>
+
+                <div class="result-box">
+                    <h3>AI Decision</h3>
+                    <div id="decision"></div>
+                </div>
+
+                <div class="result-box">
+                    <h3>Reasoning</h3>
+                    <div id="reasoning"></div>
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+    <script>
+        async function evaluateTicket(ticketId) {
+            const loading = document.getElementById("loading");
+            const resultCard = document.getElementById("resultCard");
+            const errorCard = document.getElementById("errorCard");
+            const errorMessage = document.getElementById("errorMessage");
+            const decision = document.getElementById("decision");
+            const reasoning = document.getElementById("reasoning")
+            const ticketNumber = document.getElementById("ticketNumber");
+
+            if (!ticketId) {
+                errorMessage.textContent =
+                    "Please select a ticket.";
+
+                errorCard.classList.remove("hidden");
+                resultCard.classList.add("hidden");
+                return;
+            }
+
+            errorCard.classList.add("hidden");
+            resultCard.classList.add("hidden");
+            loading.classList.remove("hidden");
+
+            try {
+                const response = await fetch(
+                    `/api/tickets/${ticketId}/evaluate`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        }
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.error || "AI Evaluation failed."
+                    );
+                }
+
+                ticketNumber.textContent =
+                    `Ticket #${data.ticket_id}`;
+
+                decision.textContent = data.decision;
+                reasoning.textContent = data.reasoning;
+
+                resultCard.classList.remove("hidden");
+
+            } catch (error) {
+                console.error(error);
+
+                errorMessage.textContent =
+                    error.message;
+
+                errorCard.classList.remove("hidden");
+
+            } finally {
+                loading.classList.add("hidden");
+            }
+        }
+    </script>
+</body>
+</html>
