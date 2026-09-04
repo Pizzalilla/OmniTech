@@ -1,25 +1,11 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ service_name }} - OmniTech</title>
-    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
-</head>
-<body>
-    <h1>{{ service_name }} Microservice</h1>
-    <p>This is the starter template. Build your service here.</p>
-    <a href="http://localhost:8080">&larr; Back to Home</a>
-</body>
-</html> -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OmniTech - Warranty Support</title>
-    <!-- <link rel="stylesheet" href="../../shared/frontend/css/styles.css"> -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('shared_css', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 <div class="container">
@@ -27,34 +13,48 @@
             <h1>OmniTech</h1>
             <p>Warranty Support</p>
         </header>
+        <div class="ticket-table-container">
+            <table class="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Ticket ID</th>
+                        <th>Product</th>
+                        <th>Claim</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                        <td>{{ ticket["ticket_id"] }}</td>
+                        <td>{{ ticket["product_category"] }}</td>
+                        <td>{{ ticket["ticket_claim"] }}</td>
+                        <td>
+                            <!-- <button onclick="evaluateTicket({{ ticket['ticket_id'] }})">
+                                Evaluate
+                            </button> -->
+                            <!-- <button
+                                class="evaluate-button"
+                                onclick="evaluateTicket({{ ticket['ticket_id'] }})"
+                            >
+                                Evaluate
+                            </button> -->
+                            <button
+                                class="evaluate-button"
+                                data-ticket-id="{{ ticket['ticket_id'] }}"
+                                onclick="evaluateTicket(this.dataset.ticketId)"
+                            >
+                                Evaluate
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
         <main class="ticket-section">
-
-            <div class="ticket-input-card">
-
-                <h2>AI Warranty Evaluation</h2>
-
-                <p class="description">
-                    Enter a ticket ID to have the AI evaluate the warranty claim
-                    according to the company's warranty policies.
-                </p>
-
-                <div class="input-group">
-                    <label for="ticketId">Ticket ID</label>
-
-                    <input
-                        type="number"
-                        id="ticketId"
-                        placeholder="Enter ticket ID"
-                        min="1"
-                    >
-
-                    <button id="evaluateButton" onclick="evaluateTicket()">
-                        Evaluate Ticket
-                    </button>
-                </div>
-
-            </div>
 
             <div id="loading" class="status-card hidden">
                 <div class="spinner"></div>
@@ -69,17 +69,18 @@
             <div id="resultCard" class="result-card hidden">
 
                 <div class="result-header">
-                    <h2>AI Decision</h2>
+                    <h2>AI Evaluation Result</h2>
                     <span id="ticketNumber"></span>
                 </div>
 
-
-                <div class="decision-box">
-
-                    <h3>Decision</h3>
-
+                <div class="result-box">
+                    <h3>AI Decision</h3>
                     <div id="decision"></div>
+                </div>
 
+                <div class="result-box">
+                    <h3>Reasoning</h3>
+                    <div id="reasoning"></div>
                 </div>
 
             </div>
@@ -88,29 +89,20 @@
 
     </div>
 
-
     <script>
-
-        async function evaluateTicket() {
-            const ticketId = document.getElementById("ticketId").value;
-            const evaluateButton =
-                document.getElementById("evaluateButton");
-            const loading =
-                document.getElementById("loading");
-            const resultCard =
-                document.getElementById("resultCard");
-            const errorCard =
-                document.getElementById("errorCard");
-            const errorMessage =
-                document.getElementById("errorMessage");
-            const decision =
-                document.getElementById("decision");
-            const ticketNumber =
-                document.getElementById("ticketNumber");
+        async function evaluateTicket(ticketId) {
+            const loading = document.getElementById("loading");
+            const resultCard = document.getElementById("resultCard");
+            const errorCard = document.getElementById("errorCard");
+            const errorMessage = document.getElementById("errorMessage");
+            const decision = document.getElementById("decision");
+            const reasoning = document.getElementById("reasoning")
+            const ticketNumber = document.getElementById("ticketNumber");
 
             if (!ticketId) {
                 errorMessage.textContent =
-                    "Please enter a ticket ID.";
+                    "Please select a ticket.";
+
                 errorCard.classList.remove("hidden");
                 resultCard.classList.add("hidden");
                 return;
@@ -119,7 +111,6 @@
             errorCard.classList.add("hidden");
             resultCard.classList.add("hidden");
             loading.classList.remove("hidden");
-            evaluateButton.disabled = true;
 
             try {
                 const response = await fetch(
@@ -133,6 +124,7 @@
                 );
 
                 const data = await response.json();
+
                 if (!response.ok || !data.success) {
                     throw new Error(
                         data.error || "AI Evaluation failed."
@@ -141,33 +133,24 @@
 
                 ticketNumber.textContent =
                     `Ticket #${data.ticket_id}`;
-                decision.textContent =
-                    data.decision;
+
+                decision.textContent = data.decision;
+                reasoning.textContent = data.reasoning;
+
                 resultCard.classList.remove("hidden");
 
-            }
-
-            catch (error) {
+            } catch (error) {
                 console.error(error);
+
                 errorMessage.textContent =
                     error.message;
+
                 errorCard.classList.remove("hidden");
 
-            }
-
-            finally {
+            } finally {
                 loading.classList.add("hidden");
-                evaluateButton.disabled = false;
             }
         }
-
-        document
-            .getElementById("ticketId")
-            .addEventListener("keydown", function(event) {
-                if (event.key === "Enter") {
-                    evaluateTicket();
-                }
-            });
     </script>
 </body>
 </html>

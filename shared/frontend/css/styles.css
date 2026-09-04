@@ -269,25 +269,3 @@ input:focus, select:focus, textarea:focus {
 .order-list li:last-child {
     border-bottom: none;
 }
-
-.hidden {
-    display: none !important;
-}
-
-.ai-navigation-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    padding: 14px 24px;
-    background: #81a6c6;
-    color: white;
-    text-decoration: none;
-    border-radius: 10px;
-    font-weight: 600;
-    transition: 0.2s ease;
-}
-
-.ai-button:hover {
-    transform: translateY(-2px);
-    opacity: 0.9;
-}

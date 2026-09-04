@@ -1,9 +1,13 @@
-All Categories:
-Physical Damage:
-- Product must be damaged upon arrival meaning it was not the customer's fault
-- Any phyiscal damage done by the customer after unboxing is not accepted
-- Chips and dents to the product upon arrival is a reasonable claim
+OmniTech Policy Rules
 
-Internal Damage:
-- If the product broke down while in use, it is acceptable
-- Damage done by deliberate actions like installing malware is not accepted
+PC Hardware:
+- If the PC hardware was damaged or defective upon arrival, the claim should be approved
+- If the PC hardware develops a fault during normal use and the fault was not caused by the customer, the claim should be approved
+- If the PC hardware was physically damaged by the customer, the claim should be rejected
+- If the PC hardware was modified, incorrectly installed, or damaged due to improper use by the customer, the claim should be rejected
+
+Home Appliances:
+- If the home appliance was damaged or defective upon arrival, the claim should be approved
+- If the home appliance stops working during normal use and the fault was not caused by the customer, the claim should be approved
+- If the home appliance was physically damaged by the customer, the claim should be rejected
+- If the home appliance was damaged due to improper use, misuse, or incorrect installation by the customer, the claim should be rejected

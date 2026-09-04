@@ -2,25 +2,52 @@ import os
 import sys
 STUDENT5_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, STUDENT5_DIR)
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, send_from_directory
 from llm_client import OLLAMA_MODEL, create_chat_completion
 from prompt_loader import load_prompt
 from database.app import get_db_connection
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# app = Flask(
+#     __name__,
+#     template_folder=os.path.join(BASE_DIR, "frontend", "templates"),
+#     static_folder=os.path.join(os.path.dirname(BASE_DIR), "shared", "frontend", "css")
+# )
 app = Flask(
     __name__,
     template_folder=os.path.join(BASE_DIR, "frontend", "templates"),
-    static_folder=os.path.join(os.path.dirname(BASE_DIR), "shared", "frontend", "css")
+    static_folder=os.path.join(BASE_DIR, "frontend", "css")
 )
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 
-
 @app.route("/")
 def index():
-    return render_template("index.html", service_name="Student 5")
+    conn = get_db_connection()
+
+    tickets = conn.execute(
+        "SELECT * FROM tickets ORDER BY ticket_id"
+    ).fetchall()
+
+    conn.close()
+
+    return render_template(
+        "index.html",
+        tickets=tickets
+    )
+
+@app.route("/ai-evaluation")
+def ai_evaluation():
+    conn = get_db_connection()
+
+    tickets = conn.execute(
+        "SELECT * FROM tickets ORDER BY ticket_id"
+    ).fetchall()
+
+    conn.close()
+
+    return render_template("index.html", tickets=tickets)
 
 @app.post("/api/tickets/<int:ticket_id>/evaluate")
 def ai_evaluate_ticket(ticket_id):
@@ -53,7 +80,7 @@ Product Category: {ticket["product_category"]}
 Warranty Claim: {ticket["ticket_claim"]}
 """
 
-        decision = create_chat_completion(
+        ai_response = create_chat_completion(
             [
                 {
                     "role": "system",
@@ -69,10 +96,21 @@ Warranty Claim: {ticket["ticket_claim"]}
             model=OLLAMA_MODEL,
         )
 
+        ai_response = ai_response.strip()
+        decision = ""
+        reasoning = ""
+        for line in ai_response.splitlines():
+            if line.lower().startswith("decision:"):
+                decision = line.split(":", 1)[1].strip()
+
+            elif line.lower().startswith("reasoning:"):
+                reasoning = line.split(":", 1)[1].strip()
+
         return jsonify({
             "success": True,
             "ticket_id": ticket_id,
-            "decision": decision.strip()
+            "decision": decision,
+            "reasoning": reasoning
         }), 200
 
     except Exception as exc:
@@ -83,6 +121,17 @@ Warranty Claim: {ticket["ticket_claim"]}
             "error": "Evaluation request failed."
         }), 503
 
+@app.route("/shared/css/<path:filename>")
+def shared_css(filename):
+    return send_from_directory(
+        os.path.join(
+            os.path.dirname(BASE_DIR),
+            "shared",
+            "frontend",
+            "css"
+        ),
+        filename
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5005, debug=True)

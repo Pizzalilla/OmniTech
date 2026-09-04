@@ -1,0 +1,159 @@
+.title {
+    color: #81a6c6;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.ai-navigation-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    background: #81a6c6;
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.ai-button:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+/* Ticket table */
+.ticket-table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 25px;
+}
+
+.ticket-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Table header */
+.ticket-table thead {
+    background-color: #f4f5f7;
+}
+
+.ticket-table th {
+    padding: 16px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: #81a6c6;
+    border-bottom: 2px solid #d9d9d9;
+}
+
+/* Table cells */
+.ticket-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e5e5e5;
+    color: #444;
+    font-size: 14px;
+    vertical-align: top;
+}
+
+/* Row hover */
+.ticket-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Remove border from final row */
+.ticket-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Ticket ID */
+.ticket-id {
+    font-weight: 600;
+    color: #222;
+    white-space: nowrap;
+}
+
+/* Evaluate button */
+.evaluate-button {
+    padding: 9px 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: #81a6c6;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.evaluate-button:hover {
+    background-color: #444;
+}
+
+.evaluate-button:active {
+    transform: scale(0.97);
+}
+
+.evaluate-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* AI evaluation result */
+.result-card {
+    margin-top: 25px;
+    padding: 25px;
+    background-color: white;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.result-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #81a6c6;
+}
+
+.result-header span {
+    font-size: 14px;
+    color: #81a6c6;
+}
+
+/* Individual result boxes */
+.result-box {
+    padding: 18px;
+    margin-top: 15px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    background-color: #81a6c6;
+}
+
+.result-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+    color: #333;
+}
+
+.result-box div {
+    padding: 12px;
+    background-color: white;
+    border: 1px solid #e1e1e1;
+    border-radius: 6px;
+    line-height: 1.6;
+    color: #444;
+    white-space: pre-wrap;
+}
