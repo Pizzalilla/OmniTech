@@ -4,7 +4,7 @@ import sys
 STUDENT5_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, STUDENT5_DIR)
 
-from flask import Flask, render_template, jsonify, send_from_directory
+from flask import Flask, render_template, jsonify, send_from_directory, request
 from llm_client import OLLAMA_MODEL, create_chat_completion
 from prompt_loader import load_prompt
 from database.app import get_db_connection
@@ -122,6 +122,35 @@ Warranty Claim: {ticket["ticket_claim"]}
             "success": False,
             "error": "Evaluation request failed."
         }), 503
+
+@app.post("/tickets/<int:ticket_id>/update")
+def update_ticket(ticket_id):    
+    data = request.get_json()
+    decision = data.get("decision")
+    reasoning = data.get("reasoning")
+    if not decision or not reasoning:
+        return jsonify({
+            "success": False,
+            "error": "AI decision and reasoning are required."
+        }), 400
+
+    ticket_status = decision
+    conn = get_db_connection()
+    conn.execute("""
+        UPDATE tickets
+        SET ticket_status = ?,
+            ai_decision = ?,
+            ai_reasoning = ?,
+            ai_reviewed_date = CURRENT_TIMESTAMP
+        WHERE ticket_id = ?
+    """, (ticket_status, decision, reasoning, ticket_id)
+    )
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "success": True,
+        "message": f"Ticket {ticket_id} updated successfully."
+    }), 200
 
 @app.route("/shared/css/<path:filename>")
 def shared_css(filename):

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniTech - Warranty Ticket Creator</title>
+    <link rel="stylesheet" href="{{ url_for('shared_css', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>OmniTech</h1>
+            <p>Warranty Support</p>
+        </header>
+        <div class="order-table-container">
+            <table class="order-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer ID</th>
+                        <th>Product ID</th>
+                        <th>Cost</th>
+                        <th>Status</th>
+                        <th>Date Ordered</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ order[""] }}</td>
+                        <td>{{ order[""] }}</td>
+                        <td>{{ order[""] }}</td>
+                        <td>{{ order[""] }}</td>
+                        <td>{{ order[""] }}</td>
+                        <td>{{ order[""] }}</td>
+                        <td>
+                            <button
+                                class="make-ticket-button"
+                                data-order-id="{{ order['order_id'] }}"
+                                onclick="makeTicket(this.dataset.orderId)"
+                            >
+                                Make Ticket
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>

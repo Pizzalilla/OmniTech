@@ -158,6 +158,10 @@
     white-space: pre-wrap;
 }
 
+.result-actions {
+    margin-top: 25px;
+}
+
 /* Home Page */
 .home-card,
 .policy-card {

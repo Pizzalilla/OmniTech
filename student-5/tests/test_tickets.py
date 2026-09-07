@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-DB_URL = "http://127.0.0.1:5005"
+DB_URL = "http://127.0.0.1:5006"
 
 def test_db_health():
     result = requests.get(f"{DB_URL}/", timeout=3)
@@ -24,3 +24,13 @@ def test_get_ticket():
     print("DEBUG RESPONSE:", ticket)
     assert ticket["ticket_id"] == 1
     assert ticket["product_category"] == "CPU"
+
+def test_updated_ticket():
+    result = requests.get(f"{DB_URL}/tickets/1", timeout=3)
+    assert result.status_code == 200
+    ticket = result.json()
+    print("DEBUG RESPONSE:", ticket)
+    assert ticket["ticket_id"] == 1
+    assert ticket["ai_decision"] is not None
+    assert ticket["ai_reasoning"] is not None
+    assert ticket["ticket_status"] == "Rejected"

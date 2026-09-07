@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-<div class="container">
+    <div class="container">
         <header class="header">
             <h1>OmniTech</h1>
             <p>Warranty Support</p>
@@ -20,6 +20,7 @@
                         <th>Ticket ID</th>
                         <th>Category</th>
                         <th>Claim</th>
+                        <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -30,6 +31,7 @@
                         <td>{{ ticket["ticket_id"] }}</td>
                         <td>{{ ticket["product_category"] }}</td>
                         <td>{{ ticket["ticket_claim"] }}</td>
+                        <td>{{ ticket["ticket_status"] }}</td>
                         <td>
                             <button
                                 class="evaluate-button"
@@ -74,6 +76,16 @@
                     <div id="reasoning"></div>
                 </div>
 
+                <div class="result-actions">
+                    <button
+                        id="updateButton"
+                        class="evaluate-button"
+                        onclick="updateTicket()"
+                    >
+                        Update Ticket
+                    </button>
+                </div>
+
             </div>
 
         </main>
@@ -81,13 +93,16 @@
     </div>
 
     <script>
+        let currentTicketId = null;
+        let currentDecision = "";
+        let currentReasoning = "";
         async function evaluateTicket(ticketId) {
             const loading = document.getElementById("loading");
             const resultCard = document.getElementById("resultCard");
             const errorCard = document.getElementById("errorCard");
             const errorMessage = document.getElementById("errorMessage");
             const decision = document.getElementById("decision");
-            const reasoning = document.getElementById("reasoning")
+            const reasoning = document.getElementById("reasoning");
             const ticketNumber = document.getElementById("ticketNumber");
 
             if (!ticketId) {
@@ -115,31 +130,53 @@
                 );
 
                 const data = await response.json();
-
                 if (!response.ok || !data.success) {
                     throw new Error(
                         data.error || "AI Evaluation failed."
                     );
                 }
 
-                ticketNumber.textContent =
-                    `Ticket #${data.ticket_id}`;
-
+                currentTicketId = data.ticket_id;
+                currentDecision = data.decision;
+                currentReasoning = data.reasoning;
+                ticketNumber.textContent = `Ticket #${data.ticket_id}`;
                 decision.textContent = data.decision;
                 reasoning.textContent = data.reasoning;
-
                 resultCard.classList.remove("hidden");
-
             } catch (error) {
                 console.error(error);
-
-                errorMessage.textContent =
-                    error.message;
-
+                errorMessage.textContent = error.message;
                 errorCard.classList.remove("hidden");
-
             } finally {
                 loading.classList.add("hidden");
+            }
+        }
+
+        async function updateTicket() {
+            try {
+                const response = await fetch(
+                    `/tickets/${currentTicketId}/update`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            decision: currentDecision,
+                            reasoning: currentReasoning
+                        })
+                    }
+                );
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.error || "Failed to update ticket."
+                    );
+                }
+                alert("Ticket updated successfully.");
+            } catch (error) {
+                console.error(error);
+                alert(error.message);
             }
         }
     </script>

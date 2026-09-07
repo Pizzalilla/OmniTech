@@ -53,20 +53,5 @@ def get_ticket_by_ticket_id(ticket_id):
     
     return jsonify(dict(ticket))
 
-# @app.post("/tickets/<int:ticket_id>/update")
-# def update_ticket(ticket_id):
-#     ticket = get_ticket_by_ticket_id(ticket_id)
-#     # 
-#     conn = get_db_connection()
-#     conn.execute("""
-#         UPDATE tickets 
-#         SET ticket_status = ?, ai_decision = ?, ai_reasoning = ?, ai_reviewed_date = CURRENT_TIMESTAMP
-#         WHERE ticket_id = ?
-#     """, (the rest to be created ,ticket_id))
-#     conn.commit()
-#     conn.close()
-
-    # return some message in the ui
-
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5005, debug=True)
+    app.run(host="127.0.0.1", port=5006, debug=True)
