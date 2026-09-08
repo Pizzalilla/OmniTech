@@ -8,6 +8,7 @@ from flask import Flask, render_template, jsonify, send_from_directory, request
 from llm_client import OLLAMA_MODEL, create_chat_completion
 from prompt_loader import load_prompt
 from database.app import get_db_connection
+from database.init_db import init_db
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -244,6 +245,9 @@ def shared_css(filename):
         ),
         filename
     )
+
+with app.app_context():
+    init_db()
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5005, debug=True)
