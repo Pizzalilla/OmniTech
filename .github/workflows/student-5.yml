@@ -1,0 +1,43 @@
+name: Student 5 CI
+
+on:
+  push:
+    branches: [main, "feature/student-5-**"]
+    paths:
+      - "student-5/**"
+      - ".github/workflows/student-5.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "student-5/**"
+      - ".github/workflows/student-5.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r student-5/requirements.txt
+
+      - name: Syntax Check
+        run: |
+          python -m py_compile student-5/backend/main.py
+          python -m py_compile student-5/backend/llm_client.py
+          python -m py_compile student-5/backend/prompt_loader.py
+          python -m py_compile student-5/database/init_db.py
+          python -m py_compile student-5/database/app.py
+
+      - name: Run tests
+        run: |
+          cd student-5
+          python -m pytest tests/ -v
+
+      - name: Build Docker image
+        run: docker build -t student-5 ./student-5
