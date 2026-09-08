@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OmniTech - Warranty Support</title>
-    <link rel="stylesheet" href="{{ url_for('shared_css', filename='styles.css') }}">
+    <!-- <link rel="stylesheet" href="{{ url_for('shared_css', filename='styles.css') }}"> -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -36,7 +36,9 @@
                         <td>{{ ticket["ticket_id"] }}</td>
                         <td>{{ ticket["product_category"] }}</td>
                         <td>{{ ticket["ticket_claim"] }}</td>
-                        <td>{{ ticket["ticket_status"] }}</td>
+                        <td id="status-{{ ticket['ticket_id'] }}">
+                            {{ ticket["ticket_status"] }}
+                        </td>
                         <td>
                             <button
                                 class="evaluate-button"
@@ -167,6 +169,8 @@
                         data.error || "Failed to update ticket."
                     );
                 }
+                document.getElementById(`status-${currentTicketId}`).textContent = currentDecision;
+                document.getElementById("resultCard").classList.add("hidden");
                 alert("Ticket updated successfully.");
             } catch (error) {
                 console.error(error);
