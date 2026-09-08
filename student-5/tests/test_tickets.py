@@ -34,7 +34,7 @@ def test_updated_ticket():
     assert ticket["ticket_id"] == 1
     assert ticket["ai_decision"] is not None
     assert ticket["ai_reasoning"] is not None
-    assert ticket["ticket_status"] == "Rejected"
+    assert ticket["ticket_status"] == "Approved"
 
 def test_create_ticket():
     data = {

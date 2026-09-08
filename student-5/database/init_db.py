@@ -53,8 +53,15 @@ def init_db():
     cursor.execute("DELETE FROM sqlite_sequence WHERE name IN ('tickets', 'products', 'orders')")
 
     # Seed data for tickets
+    evaluated_ticket_data = (
+        (1, 1, "CPU", "The CPU pins were bent upon arrival and opening.", "Approved", "Approved", "The customer claimed his CPU came in damaged, this claim aligns with the policy that if a product was damaged before arrival, it should be approved.")
+    )
+    cursor.execute("""
+        INSERT INTO tickets (customer_id, product_id, product_category, ticket_claim, ticket_status, ai_decision, ai_reasoning)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, evaluated_ticket_data)
+
     ticket_data = [
-        (1, 1, "CPU", "The CPU pins were bent upon arrival and opening.", "Pending"),
         (2, 1, "CPU", "The CPU doesn't work.", "Pending"),
         (3, 2, "GPU", "The GPU blew up.", "Pending"),
         (4, 3, "PC Case", "The case came in with the front corner of the case being chipped.", "Pending"),

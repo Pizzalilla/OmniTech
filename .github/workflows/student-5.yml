@@ -34,6 +34,19 @@ jobs:
           python -m py_compile student-5/database/init_db.py
           python -m py_compile student-5/database/app.py
 
+      - name: Initialise Database
+        run: python student-5/database/init_db.py
+
+      - name: Start Database Server Port 5006
+        run: |
+          nohup python student-5/database/app.py > database.log 2>&1 &
+          sleep 3
+
+      - name: Start Backend Server
+        run: |
+          nohup python student-5/backend/main.py > backend.log 2>&1 &
+          sleep 3
+
       - name: Run tests
         run: |
           cd student-5
