@@ -3,65 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>OmniTech - Warranty Support</title>
-
     <link rel="stylesheet" href="{{ url_for('shared_css', filename='styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
+    <div class="container">
+        <header class="header">
+            <h1>OmniTech</h1>
+            <p>Warranty Support</p>
+        </header>
+        <main>
+            <div class="home-card">
+                <h2>Warranty Support</h2>
+                <p>
+                    Review warranty claims and evaluate them against
+                    OmniTech's warranty policy rules.
+                </p>
 
-<div class="container">
+                <div class="navigation-buttons">
+                    <a href="{{ url_for('create_ticket_page') }}" class="ai-navigation-button">
+                        Create Ticket
+                    </a>
+                    <a href="{{ url_for('tickets') }}" class="ai-navigation-button">
+                        View Tickets
+                    </a>
+                </div>
+            </div>
 
-    <header class="header">
-        <h1>OmniTech</h1>
-        <p>Warranty Support</p>
-    </header>
-
-    <main>
-
-        <div class="home-card">
-
-            <h2>Warranty Support</h2>
-
-            <p>
-                Review warranty claims and evaluate them against
-                OmniTech's warranty policy rules.
-            </p>
-
-            <a href="{{ url_for('tickets') }}" class="ai-navigation-button">
-                View Tickets
-            </a>
-
-        </div>
-
-
-        <div class="policy-card">
-
-            <h2>Policy Rules</h2>
-
-            <h3>PC Hardware</h3>
-            <ul>
-                <li>If the hardware was damaged or defective upon arrival, the claim should be approved.</li>
-                <li>If the hardware develops a fault during normal use and the customer did not cause it, the claim should be approved.</li>
-                <li>If the hardware was physically damaged by the customer, the claim should be rejected.</li>
-                <li>If the hardware was modified, incorrectly installed, or damaged through improper use, the claim should be rejected.</li>
-            </ul>
-
-            <h3>Home Appliances</h3>
-            <ul>
-                <li>If the appliance was damaged or defective upon arrival, the claim should be approved.</li>
-                <li>If the appliance stops working during normal use and the customer did not cause the fault, the claim should be approved.</li>
-                <li>If the appliance was physically damaged by the customer, the claim should be rejected.</li>
-                <li>If the appliance was damaged through improper use, misuse, or incorrect installation, the claim should be rejected.</li>
-            </ul>
-
-        </div>
-
-    </main>
-
-</div>
-
+            <div class="policy-card">
+                <h2>Policy Rules</h2>
+                <h3>PC Hardware</h3>
+                <ul>
+                    <li>If the hardware was damaged or defective upon arrival, the claim should be approved.</li>
+                    <li>If the hardware develops a fault during normal use and the customer did not cause it, the claim should be approved.</li>
+                    <li>If the hardware was physically damaged by the customer, the claim should be rejected.</li>
+                    <li>If the hardware was modified, incorrectly installed, or damaged through improper use, the claim should be rejected.</li>
+                </ul>
+                <h3>Home Appliances</h3>
+                <ul>
+                    <li>If the appliance was damaged or defective upon arrival, the claim should be approved.</li>
+                    <li>If the appliance stops working during normal use and the customer did not cause the fault, the claim should be approved.</li>
+                    <li>If the appliance was physically damaged by the customer, the claim should be rejected.</li>
+                    <li>If the appliance was damaged through improper use, misuse, or incorrect installation, the claim should be rejected.</li>
+                </ul>
+            </div>
+        </main>
+    </div>
 </body>
 </html>

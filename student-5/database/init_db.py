@@ -76,7 +76,12 @@ def init_db():
         ("Nvidia RTX 5060", "GPU", 400.00, "Ultra fast GPU", 2),
         ("DeepCool ATX Case", "PC Case", 50.00, "RGB PC Case", 2),
         ("Asus ATX X470 Motherboard", "Motherboard", 150.00, "AMD compatible motherboard", 4),
-        ("1TB Samsuung HD", "Hard Drive", 75.00, "1TB storage hd", 2)
+        ("1TB Samsuung HD", "Hard Drive", 75.00, "1TB storage hd", 2),
+        ("100L Fridge", "Fridge", 400.00, "100 litre fridge", 5),
+        ("20L Freezer", "Freezer", 200.00, "20 litre freezer", 4),
+        ("Ultra Clean Dishwasher", "Dishwasher", 500.00, "Very clean dishwasher", 10),
+        ("Ninja Blender", "Blender", 300.00, "Fastest and sharpest blender", 4),
+        ("M4 14 Inch Macbook Pro", "Macbook", 2500.00, "M4 chip macbook pro with 14 inch screen", 1)
     ]
     cursor.executemany("""
         INSERT INTO products (product_name, product_category, product_price, product_description, product_warranty_years)
@@ -103,7 +108,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Database was initialised with 10 tickets, orders and 5 products.")
+    print("Database was initialised with 10 tickets, orders and products.")
 
 if __name__ == "__main__":
     init_db()

@@ -1,273 +1,169 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>OmniTech - Warranty Ticket Creator</title>
-
-    <link rel="stylesheet"
-          href="{{ url_for('shared_css', filename='styles.css') }}">
-
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('shared_css', filename='styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-
 <body>
+    <div class="container">
+        <header class="header">
+            <h1>OmniTech</h1>
+            <p>Warranty Support</p>
+        </header>
+        <!-- Back Button -->
+        <a href="{{ url_for('index') }}" class="back-button">
+            ← Back
+        </a>
 
-<div class="container">
+        <!-- Orders Table -->
+        <div class="ticket-table-container">
+            <table class="ticket-table">
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th>Customer ID</th>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Cost</th>
+                        <th>Status</th>
+                        <th>Date Ordered</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ order["order_id"] }}</td>
+                        <td>{{ order["customer_id"] }}</td>
+                        <td>{{ order["product_name"] }}</td>
+                        <td>{{ order["product_category"] }}</td>
+                        <td>${{ order["order_price"] }}</td>
+                        <td>{{ order["order_status"] }}</td>
+                        <td>{{ order["order_date"] }}</td>
+                        <td>
+                            <button
+                                class="make-ticket-button"
+                                data-order-id="{{ order['order_id'] }}"
+                                data-product-name="{{ order['product_name'] }}"
+                                data-product-category="{{ order['product_category'] }}"
+                                onclick="makeTicket(this)"
+                            >
+                                Make Ticket
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-    <header class="header">
-        <h1>OmniTech</h1>
-        <p>Warranty Support</p>
-    </header>
+        <!-- Form To Create Ticket -->
+        <div id="ticket-form-container" class="ticket-form-container hidden">
+            <h2>Create Warranty Ticket</h2>
+            <p>
+                Creating ticket for Order
+                <strong id="selected-order-id"></strong>
+            </p>
+            <p>
+                <strong>Product:</strong>
+                <span id="selected-product-name"></span>
+            </p>
 
-
-    <!-- ORDERS TABLE -->
-    <div class="order-table-container">
-
-        <table class="order-table">
-
-            <thead>
-                <tr>
-                    <th>Order ID</th>
-                    <th>Customer ID</th>
-                    <th>Product ID</th>
-                    <th>Cost</th>
-                    <th>Status</th>
-                    <th>Date Ordered</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-
-            <tbody>
-
-                {% for order in orders %}
-
-                <tr>
-
-                    <td>{{ order["order_id"] }}</td>
-
-                    <td>{{ order["customer_id"] }}</td>
-
-                    <td>{{ order["product_id"] }}</td>
-
-                    <td>${{ order["cost"] }}</td>
-
-                    <td>{{ order["order_status"] }}</td>
-
-                    <td>{{ order["order_date"] }}</td>
-
-                    <td>
-                        <button
-                            class="make-ticket-button"
-                            data-order-id="{{ order['order_id'] }}"
-                            onclick="makeTicket(this.dataset.orderId)"
-                        >
-                            Make Ticket
-                        </button>
-                    </td>
-
-                </tr>
-
-                {% endfor %}
-
-            </tbody>
-
-        </table>
-
-    </div>
-
-
-    <!-- CREATE TICKET FORM -->
-
-    <div id="ticket-form-container" class="ticket-form-container hidden">
-
-        <h2>Create Warranty Ticket</h2>
-
-        <p>
-            Creating ticket for Order
-            <strong id="selected-order-id"></strong>
-        </p>
-
-
-        <form id="ticket-form">
-
-            <input
-                type="hidden"
-                id="order-id"
-                name="order_id"
-            >
-
-
-            <div class="form-group">
-
-                <label for="product-category">
-                    Product Category
-                </label>
-
+            <p>
+                <strong>Category:</strong>
+                <span id="selected-product-category"></span>
+            </p>
+            <form id="ticket-form">
                 <input
-                    type="text"
-                    id="product-category"
-                    name="product_category"
-                    required
+                    type="hidden"
+                    id="order-id"
+                    name="order_id"
                 >
 
-            </div>
+                <div class="form-group">
+                    <label for="ticket-claim">
+                        Warranty Claim
+                    </label>
+                    <textarea
+                        id="ticket-claim"
+                        name="ticket_claim"
+                        rows="6"
+                        placeholder="Describe the problem with the product..."
+                        required
+                    ></textarea>
+                </div>
 
-
-            <div class="form-group">
-
-                <label for="ticket-claim">
-                    Warranty Claim
-                </label>
-
-                <textarea
-                    id="ticket-claim"
-                    name="ticket_claim"
-                    rows="6"
-                    placeholder="Describe the problem with the product..."
-                    required
-                ></textarea>
-
-            </div>
-
-
-            <div class="form-actions">
-
-                <button
-                    type="submit"
-                    class="make-ticket-button"
-                >
-                    Create Ticket
-                </button>
-
-                <button
-                    type="button"
-                    class="cancel-button"
-                    onclick="closeTicketForm()"
-                >
-                    Cancel
-                </button>
-
-            </div>
-
-        </form>
-
+                <div class="form-actions">
+                    <button
+                        type="submit"
+                        class="make-ticket-button"
+                    >
+                        Create Ticket
+                    </button>
+                    <button
+                        type="button"
+                        class="cancel-button"
+                        onclick="closeTicketForm()"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-
-</div>
-
 
 <script>
-
     let selectedOrderId = null;
-
-
-    function makeTicket(orderId) {
-
+    function makeTicket(button) {
+        const orderId = button.dataset.orderId;
+        const productName = button.dataset.productName;
+        const productCategory = button.dataset.productCategory;
         selectedOrderId = orderId;
-
-        // Store the selected order ID
         document.getElementById("order-id").value = orderId;
-
-        // Display the order ID
-        document.getElementById("selected-order-id").textContent =
-            `#${orderId}`;
-
-        // Show the form
-        document
-            .getElementById("ticket-form-container")
-            .classList.remove("hidden");
-
-        // Scroll down to the form
-        document
-            .getElementById("ticket-form-container")
-            .scrollIntoView({
-                behavior: "smooth"
-            });
+        document.getElementById("selected-order-id").textContent = `#${orderId}`;
+        document.getElementById("selected-product-name").textContent = productName;
+        document.getElementById("selected-product-category").textContent = productCategory;
+        document.getElementById("ticket-form-container").classList.remove("hidden");
+        document.getElementById("ticket-form-container").scrollIntoView({behavior: "smooth"});
     }
 
-
     function closeTicketForm() {
-
-        document
-            .getElementById("ticket-form-container")
-            .classList.add("hidden");
-
+        document.getElementById("ticket-form-container").classList.add("hidden");
         document.getElementById("ticket-form").reset();
-
         selectedOrderId = null;
     }
 
-
-    document
-        .getElementById("ticket-form")
-        .addEventListener("submit", async function(event) {
-
+    document.getElementById("ticket-form").addEventListener("submit", async function(event) {
             event.preventDefault();
-
-            const orderId =
-                document.getElementById("order-id").value;
-
-            const productCategory =
-                document.getElementById("product-category").value;
-
-            const ticketClaim =
-                document.getElementById("ticket-claim").value;
-
-
+            const orderId = document.getElementById("order-id").value;
+            const ticketClaim = document.getElementById("ticket-claim").value;
             try {
-
                 const response = await fetch("/tickets/create", {
-
                     method: "POST",
-
                     headers: {
                         "Content-Type": "application/json"
                     },
-
                     body: JSON.stringify({
-
                         order_id: orderId,
-
-                        product_category: productCategory,
-
                         ticket_claim: ticketClaim
-
                     })
-
                 });
-
-
                 const data = await response.json();
-
-
                 if (!response.ok || !data.success) {
-
                     throw new Error(
                         data.error || "Failed to create ticket."
                     );
-
                 }
-
-
                 alert("Warranty ticket created successfully.");
-
                 closeTicketForm();
-
-
             } catch (error) {
-
                 console.error(error);
-
                 alert(error.message);
-
             }
-
         });
-
 </script>
 </body>
 </html>

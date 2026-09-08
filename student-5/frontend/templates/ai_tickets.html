@@ -13,6 +13,12 @@
             <h1>OmniTech</h1>
             <p>Warranty Support</p>
         </header>
+        <!-- Back Button -->
+        <a href="{{ url_for('index') }}" class="back-button">
+            ← Back
+        </a>
+
+        <!-- Tickets Table -->
         <div class="ticket-table-container">
             <table class="ticket-table">
                 <thead>
@@ -24,7 +30,6 @@
                         <th>Action</th>
                     </tr>
                 </thead>
-
                 <tbody>
                     {% for ticket in tickets %}
                     <tr>
@@ -47,8 +52,8 @@
             </table>
         </div>
 
+        <!-- AI Evaluation & Update Ticket -->
         <main class="ticket-section">
-
             <div id="loading" class="status-card hidden">
                 <div class="spinner"></div>
                 <p>AI is evaluating the warranty claim...</p>
@@ -60,7 +65,6 @@
             </div>
 
             <div id="resultCard" class="result-card hidden">
-
                 <div class="result-header">
                     <h2>AI Evaluation Result</h2>
                     <span id="ticketNumber"></span>
@@ -85,11 +89,8 @@
                         Update Ticket
                     </button>
                 </div>
-
             </div>
-
         </main>
-
     </div>
 
     <script>
@@ -104,20 +105,15 @@
             const decision = document.getElementById("decision");
             const reasoning = document.getElementById("reasoning");
             const ticketNumber = document.getElementById("ticketNumber");
-
             if (!ticketId) {
-                errorMessage.textContent =
-                    "Please select a ticket.";
-
+                errorMessage.textContent = "Please select a ticket.";
                 errorCard.classList.remove("hidden");
                 resultCard.classList.add("hidden");
                 return;
             }
-
             errorCard.classList.add("hidden");
             resultCard.classList.add("hidden");
             loading.classList.remove("hidden");
-
             try {
                 const response = await fetch(
                     `/api/tickets/${ticketId}/evaluate`,
@@ -128,14 +124,12 @@
                         }
                     }
                 );
-
                 const data = await response.json();
                 if (!response.ok || !data.success) {
                     throw new Error(
                         data.error || "AI Evaluation failed."
                     );
                 }
-
                 currentTicketId = data.ticket_id;
                 currentDecision = data.decision;
                 currentReasoning = data.reasoning;

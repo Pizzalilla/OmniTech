@@ -27,11 +27,9 @@ def index():
 @app.route("/tickets")
 def tickets():
     conn = get_db_connection()
-
     tickets = conn.execute(
         "SELECT * FROM tickets ORDER BY ticket_id"
     ).fetchall()
-
     conn.close()
 
     return render_template(
@@ -39,14 +37,37 @@ def tickets():
         tickets=tickets
     )
 
+@app.route("/create-ticket")
+def create_ticket_page():
+    conn = get_db_connection()
+    orders = conn.execute("""
+        SELECT
+            orders.order_id,
+            orders.customer_id,
+            orders.product_id,
+            orders.order_price,
+            orders.order_status,
+            orders.order_date,
+            products.product_name,
+            products.product_category
+        FROM orders
+        JOIN products
+            ON orders.product_id = products.product_id
+        ORDER BY orders.order_id
+    """).fetchall()
+    conn.close()
+
+    return render_template(
+        "ticket_creation.html",
+        orders=orders
+    )
+
 @app.route("/ai-evaluation")
 def ai_evaluation():
     conn = get_db_connection()
-
     tickets = conn.execute(
         "SELECT * FROM tickets ORDER BY ticket_id"
     ).fetchall()
-
     conn.close()
 
     return render_template("index.html", tickets=tickets)
@@ -60,7 +81,6 @@ def ai_evaluate_ticket(ticket_id):
             "SELECT * FROM tickets WHERE ticket_id = ?",
             (ticket_id,)
         ).fetchone()
-
         conn.close()
 
         if ticket is None:
@@ -151,6 +171,67 @@ def update_ticket(ticket_id):
         "success": True,
         "message": f"Ticket {ticket_id} updated successfully."
     }), 200
+
+@app.post("/tickets/create")
+def create_ticket():
+    data = request.get_json()
+    order_id = data.get("order_id")
+    ticket_claim = data.get("ticket_claim")
+    if not order_id or not ticket_claim:
+        return jsonify({
+            "success": False,
+            "error": "Order ID and warranty claim are required."
+        }), 400
+
+    conn = get_db_connection()
+    order = conn.execute("""
+        SELECT customer_id, product_id
+        FROM orders
+        WHERE order_id = ?
+    """, (order_id,)).fetchone()
+    if order is None:
+        conn.close()
+
+        return jsonify({
+            "success": False,
+            "error": "Order not found."
+        }), 404
+
+    product = conn.execute("""
+        SELECT product_category
+        FROM products
+        WHERE product_id = ?
+    """, (order["product_id"],)).fetchone()
+    if product is None:
+        conn.close()
+
+        return jsonify({
+            "success": False,
+            "error": "Product not found."
+        }), 404
+
+    conn.execute("""
+        INSERT INTO tickets (
+            customer_id,
+            product_id,
+            product_category,
+            ticket_claim,
+            ticket_status
+        )
+        VALUES (?, ?, ?, ?, ?)
+    """, (
+        order["customer_id"],
+        order["product_id"],
+        product["product_category"],
+        ticket_claim,
+        "Pending"
+    ))
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "success": True,
+        "message": "Warranty ticket created successfully."
+    }), 201
 
 @app.route("/shared/css/<path:filename>")
 def shared_css(filename):

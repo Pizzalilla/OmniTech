@@ -1,6 +1,7 @@
 import pytest
 import requests
 
+BACKEND_URL = "http://127.0.0.1:5005"
 DB_URL = "http://127.0.0.1:5006"
 
 def test_db_health():
@@ -34,3 +35,18 @@ def test_updated_ticket():
     assert ticket["ai_decision"] is not None
     assert ticket["ai_reasoning"] is not None
     assert ticket["ticket_status"] == "Rejected"
+
+def test_create_ticket():
+    data = {
+        "order_id": 10,
+        "ticket_claim": "Pytest Ticket Create Test"
+    }
+    result = requests.post(
+        f"{BACKEND_URL}/tickets/create",
+        json=data,
+        timeout=3
+    )
+    assert result.status_code == 201
+    response = result.json()
+    print("DEBUG RESPONSE:", response)
+    assert response["success"] is True
