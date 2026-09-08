@@ -1,7 +1,7 @@
 import pytest
 import requests
 
-BACKEND_URL = "http://127.0.0.1:5005"
+BACKEND_URL = "http://127.0.0.1:5000"
 DB_URL = "http://127.0.0.1:5006"
 
 def test_db_health():
