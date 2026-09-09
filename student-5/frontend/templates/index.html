@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OmniTech - Warranty Support</title>
-    <link rel="stylesheet" href="{{ url_for('shared_css', filename='styles.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
@@ -21,6 +20,7 @@
                     OmniTech's warranty policy rules.
                 </p>
 
+                <!-- Navigation Buttons -->
                 <div class="navigation-buttons">
                     <a href="{{ url_for('create_ticket_page') }}" class="ai-navigation-button">
                         Create Ticket
@@ -30,7 +30,8 @@
                     </a>
                 </div>
             </div>
-
+            
+            <!-- Policy Rules -->
             <div class="policy-card">
                 <h2>Policy Rules</h2>
                 <h3>PC Hardware</h3>
