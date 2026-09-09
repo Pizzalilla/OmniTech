@@ -15,7 +15,7 @@ CORS(app)
 DB_SERVICE_URL = os.getenv("DATABASE_SERVICE_URL", "http://127.0.0.1:5014")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", f"{OLLAMA_HOST}/v1")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
 http_session = requests.Session()
 ai_client = OpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")

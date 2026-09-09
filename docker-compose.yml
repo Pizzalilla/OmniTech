@@ -19,6 +19,7 @@ services:
     environment:
       - FLASK_ENV=development
       - OLLAMA_HOST=http://ollama-service:11434
+      - OLLAMA_MODEL=llama3.2
     depends_on:
       - ollama-service
     networks:
@@ -34,6 +35,7 @@ services:
     environment:
       - FLASK_ENV=development
       - OLLAMA_HOST=http://ollama-service:11434
+      - OLLAMA_MODEL=llama3.2
     depends_on:
       - ollama-service
     networks:
@@ -66,6 +68,7 @@ services:
     environment:
       - FLASK_ENV=development
       - OLLAMA_HOST=http://ollama-service:11434
+      - OLLAMA_MODEL=llama3.2
     depends_on:
       - ollama-service
     networks:
@@ -82,6 +85,7 @@ services:
       - FLASK_ENV=development
       - OLLAMA_HOST=http://ollama-service:11434
       - OLLAMA_BASE_URL=http://ollama-service:11434/v1
+      - OLLAMA_MODEL=llama3.2
     depends_on:
       - ollama-service
     networks:
