@@ -234,6 +234,32 @@ def create_ticket():
         "message": "Warranty ticket created successfully."
     }), 201
 
+@app.delete("/tickets/<int:ticket_id>/delete")
+def delete_ticket(ticket_id):
+    conn = get_db_connection()
+    ticket = conn.execute("""
+        SELECT ticket_status
+        FROM tickets
+        WHERE ticket_id = ?
+    """, (ticket_id,)).fetchone()
+    if ticket is None:
+        conn.close()
+        return jsonify({
+            "success": False,
+            "error": "Warranty ticket not found."
+        }), 404
+
+    conn.execute("""
+        DELETE FROM tickets
+        WHERE ticket_id = ?
+    """, (ticket_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({
+        "success": True,
+        "message": f"Ticket {ticket_id} removed successfully."
+    }), 200
+
 @app.route("/shared/css/<path:filename>")
 def shared_css(filename):
     return send_from_directory(

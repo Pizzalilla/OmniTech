@@ -27,11 +27,12 @@
                         <th>Claim</th>
                         <th>Status</th>
                         <th>Action</th>
+                        <th>Remove</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for ticket in tickets %}
-                    <tr>
+                    <tr id="ticket-row-{{ ticket['ticket_id'] }}">
                         <td>{{ ticket["ticket_id"] }}</td>
                         <td>{{ ticket["product_category"] }}</td>
                         <td>{{ ticket["ticket_claim"] }}</td>
@@ -45,6 +46,15 @@
                                 onclick="evaluateTicket(this.dataset.ticketId)"
                             >
                                 Evaluate
+                            </button>
+                        </td>
+                        <td>
+                            <button
+                                class="remove_button"
+                                data-ticket-id="{{ ticket['ticket_id'] }}"
+                                onclick="removeTicket(this.dataset.ticketId)"
+                            >
+                                Remove
                             </button>
                         </td>
                     </tr>
@@ -174,6 +184,37 @@
             } catch (error) {
                 console.error(error);
                 alert(error.message);
+            }
+        }
+
+        async function removeTicket(ticketId) {
+            const confirmed = confirm("Are you sure you want to remove this evaluated ticket?");
+            if (!confirmed) {
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `/tickets/${ticketId}/delete`,
+                    {
+                        method: "DELETE"
+                    }
+                );
+                const result = await response.json();
+                if (!response.ok) {
+                    alert(result.error || "Failed to remove ticket.");
+                    return;
+                }
+
+                const row = document.getElementById(`ticket-row-${ticketId}`);
+                if (row) {
+                    row.remove();
+                }
+
+                alert("Ticket removed successfully.");
+            } catch (error) {
+                console.error("Error removing ticket:", error);
+                alert("An error occurred while removing the ticket.");
             }
         }
     </script>
