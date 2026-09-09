@@ -8,6 +8,7 @@ on:
   pull_request:
     paths:
       - 'student-4/**'
+      - '.github/workflows/student-4.yml'
 
 jobs:
   build-and-test:
@@ -31,16 +32,26 @@ jobs:
         run: |
           python student-4/database/init_db.py
 
-      - name: Launch Database Microservice (Port 5004)
+      - name: Launch Database Microservice
         run: |
           python student-4/database/app.py &
           sleep 3
 
-      - name: Launch Backend Microservice (Port 5014)
+      - name: Launch Backend Microservice 
         run: |
           python student-4/backend/app.py &
           sleep 3
 
+      - name: Smoke test running services
+        run: |
+          curl -fsS http://127.0.0.1:5014/
+          curl -fsS http://127.0.0.1:5004/ > /dev/null
+
       - name: Run Automated Pytest Suite
         run: |
           pytest student-4/tests/test_orders_api.py -v
+
+      - name: Build Docker Image
+        run: |
+          docker build -t student-4:ci ./student-4
+
