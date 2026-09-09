@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    OmniTech Shared Design System
    Palette Tokens:
      - Primary Slate Blue: #81A6C6 (rgb: 129, 166, 198)
@@ -268,4 +268,269 @@ input:focus, select:focus, textarea:focus {
 
 .order-list li:last-child {
     border-bottom: none;
+}
+
+/* For Student5 Frontend */
+.title {
+    color: #81a6c6;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.ai-navigation-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    background: #81a6c6;
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+.ai-navigation-button:hover {
+    transform: translateY(-2px);
+    opacity: 0.9;
+}
+
+/* Ticket Table */
+.ticket-table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 25px;
+}
+
+.ticket-table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: white;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.ticket-table thead {
+    background-color: #f4f5f7;
+}
+
+.ticket-table th {
+    padding: 16px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    color: #81a6c6;
+    border-bottom: 2px solid #d9d9d9;
+}
+
+.ticket-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e5e5e5;
+    color: #444;
+    font-size: 14px;
+    vertical-align: top;
+}
+
+.ticket-table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.ticket-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ticket-id {
+    font-weight: 600;
+    color: #222;
+    white-space: nowrap;
+}
+
+/* Evaluate button */
+.evaluate-button {
+    padding: 9px 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: #81a6c6;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.evaluate-button:hover {
+    background-color: #444;
+}
+
+.evaluate-button:active {
+    transform: scale(0.97);
+}
+
+.evaluate-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* AI Evaluation Result */
+.result-card {
+    margin-top: 25px;
+    padding: 25px;
+    background-color: white;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+}
+
+.result-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.result-header h2 {
+    margin: 0;
+    font-size: 20px;
+    color: #81a6c6;
+}
+
+.result-header span {
+    font-size: 14px;
+    color: #81a6c6;
+}
+
+/* Individual Result Boxes */
+.result-box {
+    padding: 18px;
+    margin-top: 15px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    background-color: #81a6c6;
+}
+
+.result-box h3 {
+    margin: 0 0 10px 0;
+    font-size: 15px;
+    color: #333;
+}
+
+.result-box div {
+    padding: 12px;
+    background-color: white;
+    border: 1px solid #e1e1e1;
+    border-radius: 6px;
+    line-height: 1.6;
+    color: #444;
+    white-space: pre-wrap;
+}
+
+.result-actions {
+    margin-top: 25px;
+}
+
+/* Home Page */
+.home-card,
+.policy-card {
+    background-color: white;
+    border: 1px solid #d9d9d9;
+    border-radius: 10px;
+    padding: 25px;
+    margin-top: 25px;
+}
+
+.home-card {
+    text-align: center;
+}
+
+.home-card h2,
+.policy-card h2 {
+    color: #81a6c6;
+    margin-top: 0;
+}
+
+.home-card p {
+    color: #444;
+    margin-bottom: 25px;
+}
+
+.home-card .ai-navigation-button {
+    display: inline-flex;
+}
+
+.policy-card h3 {
+    color: #81a6c6;
+    margin-top: 25px;
+}
+
+.policy-card ul {
+    padding-left: 20px;
+    color: #444;
+}
+
+.policy-card li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* Ticket Form */
+.ticket-form-container {
+    margin-top: 30px;
+    padding: 25px;
+}
+
+.ticket-form-container.hidden {
+    display: none;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+}
+
+.form-actions {
+    margin-top: 25px;
+    display: flex;
+    gap: 10px;
+}
+
+.navigation-buttons {
+    display: flex;
+    gap: 15px;
+}
+
+.navigation-buttons .ai-navigation-button {
+    flex: 1;
+    text-align: center;
+}
+
+/* Back Button */
+.back-button {
+    display: inline-block;
+    margin-top: 20px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    background-color: #81a6c6;
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: 0.2s ease;
+}
+
+.back-button:hover {
+    background-color: #444;
 }

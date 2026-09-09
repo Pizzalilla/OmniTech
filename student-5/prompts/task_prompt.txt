@@ -1,0 +1,8 @@
+Task:
+Analyse the warranty ticket claim and compare it to the policy rules under the product's category. Evaluate whether the claim is valid or not and make a decision on whether it is approved or rejected with reasoning.
+
+Output Format:
+Decision: <Approved or Rejected>
+Reasoning: <Explain why you approved or rejected the claim with reference to the policy rules and claim>
+
+Do not include any other headings or information.
