@@ -348,7 +348,7 @@ input:focus, select:focus, textarea:focus {
     white-space: nowrap;
 }
 
-/* Evaluate button */
+/* Evaluate Button */
 .evaluate-button {
     padding: 9px 16px;
     border: none;
@@ -370,6 +370,32 @@ input:focus, select:focus, textarea:focus {
 }
 
 .evaluate-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Remove Button */
+.remove-button {
+    padding: 9px 16px;
+    border: none;
+    border-radius: 6px;
+    background-color: #81a6c6;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.remove-button:hover {
+    background-color: #444;
+}
+
+.remove-button:active {
+    transform: scale(0.97);
+}
+
+.remove-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
