@@ -406,6 +406,22 @@
             border-radius: var(--radius-sm);
             font-size: 0.88rem;
         }
+
+        /* Order History CRUD Controls (Update status / Delete) */
+        .history-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .status-select {
+            padding: 0.25rem 0.4rem;
+            font-size: 0.8rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            cursor: pointer;
+        }
     </style>
 </head>
 <body hx-get="/api/cart/view" hx-trigger="load" hx-target="#cart-view">
