@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Profiles & Preferences - OmniTech</title>
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <header class="service-header">
+            <h1>Customer Profiles & Preferences</h1>
+        </header>
+
+        <div class="grid-2">
+            <div>
+                <section class="card">
+                    <h2>Create Customer Account</h2>
+                    <form hx-post="/customers" hx-target="#create-result" hx-on::after-request="this.reset()">
+                        <div class="grid-2-form">
+                            <div>
+                                <label for="first_name">First Name</label>
+                                <input id="first_name" name="first_name" type="text" required>
+                            </div>
+                            <div>
+                                <label for="last_name">Last Name</label>
+                                <input id="last_name" name="last_name" type="text" required>
+                            </div>
+                        </div>
+
+                        <label for="email">Email Address</label>
+                        <input id="email" name="email" type="email" required>
+
+                        <label for="phone">Phone Number</label>
+                        <input id="phone" name="phone" type="text">
+
+                        <label for="shipping_street">Shipping Street</label>
+                        <input id="shipping_street" name="shipping_street" type="text">
+
+                        <div class="grid-3-form">
+                            <div>
+                                <label for="shipping_city">City</label>
+                                <input id="shipping_city" name="shipping_city" type="text">
+                            </div>
+                            <div>
+                                <label for="shipping_state">State</label>
+                                <input id="shipping_state" name="shipping_state" type="text">
+                            </div>
+                            <div>
+                                <label for="shipping_postcode">Postcode</label>
+                                <input id="shipping_postcode" name="shipping_postcode" type="text">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn" style="width: 100%">Register</button>
+                    </form>
+                    <div id="create-result"></div>
+                </section>
+
+                <section class="card">
+                    <h2>View Customer Accounts</h2>
+                    <div id="students-result" hx-get="/customers" hx-trigger="load, refreshCustomers from:body"></div>
+                </section>
+
+
+            </div>
+
+
+            <div>
+                <section class="card">
+                    <h2>AI Preference Tag Suggestions</h2>
+
+                    <form hx-post="/generate-ai-suggestions" hx-target="#context-result">
+                        <label for="context-customer-id">Select Customer ID for AI Suggestion</label>
+                        <input id="context-customer-id" name="customer_id" type="number" value="1" min="1" required>
+                        <button type="submit" class="btn" style="width: 100%;">Run AI Agent Loop</button>
+                    </form>
+
+
+                    <div id="context-result"></div>
+                </section>
+
+                <section class="card">
+                    <h2>Find Profile by ID</h2>
+                    <form hx-get="/customers/by-id" hx-target="#student-result">
+                        <label for="student_id">Customer ID</label>
+                        <input id="student_id" name="customer_id" type="number" min="1" placeholder="Enter ID" required>
+                        <button type="submit" class="btn">Lookup Profile</button>
+                    </form>
+                    <div id="student-result" class="panel"></div>
+                </section>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
