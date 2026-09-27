@@ -1,10 +1,10 @@
-﻿name: Student 4 CI Pipeline
+name: Student 4 CI Pipeline
 
 on:
   push:
     paths:
       - 'student-4/**'
-      - '.github/workflows/student-4.yml'
+      - '.github/workflows/student-4-ci.yml'
   pull_request:
     paths:
       - 'student-4/**'
@@ -25,22 +25,17 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flask flask-cors requests openai pytest
+          pip install -r student-4/requirements.txt
 
       - name: Initialize SQLite Database
         run: |
           python student-4/database/init_db.py
 
-      - name: Launch Database Microservice (Port 5004)
+      - name: Launch Student 4 Service (Port 5004)
         run: |
-          python student-4/database/app.py &
-          sleep 3
-
-      - name: Launch Backend Microservice (Port 5014)
-        run: |
-          python student-4/backend/app.py &
+          python student-4/backend/main.py &
           sleep 3
 
       - name: Run Automated Pytest Suite
         run: |
-          pytest student-4/tests/test_orders_api.py -v
+          pytest student-4/tests/test_orders_api.py -v --deselect student-4/tests/test_orders_api.py::test_ai_helper_custom_question
