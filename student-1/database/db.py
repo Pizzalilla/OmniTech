@@ -80,6 +80,7 @@ PRODUCT_COLUMNS = """
 def list_products(
     category_id: int | None = None,
     brand: str | None = None,
+    brands: list[str] | None = None,
     min_price: float | None = None,
     max_price: float | None = None,
     search: str | None = None,
@@ -92,13 +93,17 @@ def list_products(
         WHERE 1=1
     """
     params: list = []
+    chosen_brands = [item.strip() for item in (brands or []) if item and item.strip()]
+    if brand and not chosen_brands:
+        chosen_brands = [brand]
 
     if category_id is not None:
         query += " AND p.category_id = ?"
         params.append(category_id)
-    if brand:
-        query += " AND LOWER(p.brand) = LOWER(?)"
-        params.append(brand)
+    if chosen_brands:
+        placeholders = ", ".join("?" for _ in chosen_brands)
+        query += f" AND LOWER(p.brand) IN ({placeholders})"
+        params.extend(item.lower() for item in chosen_brands)
     if min_price is not None:
         query += " AND p.price >= ?"
         params.append(min_price)

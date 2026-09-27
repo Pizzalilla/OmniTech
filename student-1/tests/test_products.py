@@ -17,7 +17,15 @@ def new_product(client):
 def test_seed_meets_minimum_record_count(client):
     response = client.get("/api/products")
     assert response.status_code == 200
-    assert len(response.get_json()) >= 10
+    products = response.get_json()
+    assert len(products) >= 10
+    by_category = {}
+    by_brand = {}
+    for product in products:
+        by_category[product["category_id"]] = by_category.get(product["category_id"], 0) + 1
+        by_brand[product["brand"]] = by_brand.get(product["brand"], 0) + 1
+    assert all(count >= 2 for count in by_category.values())
+    assert all(count >= 2 for count in by_brand.values())
 
 
 def test_product_includes_its_category_name(client):
@@ -38,6 +46,16 @@ def test_filter_by_brand_ignores_case(client):
     products = client.get(f"/api/products?brand={brand.lower()}").get_json()
     assert products
     assert all(p["brand"].lower() == brand.lower() for p in products)
+
+
+def test_filter_accepts_more_than_one_brand(client):
+    products = client.get("/api/products").get_json()
+    first = products[0]["brand"]
+    other = next(item["brand"] for item in products if item["brand"] != first)
+    filtered = client.get(f"/api/products?brand={first}&brand={other}").get_json()
+    allowed = {first.lower(), other.lower()}
+    assert filtered
+    assert all(item["brand"].lower() in allowed for item in filtered)
 
 
 def test_filter_by_price_range(client):
