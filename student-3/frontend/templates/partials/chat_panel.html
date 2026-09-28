@@ -19,6 +19,20 @@
         </div>
     </div>
 
+    <div class="dock">
+        <div class="dock__title">Ask about policies &amp; FAQs</div>
+        <form class="rag-form"
+              hx-post="/api/rag/query"
+              hx-target="#rag-result"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type=submit]">
+            <input class="rag-form__input" name="query" type="text" autocomplete="off"
+                   placeholder="e.g. What is your return policy?" required>
+            <button type="submit" class="btn-mini">Ask</button>
+        </form>
+        <div id="rag-result"></div>
+    </div>
+
     <form class="composer"
           hx-post="/api/chat"
           hx-target="#chat-messages"

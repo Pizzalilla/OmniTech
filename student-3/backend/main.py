@@ -1,6 +1,7 @@
 import os
 import sys
 
+import requests
 from flask import Flask, abort, jsonify, render_template, request
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "database"))
@@ -8,6 +9,11 @@ from database import get_db, init_db, seed_db
 
 import agent
 import catalog
+import rag_client
+
+# Retained but disabled during CI/CD (see .github/workflows/student-3.yml) -
+# the shared RAG server is a local-only dependency that CI can't run.
+RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
@@ -446,6 +452,36 @@ def chat():
         "saved_recommendation": _reco_view(saved_reco) if saved_reco else None,
         "meta": result["meta"],
     })
+
+
+# ── Shared RAG server: grounded policy / FAQ answers ────────────────────────
+
+@app.route("/api/rag/query", methods=["POST"])
+def rag_query():
+    """Ask the shared RAG server a grounded question (policies, FAQs, etc.).
+
+    Accepts JSON {query} or an HTMX form post with the same field. Returns
+    JSON by default, or an HTML fragment when called from HTMX. Distinct from
+    /api/chat - this does not touch the catalog or a session's chat history.
+    """
+    if request.is_json:
+        query_text = ((request.get_json(silent=True) or {}).get("query") or "").strip()
+    else:
+        query_text = (request.form.get("query") or "").strip()
+    if not query_text:
+        abort(400, description="query is required")
+
+    if not RAG_ENABLED:
+        result = {"error": "RAG integration is disabled in this environment."}
+    else:
+        try:
+            result = rag_client.ask(query_text)
+        except requests.RequestException:
+            result = {"error": "The shared RAG server is not reachable right now."}
+
+    if _is_htmx():
+        return render_template("partials/rag_result.html", result=result)
+    return jsonify(result)
 
 
 # ── HTMX partials ────────────────────────────────────────────────────────────
