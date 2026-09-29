@@ -28,6 +28,29 @@ Draft notes for the Release 1 report.
   the full result, so other services (or a future MCP/multi-agent server) can
   call it.
 
+## MCP (Model Context Protocol)
+
+* **Shared MCP server** built by Student 4 on branch `shared/mcp-server`
+  (`ai-services/mcp-server`, port 6003, runs on the PC like Ollama/RAG). It
+  speaks MCP over HTTP (JSON-RPC 2.0: `initialize`, `tools/list`,
+  `tools/call`) and has a template so every student can add tools.
+* **Tool boundaries:** every tool has an input schema that the server
+  checks before the tool runs (missing, wrong-type and extra arguments are
+  rejected), and tools are read-only - they can only `GET` from a
+  student's own REST API, never open another student's database.
+* **Student 4 tools:** `get_order_status(order_id)`, `get_cart()`,
+  `get_product_specs(product_ids)`, backed by two new read-only endpoints
+  (`GET /api/cart`, `GET /api/products/specs?ids=`).
+* **MCP in my page:**
+  * an **Order lookup (MCP tool)** card that calls `get_order_status` and shows
+    the tool name, its inputs, the result (or "not found") and the raw MCP
+    result;
+  * the AI helper's Plan step now loads specs **via the MCP tool
+    `get_product_specs`** (shown as "Cart database via MCP" in its sources),
+    falling back to the database if MCP is off or offline.
+* **Terminal validation:** `python validate.py` in `ai-services/mcp-server`
+  (handshake, tool list, every tool called, boundary checks).
+
 ## Shared work done by Student 4
 
 * The RAG server stays **outside Docker** (runs on the PC like Ollama, per the

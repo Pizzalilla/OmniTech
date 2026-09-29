@@ -1,0 +1,86 @@
+Student 4 Release 1 - full test run on this PC
+2026-09-29 21:05:12
+
+0. Pre-checks
+  [PASS] Ollama running with llama3.2  -> llama3.2:latest, qwen2.5:0.5b, deepseek-r1:8b, llama3.1:8b
+  [INFO] python: 3.14.7
+
+Starting servers
+  [PASS] RAG server up (6002)
+  [PASS] MCP server up (6003)
+  [PASS] Student 4 app up (5004)
+
+A. Automated tests
+  [PASS] pytest agent+mcp  -> 35 passed in 0.75s (1s)
+  [PASS] pytest live-api (real llama3.2)  -> 20 passed in 13.60s (14s)
+  [PASS] pytest rag-server  -> 13 passed in 0.24s (1s)
+  [PASS] pytest mcp-server  -> 23 passed in 0.27s (1s)
+
+B. Terminal validation
+  [PASS] MCP validate.py  -> Result: 16 passed, 0 warning(s), 0 failed
+  [PASS] raw MCP tools/call get_order_status(5)  -> status=Processing
+  [PASS] RAG /health  -> chunks_loaded=32
+  [PASS] RAG /rag/retrieve power point  -> confidence=high, top=Running Kitchen Appliances Together
+  [PASS] RAG /rag/retrieve off-topic -> insufficient_context
+  [PASS] RAG query.py (real llama3.2)  -> confidence=medium (1s): Items can be returned within 30 days of delivery for a full refund, provided they are unused and in their original packaging. Opened software licenses and gift 
+
+C. Page checks (real llama3.2)
+  [PASS] page has AI helper + MCP card
+  [PASS] C1 Auto Audit Cart  -> box=success (12s)
+  [PASS] C1 safety warnings shown (5200W, 82 kg, out of stock)
+  [PASS] C1 specs came via MCP
+  [PASS] C1 RAG confidence badge
+         audit answer: Here are the 2 short bullet points for auditing the cart: |  | • Power / Power Points: All appliances have a 10A plug, which can be used in any standard power point. The Induction Cooktop 2000W and Microwave Oven 1000W together exceed the capacity of a single 10A power point, so separate power points are required. | • Space, Clearance and Delivery: The Samsung Fridge 500L requires clearance of 50m
+  [PASS] C2 Dimensions  -> verified, mentions ['70', '700']
+         status=verified attempts=1 rag=ok/high specs=mcp time=3.8s
+         answer: The Samsung Fridge 500L measures 700mm W x 1780mm H x 720mm D. The recommended ventilation clearance is rear 50mm, side 20mm, and top 50mm.
+         trace: Plan: loaded specs for 4/4 cart items via MCP tool get_product_specs, ran 3 safety checks, RAG returned 1 knowledge section(s) (confidence high).
+         trace: Act: attempt 1 - asked llama3.2 to answer from the facts.
+         trace: Observe: all 7 number(s) in the answer match the facts, no unsupported claims.
+  [PASS] C2 Weight  -> verified, mentions ['82']
+         status=verified attempts=1 rag=ok/medium specs=mcp time=4.0s
+         answer: The Samsung Fridge 500L weighs 82 kg. This is a large and heavy appliance, so it will be delivered by a two-person team. Please measure doorways, hallways, and stairs before checkout to ensure the appliance can be safely delivered.
+         trace: Plan: loaded specs for 4/4 cart items via MCP tool get_product_specs, ran 3 safety checks, RAG returned 2 knowledge section(s) (confidence medium).
+         trace: Act: attempt 1 - asked llama3.2 to answer from the facts.
+         trace: Observe: all 2 number(s) in the answer match the facts, no unsupported claims.
+  [PASS] C2 AU Power  -> verified, mentions ['10A', '2400', 'separate', 'no', 'not']
+         status=verified attempts=1 rag=ok/medium specs=mcp time=5.2s
+         answer: No, you cannot plug the 2000W induction cooktop and 1000W microwave into a standard Australian 10A socket. The combined power draw exceeds the 2400W limit of a standard 10A power point. You need to use separate power points for each appliance.
+         trace: Plan: loaded specs for 4/4 cart items via MCP tool get_product_specs, ran 3 safety checks, RAG returned 3 knowledge section(s) (confidence medium).
+         trace: Act: attempt 1 - asked llama3.2 to answer from the facts.
+         trace: Observe: all 5 number(s) in the answer match the facts, no unsupported claims.
+  [PASS] C2 Energy Stars  -> verified, mentions ['4', '390']
+         status=verified attempts=1 rag=ok/medium specs=mcp time=3.8s
+         answer: The Samsung Fridge 500L has a 4-star energy rating, and its annual energy consumption is 390 kWh/year.
+         trace: Plan: loaded specs for 4/4 cart items via MCP tool get_product_specs, ran 3 safety checks, RAG returned 2 knowledge section(s) (confidence medium).
+         trace: Act: attempt 1 - asked llama3.2 to answer from the facts.
+         trace: Observe: all 3 number(s) in the answer match the facts, no unsupported claims.
+  [PASS] C3 off-topic question -> insufficient context
+         status=verified attempts=1 rag=insufficient/None specs=mcp time=3.2s
+         answer: I don't have that information. I'm an OmniTech Australia cart assistant, and I'm not aware of any football results or news. My expertise is in assisting customers with product information and availability.
+         trace: Plan: loaded specs for 4/4 cart items via MCP tool get_product_specs, ran 3 safety checks, RAG returned 0 knowledge section(s) (not enough information in the store knowledge).
+         trace: Act: attempt 1 - asked llama3.2 to answer from the facts.
+         trace: Observe: all 0 number(s) in the answer match the facts, no unsupported claims.
+  [PASS] C5 MCP order lookup #5
+  [PASS] C7 MCP order lookup #999 -> not found
+  [PASS] C8 MCP server log shows the tool calls
+
+D. When something breaks
+  [PASS] D1 MCP off -> lookup says offline
+  [PASS] D2 MCP off -> AI helper uses database  -> Plan: loaded specs for 4/4 cart items from the database, ran 3 safety checks, RAG returned 2 knowledge section(s) (confi
+  [PASS] MCP restarted
+  [PASS] D3 RAG off -> still answers, RAG offline noted
+  [PASS] RAG restarted
+  [PASS] D4 Ollama unreachable -> red 'AI Helper Offline' box with real specs  -> error offline specs
+
+E. Release 0 still works
+  [PASS] E1 + quantity
+  [PASS] E2 pickup -> free
+  [PASS] E2 delivery -> $15.00
+  [PASS] E3 checkout gives an order number  -> #30
+  [PASS] E4 MCP finds the new order
+  [PASS] E5 update status
+  [PASS] E5 delete order (clean-up)
+
+TOTAL: 40 passed, 0 failed
+DONE

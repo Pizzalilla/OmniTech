@@ -4,10 +4,13 @@
 
 | Metric | Result |
 |--------|--------|
-| Agent + route tests (`tests/test_agent.py`) | **20 / 20 passing** (fake LLM + fake RAG, no Ollama; also passes with `RAG_ENABLED=false` as in CI) |
-| Live API tests (`tests/test_orders_api.py`) | **17 / 17 passing** against a running app + real RAG server + stand-in Ollama |
+| Agent + route tests (`tests/test_agent.py`) | **23 / 23 passing** (fake LLM + fake RAG, no Ollama; also passes with `RAG_ENABLED=false` as in CI) |
+| Live API tests (`tests/test_orders_api.py`) | **20 / 20 passing** against a running app + real RAG server + stand-in Ollama |
+| MCP tests (`tests/test_mcp.py`) | **12 / 12 passing** (fake MCP client) |
+| Shared MCP server tests (`ai-services/mcp-server/tests`) | **23 / 23 passing** (student APIs faked) |
+| MCP terminal validation (`validate.py`, all servers running) | **16 passed, 0 warnings, 0 failed** |
 | Shared RAG server tests (`ai-services/rag-server/tests`) | **13 / 13 passing** (11 existing + 2 new for `/rag/retrieve`) |
-| Live run with real `llama3.2` | _To fill in after running with Ollama (see section 4)_ |
+| Live run with real `llama3.2` (section 4) | **40 / 40 checks passed** |
 | CI | `student-4.yml` runs the API suite, agent tests, RAG tests and the Docker build, with `RAG_ENABLED=false` / `MCP_ENABLED=false` |
 
 ## 2. Automated results
@@ -42,25 +45,38 @@ made-up weight on the first try:
 | "Can I share a power point for the cooktop and air fryer?" | RAG `ok`, badge "RAG confidence: high", 3 sections cited |
 | Ollama stopped | `ai-alert-box error`, "AI Helper Offline", and the fridge's real specs still shown |
 
-## 4. Live run with real Ollama (to do on a machine with Ollama)
-
-```bash
-# terminal 1 - shared RAG server
-cd ai-services/rag-server && python server.py
-# terminal 2 - Student 4 app
-python student-4/backend/main.py
-# terminal 3 - all live tests, including the two AI ones
-pytest student-4/tests/test_orders_api.py -v
-```
-
-Or with Docker: start the RAG server on the PC first, then `docker-compose up --build` (containers use `RAG_HOST=http://host.docker.internal:6002`).
+### MCP integration run
 
 | Check | Result |
 |-------|--------|
-| `test_ai_helper_custom_question` | _pass / fail_ |
-| `test_ai_helper_grounded_json` | _pass / fail_ |
-| Auto Audit Cart — status shown (verified / fallback) | _…_ |
-| Typed question — status and number of attempts | _…_ |
+| Order lookup #5 | `get_order_status({"order_id": 5})` → success box: Processing, $1,299.50, 1 item |
+| Order lookup #999 | warning box "Order #999 not found" (tool error, not a crash) |
+| AI helper question | trace: "loaded specs for 4/4 cart items via MCP tool get_product_specs"; MCP server log shows the call |
+
+## 4. Live run on the PC with real Ollama (llama3.2)
+
+Run on 29 Sep 2026 (Windows, Python 3.14, Ollama llama3.2) with the RAG
+server, MCP server and Student 4 app all running. Full output:
+`docs/reports/student-4-release-1-live-run.txt` - **40 / 40 checks passed**.
+
+| Area | Result |
+|------|--------|
+| pytest: agent + MCP / live API (real llama3.2) / RAG server / MCP server | 35 / 20 / 13 / 23 passed |
+| MCP `validate.py` | 16 passed, 0 warnings, 0 failed |
+| RAG `query.py "What is your return policy?"` | grounded answer with citations, confidence medium |
+| Auto Audit Cart | green box, warnings (5200W / 82 kg / out of stock), "Cart database via MCP", RAG badge, ~12 s |
+| Dimensions | "700mm W x 1780mm H x 720mm D … rear 50mm, side 20mm, top 50mm" - 7 numbers verified |
+| Weight | "weighs 82 kg … two-person team … measure doorways" - verified |
+| AU Power | "No … combined power draw exceeds the 2400W limit … separate power points" - verified |
+| Energy Stars | "4-star energy rating … 390 kWh/year" - verified |
+| "Who won the football last night?" | RAG insufficient context; AI: "I don't have that information" |
+| MCP order lookup #5 / #999 | success (Processing) / "Order #999 not found" |
+| MCP server off | lookup says offline; AI helper falls back to the database |
+| RAG server off | AI helper still answers, "RAG server offline" shown |
+| Ollama unreachable | red "AI Helper Offline" box, real specs still shown |
+| Release 0 | quantity, pickup/delivery fee, checkout → MCP finds the new order, status update, delete |
+
+Typical answer time with llama3.2 on this PC: 3–5 s per question, ~12 s for the audit.
 
 ## 5. Defects found and fixed during testing
 
@@ -71,12 +87,15 @@ Or with Docker: start the RAG server on the PC first, then `docker-compose up --
 | AI text was inserted into the page unescaped | Escaped with `markupsafe.escape` |
 | Demo cart product ids 501–504 clashed with different products in the seeded orders | Demo cart moved to ids 511–514 |
 | Adding product names to every RAG query made all questions retrieve the same section | Names only added for the Auto Audit query |
+| Live llama3.2 audit said the plug-in cooktop needs "a 32A hardwired circuit", and called 4 stars "the highest rating in Australia" - claims with no new number, so the number check let them through | Facts now say "plugs into a normal power point - no hardwiring or electrician needed"; prompt says to apply store rules only to matching products; new **claim check** in Observe rejects hardwiring/electrician and "highest rating" claims when the facts don't support them (retry once). Re-run: both gone |
+| `OLLAMA_HOST=0.0.0.0:11434` (Windows Ollama setting) made every AI call fail with InvalidSchema | `ollama_url()` adds `http://` and swaps 0.0.0.0 for 127.0.0.1 |
 | OpenAI client retried a dead Ollama several times before failing | Replaced with one direct `requests` call to Ollama's `/api/chat` |
 
 ## 6. Known limitations
 
-* The verifier checks numbers only — a wrong statement with no number in it is
-  not caught.
+* The verifier checks numbers plus a few known claim types (hardwiring,
+  "highest rating"); other wrong statements with no number in them can still
+  get through.
 * Microwave "1000W" is its cooking output; the spec table stores its 1500 W
   power draw, which is what the power-point check uses.
 * Product specs are stored in Student 4's own database; in a later release they
