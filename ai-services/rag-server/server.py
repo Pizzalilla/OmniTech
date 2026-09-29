@@ -10,6 +10,7 @@ confidence category - or reports insufficient context instead of guessing.
 Endpoints:
     GET  /health        liveness check
     POST /rag/query      body {"query": str} -> grounded answer (see README.md)
+    POST /rag/retrieve   body {"query": str, "limit": int} -> matching chunks only
 
 Run directly (not via Docker):
     python server.py
@@ -140,6 +141,28 @@ def query():
         for c in matches
     ]
     return jsonify({"answer": answer, "citations": citations, "confidence": confidence})
+
+
+@app.route("/rag/retrieve", methods=["POST"])
+def retrieve():
+    """Retrieval only (no Ollama call) - for feature backends that run their
+    own grounded prompt and just need the matching knowledge sections."""
+    body = request.get_json(silent=True) or {}
+    q = str(body.get("query", "")).strip()
+    if not q:
+        return jsonify({"error": "query is required"}), 400
+    try:
+        limit = max(1, min(int(body.get("limit", TOP_K)), 10))
+    except (TypeError, ValueError):
+        limit = TOP_K
+
+    matches, confidence = retriever.search(q, _CHUNKS, limit=limit)
+    log.info("RETRIEVE-ONLY %d chunk(s) confidence=%s for %r", len(matches), confidence, q[:80])
+    return jsonify({
+        "chunks": [{"source": c["source"], "heading": c["heading"], "text": c["text"]} for c in matches],
+        "confidence": confidence,
+        "insufficient_context": not matches,
+    })
 
 
 if __name__ == "__main__":

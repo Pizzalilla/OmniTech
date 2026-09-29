@@ -6,14 +6,25 @@ DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "orders.db")
 ORDER_STATUSES = ["Pending", "Processing", "Shipped", "Completed", "Cancelled"]
 
 
+_specs_ready = False
+
+
 # CONNECTION: open orders.db (create + seed it first if it is missing)
 def get_db():
+    global _specs_ready
     if not os.path.exists(DB_FILE):
         from init_db import init_database
         init_database()
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+
+    # UPGRADE: older orders.db files have no product_specs table yet
+    if not _specs_ready:
+        from init_db import create_product_specs
+        create_product_specs(conn.cursor())
+        conn.commit()
+        _specs_ready = True
     return conn
 
 
@@ -79,6 +90,18 @@ def delete_order(order_id):
     conn.commit()
     conn.close()
     return cursor.rowcount > 0
+
+
+# READ: product specs for the given product ids, as {product_id: {...}}
+def get_product_specs(product_ids):
+    ids = list(product_ids)
+    if not ids:
+        return {}
+    conn = get_db()
+    marks = ",".join("?" for _ in ids)
+    rows = conn.execute(f"SELECT * FROM product_specs WHERE product_id IN ({marks})", ids).fetchall()
+    conn.close()
+    return {r["product_id"]: dict(r) for r in rows}
 
 
 # READ: one saved shopping cart with its items (None if not found)

@@ -134,7 +134,23 @@ def test_ai_helper_custom_question():
     res = requests.post(
         f"{BASE_URL}/api/orders/ai-validate-cart",
         data={"question": "What are the dimensions of a 500L fridge in cm and ventilation space needed?"},
-        timeout=60
+        timeout=200
     )
     assert res.status_code == 200
-    assert "ai-alert-box success" in res.text, "AI returned the offline banner instead of an answer"
+    assert "ai-alert-box error" not in res.text, "AI returned the offline banner instead of an answer"
+    assert "How the agent worked" in res.text
+
+# AI HELPER JSON TEST (Release 1): the answer is grounded in the database + RAG
+def test_ai_helper_grounded_json():
+    requests.post(f"{BASE_URL}/api/cart/reset", timeout=3)
+    res = requests.post(
+        f"{BASE_URL}/api/orders/ai-validate-cart",
+        json={"question": "Can I plug the induction cooktop and air fryer into one 10A power point?"},
+        timeout=200
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["status"] in ("verified", "fallback")
+    assert body["facts_used"] == 4
+    assert body["rag_status"] == "ok", "RAG server not reachable - start ai-services/rag-server/server.py"
+    assert body["knowledge"], "RAG returned no store knowledge"

@@ -4,15 +4,21 @@ on:
   push:
     paths:
       - 'student-4/**'
+      - 'ai-services/rag-server/**'
       - '.github/workflows/student-4.yml'
   pull_request:
     paths:
       - 'student-4/**'
+      - 'ai-services/rag-server/**'
       - '.github/workflows/student-4.yml'
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      # No RAG/MCP servers in CI: keep them switched off (tests use fake responses)
+      RAG_ENABLED: "false"
+      MCP_ENABLED: "false"
 
     steps:
       - name: Check out repository
@@ -42,9 +48,19 @@ jobs:
           curl -fsS http://127.0.0.1:5004/api/health
           curl -fsS http://127.0.0.1:5004/ > /dev/null
 
-      - name: Run Automated Pytest Suite (AI-Mode test skipped - no Ollama in CI)
+      - name: Run Automated Pytest Suite (live AI tests skipped - no Ollama in CI)
         run: |
-          pytest student-4/tests/test_orders_api.py -v --deselect student-4/tests/test_orders_api.py::test_ai_helper_custom_question
+          pytest student-4/tests/test_orders_api.py -v \
+            --deselect student-4/tests/test_orders_api.py::test_ai_helper_custom_question \
+            --deselect student-4/tests/test_orders_api.py::test_ai_helper_grounded_json
+
+      - name: Run AI Agent Tests (Release 1 - fake LLM + fake RAG, no Ollama needed)
+        run: |
+          pytest student-4/tests/test_agent.py -v
+
+      - name: Run Shared RAG Server Tests (Student 4 knowledge + /rag/retrieve)
+        run: |
+          cd ai-services/rag-server && python -m pytest tests/ -v
 
       - name: Build Docker Image
         run: |

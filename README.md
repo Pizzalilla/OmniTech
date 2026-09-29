@@ -53,6 +53,10 @@ This starts 7 containers on a shared network (`omnitech-net`):
 | Student 5      | http://localhost:5005       |
 | Ollama (AI)    | http://localhost:11434      |
 
+The shared RAG server runs on the PC, outside Docker (see
+`ai-services/rag-server/README.md`): `cd ai-services/rag-server && python server.py`
+(port 6002). Containers reach it through `RAG_HOST=http://host.docker.internal:6002`.
+
 ### 3. Pull an AI Model
 
 Once the Ollama container is running, pull a model:
