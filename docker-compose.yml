@@ -21,6 +21,8 @@ services:
       - OLLAMA_HOST=http://ollama-service:11434
       - OLLAMA_MODEL=llama3.2
       - MCP_HOST=http://host.docker.internal:6003
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - ollama-service
     networks:
@@ -38,6 +40,8 @@ services:
       - OLLAMA_HOST=http://ollama-service:11434
       - OLLAMA_MODEL=llama3.2
       - MCP_HOST=http://host.docker.internal:6003
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - ollama-service
     networks:
@@ -55,6 +59,8 @@ services:
       - OLLAMA_HOST=http://ollama-service:11434
       - OLLAMA_MODEL=llama3.2
       - MCP_HOST=http://host.docker.internal:6003
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - ollama-service
     networks:
@@ -73,6 +79,8 @@ services:
       - OLLAMA_HOST=http://ollama-service:11434
       - OLLAMA_MODEL=llama3.2
       - MCP_HOST=http://host.docker.internal:6003
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - ollama-service
     networks:
@@ -91,6 +99,8 @@ services:
       - OLLAMA_BASE_URL=http://ollama-service:11434/v1
       - OLLAMA_MODEL=llama3.2
       - MCP_HOST=http://host.docker.internal:6003
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - ollama-service
     networks:

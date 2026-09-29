@@ -192,10 +192,19 @@ def test_protocol_errors(client):
     assert rpc(client, "resources/list").get_json()["error"]["code"] == -32601
     assert client.get("/mcp").status_code == 405
 
+    list_params = client.post("/mcp", json={"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": [1]})
+    assert list_params.status_code == 400 and list_params.get_json()["error"]["code"] == -32602
+
+
+def test_client_response_is_accepted(client):
+    res = client.post("/mcp", json={"jsonrpc": "2.0", "id": 9, "result": {}})
+    assert res.status_code == 202 and res.data == b""
+
 
 def test_foreign_browser_origin_is_blocked(client):
     body = {"jsonrpc": "2.0", "id": 1, "method": "ping"}
     assert client.post("/mcp", json=body, headers={"Origin": "http://evil.example"}).status_code == 403
+    assert client.post("/mcp", json=body, headers={"Origin": "http://localhost.evil.example"}).status_code == 403
     assert client.post("/mcp", json=body, headers={"Origin": "http://localhost:5004"}).status_code == 200
 
 

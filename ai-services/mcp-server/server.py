@@ -24,6 +24,7 @@ import json
 import logging
 import os
 import pkgutil
+from urllib.parse import urlparse
 
 from flask import Flask, jsonify, request
 
@@ -105,7 +106,8 @@ def origin_allowed():
     origin = request.headers.get("Origin")
     if not origin:
         return True
-    return any(origin.startswith(p) for p in ("http://localhost", "http://127.0.0.1", "http://host.docker.internal"))
+    # compare the exact hostname so "http://localhost.evil.com" is not let through
+    return urlparse(origin).hostname in ("localhost", "127.0.0.1", "host.docker.internal")
 
 
 @app.route("/mcp", methods=["POST"])
@@ -117,10 +119,18 @@ def mcp():
         msg = json.loads(request.get_data(as_text=True) or "")
     except ValueError:
         return rpc_error(None, -32700, "Parse error: body is not valid JSON"), 400
-    if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0" or "method" not in msg:
+    if not isinstance(msg, dict) or msg.get("jsonrpc") != "2.0":
         return rpc_error(msg.get("id") if isinstance(msg, dict) else None, -32600, "Invalid JSON-RPC request"), 400
 
+    # RESPONSES: a client answering us (result/error, no method) -> accepted, no reply body
+    if "method" not in msg and ("result" in msg or "error" in msg):
+        return "", 202
+    if "method" not in msg:
+        return rpc_error(msg.get("id"), -32600, "Invalid JSON-RPC request"), 400
+
     method, params, msg_id = msg["method"], msg.get("params") or {}, msg.get("id")
+    if not isinstance(params, dict):
+        return rpc_error(msg_id, -32602, "Invalid params: params must be an object"), 400
 
     # NOTIFICATIONS: no id -> no reply body
     if msg_id is None:
