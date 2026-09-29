@@ -2,12 +2,8 @@
 flask==3.0.3
 flask-cors==4.0.1
 
-# HTTP: used by the pytest suite
+# HTTP: AI helper calls Ollama + the shared RAG server, and the pytest suite
 requests==2.31.0
-
-# AI: talks to Ollama through its OpenAI-compatible API
-openai==1.14.1
-httpx<0.28
 
 # TESTING: pytest suite in student-4/tests
 pytest==8.1.1

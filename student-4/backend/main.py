@@ -3,12 +3,13 @@ import os
 import sys
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-from openai import OpenAI
+from markupsafe import escape
 
 # DATABASE LAYER: the backend reads/writes SQLite directly through database/database.py
 DATABASE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "database")
 sys.path.insert(0, DATABASE_DIR)
 import database as db
+import agent
 
 app = Flask(
     __name__,
@@ -18,16 +19,10 @@ app = Flask(
 )
 CORS(app)
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", f"{OLLAMA_HOST}/v1")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
-
-ai_client = OpenAI(base_url=OLLAMA_BASE_URL, api_key="ollama")
-
 # DEMO CART: starting items for Customer #101 (restored by "Reload demo cart")
 DEMO_CART_ITEMS = [
     {
-        "product_id": 501,
+        "product_id": 511,
         "product_name": "Samsung Fridge 500L",
         "category": "Kitchen",
         "unit_price": 1499.00,
@@ -35,7 +30,7 @@ DEMO_CART_ITEMS = [
         "in_stock": True
     },
     {
-        "product_id": 502,
+        "product_id": 512,
         "product_name": "Induction Cooktop 2000W",
         "category": "Kitchen",
         "unit_price": 799.00,
@@ -43,7 +38,7 @@ DEMO_CART_ITEMS = [
         "in_stock": True
     },
     {
-        "product_id": 503,
+        "product_id": 513,
         "product_name": "Microwave Oven 1000W",
         "category": "Kitchen",
         "unit_price": 249.00,
@@ -51,7 +46,7 @@ DEMO_CART_ITEMS = [
         "in_stock": False
     },
     {
-        "product_id": 504,
+        "product_id": 514,
         "product_name": "Air Fryer 20L",
         "category": "Small Appliances",
         "unit_price": 189.00,
@@ -356,66 +351,63 @@ def get_cart(cart_id):
 
 
 # ---------------------------------------------------------------------------
-# AI HELPER: calls the shared Ollama LLM
+# AI HELPER: grounded Plan -> Act -> Observe -> Adapt agent (backend/agent.py)
 # ---------------------------------------------------------------------------
+
+AI_STATUS = {
+    "verified": ("success", "✓ Every number was checked against the product database and store knowledge."),
+    "fallback": ("warning", "⚠ The AI used numbers that aren't in our data, so these are the facts straight from the database."),
+    "offline": ("error", "<strong>AI Helper Offline:</strong> showing the facts straight from the database. "
+                         "Ensure Ollama is running locally on port 11434."),
+}
+CHECK_ICONS = {"warn": "⚠", "info": "ℹ", "ok": "✓"}
+
+
+# AI RESULT HTML: answer, safety checks, sources and the agent trace
+def render_ai_result_html(result):
+    box_class, footnote = AI_STATUS[result["status"]]
+
+    checks = "".join(
+        f"<li class='check-{c['level']}'>{CHECK_ICONS[c['level']]} {escape(c['text'])}</li>"
+        for c in result["checks"]
+    )
+
+    sources = [f"Cart database ({result['facts_used']} products)"]
+    sources += [f"{escape(k['source'])} › {escape(k['heading'])}" for k in result["knowledge"]]
+
+    # RAG STATUS: confidence badge, or why there is no store knowledge
+    rag = {
+        "ok": f"<span class='rag-badge {escape(result['rag_confidence'] or 'low')}'>RAG confidence: "
+              f"{escape(result['rag_confidence'] or 'low')}</span>",
+        "insufficient": "<span class='rag-badge none'>📚 I don't have enough information in the store knowledge "
+                        "to answer that - only product data was used.</span>",
+        "offline": "<span class='rag-badge none'>RAG server offline - only product data was used.</span>",
+        "disabled": "<span class='rag-badge none'>RAG disabled - only product data was used.</span>",
+    }[result["rag_status"]]
+
+    trace = "".join(f"<li>{escape(t)}</li>" for t in result["trace"])
+
+    return f"""
+    <div class='ai-alert-box {box_class}'>
+        <div class='ai-output-text'>{escape(result['answer'])}</div>
+        <ul class='ai-checks'>{checks}</ul>
+        <div class='ai-sources'><strong>Sources:</strong> {' · '.join(sources)}</div>
+        <div class='ai-rag'>{rag}</div>
+        <small class='ai-footnote'>{footnote}</small>
+        <details class='ai-trace'><summary>How the agent worked</summary><ol>{trace}</ol></details>
+    </div>
+    """
+
 
 @app.post("/api/orders/ai-validate-cart")
 def ai_helper_audit():
-    user_query = request.form.get("question", "").strip()
-    items = CUSTOMER_CART["items"]
+    data = request.get_json(silent=True) or request.form
+    question = str(data.get("question", "")).strip()
+    result = agent.run_cart_agent(question, CUSTOMER_CART["items"])
 
-    item_names = ", ".join([f"{i['quantity']}x {i['product_name']}" for i in items]) if items else "Empty Cart"
-
-    if user_query:
-        prompt = f"""
-        You are an AI Appliance Consultant for OmniTech Australia.
-        Cart items: {item_names}
-        Customer Question: {user_query}
-
-        Strict Rules:
-        - Use ONLY Australian metric units: cm or mm for dimensions, kg for weight, L for capacity, W/kW for power, and kWh/year or Stars for Australian Energy Ratings.
-        - Reference Australian 230V/240V electrical standards (10A standard socket / 15A dedicated circuit).
-        - Maximum 2 concise sentences.
-        """
-    else:
-        prompt = f"""
-        You are an AI Appliance Installation & Safety Consultant for OmniTech Australia.
-        Evaluate the following cart appliances for Australian power draw (240V/10A) and space clearances:
-        Items: {item_names}
-
-        Respond strictly in 2 short bullet points:
-        1. AU Power / Wattage Warning: (e.g. 2000W load on a standard 10A socket or dedicated 15A/20A circuit)
-        2. Metric Dimensions & Clearance: (e.g. 5cm back ventilation space or door swing clearance)
-        """
-
-    try:
-        response = ai_client.chat.completions.create(
-            model=OLLAMA_MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a concise home appliance expert using Australian metric measurements (cm, mm, kg, L, W, kWh/year) and Australian electrical standards (240V, 10A/15A)."
-                },
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=400,
-            temperature=0.2
-        )
-        raw_output = response.choices[0].message.content
-    except Exception as e:
-        return f"""
-        <div class='ai-alert-box error'>
-            <strong>AI Helper Offline:</strong> {str(e)}<br>
-            <small>Ensure Ollama is running locally on port 11434.</small>
-        </div>
-        """, 200
-
-    return f"""
-    <div class='ai-alert-box success'>
-        <div class='ai-output-text'>{raw_output}</div>
-        <small class='ai-footnote'>✓ Verified with Australian metric & electrical standards.</small>
-    </div>
-    """, 200
+    if request.is_json:
+        return jsonify(result), 200
+    return render_ai_result_html(result), 200
 
 
 if __name__ == "__main__":
