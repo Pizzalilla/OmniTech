@@ -16,6 +16,7 @@ from itertools import combinations
 import requests
 
 import database as db
+from mcp_client import McpClient, McpError
 
 
 # OLLAMA ADDRESS: Windows often sets OLLAMA_HOST=0.0.0.0:11434 (a listen address),
@@ -33,6 +34,9 @@ OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "90"))
 RAG_HOST = os.getenv("RAG_HOST", "http://127.0.0.1:6002")
 RAG_TIMEOUT = int(os.getenv("RAG_TIMEOUT", "10"))
 RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() != "false"   # CI sets RAG_ENABLED=false
+MCP_HOST = os.getenv("MCP_HOST", "http://127.0.0.1:6003")
+MCP_TIMEOUT = int(os.getenv("MCP_TIMEOUT", "10"))
+MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() != "false"   # CI sets MCP_ENABLED=false
 
 VOLTS = 240
 SOCKET_10A_W = 2400   # 240V x 10A
@@ -52,13 +56,27 @@ STANDARD_NUMBERS = {
 # PLAN: collect facts
 # ---------------------------------------------------------------------------
 
-# FACTS: cart items joined with their specs from orders.db
+# SPECS: ask the shared MCP server's get_product_specs tool; fall back to orders.db
+# returns (specs by product_id, "mcp" or "database")
+def load_specs(product_ids):
+    ids = sorted(set(product_ids))
+    if MCP_ENABLED and ids:
+        try:
+            res = McpClient(MCP_HOST, timeout=MCP_TIMEOUT).call_tool("get_product_specs", {"product_ids": ids})
+            if not res["isError"]:
+                return {s["product_id"]: s for s in res["structuredContent"]["specs"]}, "mcp"
+        except (requests.RequestException, McpError, KeyError, ValueError):
+            pass
+    return db.get_product_specs(ids), "database"
+
+
+# FACTS: cart items joined with their specs
 def get_cart_facts(items):
-    specs = db.get_product_specs(i["product_id"] for i in items)
+    specs, source = load_specs(i["product_id"] for i in items)
     facts = []
     for item in items:
         spec = specs.get(item["product_id"], {})
-        facts.append({**spec, **item, "has_specs": bool(spec)})
+        facts.append({**spec, **item, "has_specs": bool(spec), "specs_source": source})
     return facts
 
 
@@ -126,7 +144,10 @@ def describe_product(f):
         return f"{f['quantity']}x {f['product_name']}: no specs on file."
     parts = [f"{f['quantity']}x {f['product_name']}"]
     if f.get("power_w"):
-        parts.append(f"{f['power_w']:g}W max draw ({f['power_w'] / VOLTS:.1f}A at {VOLTS}V), {f['plug']}")
+        plug = f["plug"]
+        if plug.startswith("10A"):
+            plug += " (plugs into a normal power point - no hardwiring or electrician needed)"
+        parts.append(f"{f['power_w']:g}W max draw ({f['power_w'] / VOLTS:.1f}A at {VOLTS}V), {plug}")
     else:
         parts.append(f"{f.get('plug') or 'no power'}")
     parts.append(f"{f['width_mm']}mm W x {f['height_mm']}mm H x {f['depth_mm']}mm D, {f['weight_kg']:g} kg")
@@ -165,15 +186,17 @@ def build_prompt(question, facts, checks, knowledge, feedback=None):
         lines.append("TASK: Audit this cart in 2 short bullet points: 1) power / power points, 2) space, clearance and delivery. "
                      "Mention one suggested accessory if there is one.")
     if feedback:
-        lines.append(f"Your last answer used numbers that are NOT in the facts: {feedback}. "
-                     "Rewrite it using only numbers from the facts above.")
+        lines.append(f"Your last answer had numbers or claims that are NOT in the facts: {feedback}. "
+                     "Rewrite it using only the facts above.")
     return "\n".join(lines)
 
 
 SYSTEM_PROMPT = (
     "You are the OmniTech Australia cart assistant. Use ONLY the facts you are given - never guess or add "
     "numbers that are not in the facts. If the facts do not answer the question, say you don't have that "
-    "information. Use metric units (mm, cm, kg, L, W, A, kWh/year)."
+    "information. Use metric units (mm, cm, kg, L, W, A, kWh/year). STORE KNOWLEDGE is general advice: only "
+    "apply a rule to a product when that product's facts match it (for example, hardwiring rules only apply to "
+    "products whose plug says Hardwired). Do not compare a product with other products or ratings you were not given."
 )
 
 
@@ -246,6 +269,18 @@ def find_unsupported(answer, allowed):
     return unsupported
 
 
+# CLAIMS: statements with no new number that still contradict the facts
+def find_unsupported_claims(answer, facts):
+    claims = []
+    text = answer.lower()
+    hardwired_in_cart = any("hardwired" in (f.get("plug") or "").lower() for f in facts)
+    if not hardwired_in_cart and re.search(r"hard-?wir|electrician|\b32\s*a\b", text):
+        claims.append("hardwiring / electrician claim (nothing in the cart is hardwired)")
+    if re.search(r"(highest|best|maximum|top)\s+(possible\s+|available\s+)?(energy\s+)?(star\s+)?rating", text):
+        claims.append("rating comparison claim (not in the facts)")
+    return claims
+
+
 # ---------------------------------------------------------------------------
 # ADAPT + RUN: the whole Plan -> Act -> Observe -> Adapt loop
 # ---------------------------------------------------------------------------
@@ -266,7 +301,9 @@ def run_cart_agent(question, items):
     knowledge, rag_status, rag_confidence = retrieve_knowledge(question or f"{AUDIT_QUERY} {names}")
     rag_note = {"ok": f"confidence {rag_confidence}", "insufficient": "not enough information in the store knowledge",
                 "offline": "RAG server offline", "disabled": "RAG disabled"}[rag_status]
-    trace.append(f"Plan: loaded specs for {sum(f['has_specs'] for f in facts)}/{len(facts)} cart items, "
+    specs_source = facts[0]["specs_source"] if facts else "database"
+    via = "via MCP tool get_product_specs" if specs_source == "mcp" else "from the database"
+    trace.append(f"Plan: loaded specs for {sum(f['has_specs'] for f in facts)}/{len(facts)} cart items {via}, "
                  f"ran {len(checks)} safety checks, RAG returned {len(knowledge)} knowledge section(s) ({rag_note}).")
 
     fact_text = "\n".join(describe_product(f) for f in facts) + "\n" + "\n".join(c["text"] for c in checks)
@@ -276,6 +313,7 @@ def run_cart_agent(question, items):
     result = {
         "question": question, "checks": checks, "knowledge": knowledge, "rag_status": rag_status,
         "rag_confidence": rag_confidence,
+        "specs_source": specs_source,
         "facts_used": sum(f["has_specs"] for f in facts), "trace": trace,
     }
 
@@ -291,11 +329,12 @@ def run_cart_agent(question, items):
         trace.append(f"Act: attempt {attempt} - asked {OLLAMA_MODEL} to answer from the facts.")
 
         # OBSERVE
-        unsupported = find_unsupported(answer, allowed)
+        unsupported = find_unsupported(answer, allowed) + find_unsupported_claims(answer, facts)
         if not unsupported:
-            trace.append(f"Observe: all {len(extract_numbers(answer))} number(s) in the answer match the facts.")
+            trace.append(f"Observe: all {len(extract_numbers(answer))} number(s) in the answer match the facts, "
+                         "no unsupported claims.")
             return {**result, "status": "verified", "answer": answer, "attempts": attempt}
-        trace.append(f"Observe: unsupported number(s) {', '.join(unsupported)}.")
+        trace.append(f"Observe: unsupported {', '.join(unsupported)}.")
 
         # ADAPT
         feedback = ", ".join(unsupported)

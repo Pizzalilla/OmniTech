@@ -107,6 +107,20 @@
                 <div id="summary-container">
                     <!-- Dynamic Subtotal & Grand Total -->
                 </div>
+
+                <!-- MCP Order Lookup: calls the shared MCP server's get_order_status tool -->
+                <div class="ai-helper-card mcp-card">
+                    <div class="ai-helper-header">
+                        <h4>🧰 Order lookup <span class="mcp-tag">MCP tool</span></h4>
+                    </div>
+                    <form hx-post="/api/mcp/order-status" hx-target="#mcp-result" class="ai-input-row">
+                        <input type="number" name="order_id" min="1" placeholder="Order number, e.g. 5" required>
+                        <button type="submit" class="btn-ai-ask">Look up</button>
+                    </form>
+                    <div id="mcp-result">
+                        <small style="color: var(--text-muted);">Asks the shared MCP server to run the <code>get_order_status</code> tool.</small>
+                    </div>
+                </div>
             </section>
 
         </div>

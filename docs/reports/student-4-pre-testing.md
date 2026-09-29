@@ -107,6 +107,20 @@ Health, orders read/CRUD lifecycle/validation, saved cart, index page, cart
 view + stock dots, quantity change, fulfilment toggle, order history, checkout
 saves an order — all in `tests/test_orders_api.py`, must still pass.
 
+### 4.7 MCP (Release 1)
+
+| ID | Case | Expected |
+|----|------|----------|
+| M1 | `GET /api/products/specs?ids=511,512,9999` | specs for 511 + 512, `missing: [9999]`; 400 for missing/bad ids |
+| M2 | `GET /api/cart` | live cart JSON with totals |
+| M3 | AI helper with MCP on | specs loaded through `get_product_specs`; trace says "via MCP tool" |
+| M4 | AI helper with MCP offline / disabled | falls back to the database, still answers |
+| M5 | Order lookup, existing order | success box with tool name + inputs, status, items, raw MCP result |
+| M6 | Order lookup, unknown order | warning box "Order #999 not found" (tool error) |
+| M7 | Order lookup, server rejects input / server offline / bad input / MCP disabled | clear error message each time, no crash |
+| M8 | MCP server (`ai-services/mcp-server/tests`) | handshake, tools/list schemas, tools/call, bad calls rejected with -32602, tools only use GET, crashing tool doesn't crash server, foreign browser origin blocked |
+| M9 | `validate.py` against running servers | all checks pass |
+
 ## 5. Exit criteria
 
 * All `test_agent.py`, `test_orders_api.py` and RAG server tests pass.

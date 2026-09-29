@@ -1,15 +1,18 @@
 import copy
+import json
 import os
 import sys
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from markupsafe import escape
+import requests
 
 # DATABASE LAYER: the backend reads/writes SQLite directly through database/database.py
 DATABASE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "database")
 sys.path.insert(0, DATABASE_DIR)
 import database as db
 import agent
+from mcp_client import McpClient, McpError
 
 app = Flask(
     __name__,
@@ -341,6 +344,34 @@ def delete_order(order_id):
     return jsonify({"deleted": order_id}), 200
 
 
+# READ: the live cart as JSON (used by the MCP tool get_cart)
+@app.get("/api/cart")
+def get_live_cart():
+    subtotal, fee, total = cart_totals()
+    return jsonify({
+        "user_id": CUSTOMER_CART["user_id"],
+        "fulfillment": CUSTOMER_CART["fulfillment"],
+        "delivery_address": CUSTOMER_CART["delivery_address"],
+        "items": CUSTOMER_CART["items"],
+        "subtotal": round(subtotal, 2),
+        "delivery_fee": fee,
+        "total": round(total, 2),
+    }), 200
+
+
+# READ: product specs as JSON, e.g. /api/products/specs?ids=511,512 (used by the MCP tool get_product_specs)
+@app.get("/api/products/specs")
+def get_specs():
+    try:
+        ids = [int(i) for i in request.args.get("ids", "").split(",") if i.strip()]
+    except ValueError:
+        return jsonify({"error": "ids must be comma-separated numbers"}), 400
+    if not ids:
+        return jsonify({"error": "ids is required, e.g. ?ids=511,512"}), 400
+    specs = db.get_product_specs(ids)
+    return jsonify({"specs": list(specs.values()), "missing": [i for i in ids if i not in specs]}), 200
+
+
 # READ: a saved shopping cart
 @app.get("/api/carts/<int:cart_id>")
 def get_cart(cart_id):
@@ -372,7 +403,8 @@ def render_ai_result_html(result):
         for c in result["checks"]
     )
 
-    sources = [f"Cart database ({result['facts_used']} products)"]
+    via_mcp = " via MCP" if result.get("specs_source") == "mcp" else ""
+    sources = [f"Cart database{via_mcp} ({result['facts_used']} products)"]
     sources += [f"{escape(k['source'])} › {escape(k['heading'])}" for k in result["knowledge"]]
 
     # RAG STATUS: confidence badge, or why there is no store knowledge
@@ -408,6 +440,57 @@ def ai_helper_audit():
     if request.is_json:
         return jsonify(result), 200
     return render_ai_result_html(result), 200
+
+
+# ---------------------------------------------------------------------------
+# MCP: order lookup through the shared MCP server's get_order_status tool
+# ---------------------------------------------------------------------------
+
+# MCP RESULT HTML: which tool ran, with what inputs, and what came back
+def render_mcp_html(tool_name, arguments, box_class, body_html, raw=None):
+    raw_html = f"<details class='ai-trace'><summary>Raw MCP result</summary><pre class='mcp-raw'>{escape(raw)}</pre></details>" if raw else ""
+    return f"""
+    <div class='ai-alert-box {box_class}'>
+        <div class='mcp-call'>🧰 <code>{escape(tool_name)}({escape(json.dumps(arguments))})</code></div>
+        {body_html}
+        {raw_html}
+    </div>
+    """
+
+
+@app.post("/api/mcp/order-status")
+def mcp_order_status():
+    tool_name = "get_order_status"
+    try:
+        order_id = int(request.form.get("order_id", ""))
+    except ValueError:
+        return render_mcp_html(tool_name, {}, "error", "<div>Please enter an order number.</div>"), 200
+    arguments = {"order_id": order_id}
+
+    if not agent.MCP_ENABLED:
+        return render_mcp_html(tool_name, arguments, "error", "<div>MCP is disabled (MCP_ENABLED=false).</div>"), 200
+
+    try:
+        res = McpClient(agent.MCP_HOST, timeout=agent.MCP_TIMEOUT).call_tool(tool_name, arguments)
+    except McpError as exc:
+        return render_mcp_html(tool_name, arguments, "error", f"<div>MCP server rejected the call: {escape(str(exc))}</div>"), 200
+    except requests.RequestException:
+        return render_mcp_html(tool_name, arguments, "error",
+                               f"<div><strong>MCP server offline</strong> at {escape(agent.MCP_HOST)}. "
+                               "Start it with <code>python server.py</code> in ai-services/mcp-server.</div>"), 200
+
+    raw = json.dumps(res, indent=2)
+    if res["isError"]:
+        return render_mcp_html(tool_name, arguments, "warning", f"<div>{escape(res['content'][0]['text'])}</div>", raw), 200
+
+    order = res["structuredContent"]
+    items = "".join(f"<li>{i['quantity']}x {escape(i['product_name'])} - ${i['unit_price']:,.2f}</li>" for i in order["items"])
+    body = f"""
+        <div><strong>Order #{order['order_id']}</strong> - <span class='rag-badge high'>{escape(order['status'])}</span></div>
+        <div>Total: ${order['total_price']:,.2f} · {order['item_count']} item(s) · placed {escape(order['created_at'] or '')}</div>
+        <ul class='ai-checks'>{items}</ul>
+    """
+    return render_mcp_html(tool_name, arguments, "success", body, raw), 200
 
 
 if __name__ == "__main__":

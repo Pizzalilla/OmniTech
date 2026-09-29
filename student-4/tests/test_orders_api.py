@@ -154,3 +154,21 @@ def test_ai_helper_grounded_json():
     assert body["facts_used"] == 4
     assert body["rag_status"] == "ok", "RAG server not reachable - start ai-services/rag-server/server.py"
     assert body["knowledge"], "RAG returned no store knowledge"
+
+# --- Release 1: JSON endpoints used by the MCP tools ---
+
+def test_cart_json_endpoint():
+    requests.post(f"{BASE_URL}/api/cart/reset", timeout=3)
+    body = requests.get(f"{BASE_URL}/api/cart", timeout=3).json()
+    assert body["user_id"] == 101 and len(body["items"]) == 4
+
+def test_product_specs_endpoint():
+    body = requests.get(f"{BASE_URL}/api/products/specs?ids=511,9999", timeout=3).json()
+    assert body["specs"][0]["product_name"] == "Samsung Fridge 500L"
+    assert body["missing"] == [9999]
+
+# MCP LIVE TEST: needs the shared MCP server running (ai-services/mcp-server/server.py)
+def test_mcp_order_lookup_live():
+    res = requests.post(f"{BASE_URL}/api/mcp/order-status", data={"order_id": "1"}, timeout=30)
+    assert "MCP server offline" not in res.text, "start ai-services/mcp-server/server.py first"
+    assert "ai-alert-box success" in res.text and "Order #1" in res.text

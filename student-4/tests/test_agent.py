@@ -37,6 +37,7 @@ def setup(tmp_path, monkeypatch):
     monkeypatch.setattr(init_db, "DB_FILE", db_file)
     monkeypatch.setattr(db, "_specs_ready", False)
     monkeypatch.setattr(agent, "retrieve_knowledge", lambda query, limit=3: (KNOWLEDGE, "ok", "high"))
+    monkeypatch.setattr(agent, "MCP_ENABLED", False)   # MCP paths are tested in test_mcp.py
     main.CUSTOMER_CART["items"] = copy.deepcopy(main.DEMO_CART_ITEMS)
     main.app.testing = True
     return main.app.test_client()
@@ -256,3 +257,26 @@ def test_ollama_url_handles_windows_setting():
     assert agent.ollama_url("0.0.0.0:11434") == "http://127.0.0.1:11434"
     assert agent.ollama_url("http://ollama-service:11434/") == "http://ollama-service:11434"
     assert agent.ollama_url(None) == "http://127.0.0.1:11434"
+
+
+# CLAIM CHECK: claims with no new number are still checked against the facts
+def test_claim_check_catches_hardwiring_and_rating_claims(setup):
+    facts = agent.get_cart_facts(main.CUSTOMER_CART["items"])          # demo cart: all 10A plug-in
+    assert agent.find_unsupported_claims("The cooktop needs a 32A hardwired circuit.", facts)
+    assert agent.find_unsupported_claims("Get a licensed electrician to install it.", facts)
+    assert agent.find_unsupported_claims("4-star is the highest rating available in Australia.", facts)
+    assert agent.find_unsupported_claims("Use separate 10A power points.", facts) == []
+
+    built_in = [{"product_id": 505, "product_name": "Built-in Induction Cooktop 4-Zone", "category": "Kitchen",
+                 "unit_price": 1299.5, "quantity": 1, "in_stock": True}]
+    hardwired_facts = agent.get_cart_facts(built_in)
+    assert agent.find_unsupported_claims("It must be hardwired by a licensed electrician.", hardwired_facts) == []
+
+
+def test_agent_retries_when_answer_makes_a_hardwiring_claim(setup, monkeypatch):
+    prompts = fake_llm(monkeypatch, ["The cooktop needs a 32A hardwired circuit.",
+                                     "Plug the cooktop and air fryer into separate 10A power points."])
+    result = agent.run_cart_agent("", main.CUSTOMER_CART["items"])
+    assert result["status"] == "verified" and result["attempts"] == 2
+    assert "hardwiring" in prompts[1]
+    assert "no hardwiring or electrician needed" in prompts[0]      # plug-in fact is spelled out
