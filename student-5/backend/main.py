@@ -5,10 +5,12 @@ STUDENT5_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, STUDENT5_DIR)
 
 from flask import Flask, render_template, jsonify, send_from_directory, request
-from llm_client import OLLAMA_MODEL, create_chat_completion
-from prompt_loader import load_prompt
+# from llm_client import OLLAMA_MODEL, create_chat_completion
+# from prompt_loader import load_prompt
 from database.app import get_db_connection
 from database.init_db import init_db
+
+from agent import run_agentic_evaluation
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -77,68 +79,40 @@ def ai_evaluation():
 def ai_evaluate_ticket(ticket_id):
     try:
         conn = get_db_connection()
-
         ticket = conn.execute(
             "SELECT * FROM tickets WHERE ticket_id = ?",
             (ticket_id,)
         ).fetchone()
         conn.close()
-
         if ticket is None:
             return jsonify({
                 "success": False,
                 "error": f"Ticket {ticket_id} not found."
             }), 404
 
-        system_prompt = load_prompt("system_prompt.txt")
-        policy_rules_prompt = load_prompt("policy_rules_prompt.txt")
-        task_prompt = load_prompt("task_prompt.txt")
-
-        final_prompt = f"""
-{task_prompt}
-
-{policy_rules_prompt}
-
-Product Category: {ticket["product_category"]}
-Warranty Claim: {ticket["ticket_claim"]}
-"""
-
-        ai_response = create_chat_completion(
-            [
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": final_prompt
-                }
-            ],
-            max_tokens=300,
-            temperature=0.2,
-            model=OLLAMA_MODEL,
-        )
-
-        ai_response = ai_response.strip()
-        decision = ""
-        reasoning = ""
-        for line in ai_response.splitlines():
-            if line.lower().startswith("decision:"):
-                decision = line.split(":", 1)[1].strip()
-
-            elif line.lower().startswith("reasoning:"):
-                reasoning = line.split(":", 1)[1].strip()
+        result = run_agentic_evaluation(ticket)
+        if not result["success"]:
+            return jsonify({
+                "success": False,
+                "ticket_id": ticket_id,
+                "error": result["error"],
+                "review": result.get("review"),
+                "attempts": result.get("attempts")
+            }), 503
 
         return jsonify({
             "success": True,
             "ticket_id": ticket_id,
-            "decision": decision,
-            "reasoning": reasoning
+            "decision": result["decision"],
+            "reasoning": result["reasoning"],
+            "review": result["review"],
+            "attempts": result["attempts"]
         }), 200
 
     except Exception as exc:
-        print(f"AI evaluation failed for ticket {ticket_id}: {exc}")
-
+        print(
+            f"AI evaluation failed for ticket {ticket_id}: {exc}"
+        )
         return jsonify({
             "success": False,
             "error": "Evaluation request failed."
