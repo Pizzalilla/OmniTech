@@ -1,0 +1,42 @@
+name: Shared MCP Server CI
+
+on:
+  push:
+    paths:
+      - 'ai-services/mcp-server/**'
+      - '.github/workflows/mcp-server.yml'
+  pull_request:
+    paths:
+      - 'ai-services/mcp-server/**'
+      - '.github/workflows/mcp-server.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ai-services/mcp-server/requirements.txt
+
+      - name: Run MCP server tests (student APIs faked)
+        run: |
+          cd ai-services/mcp-server && python -m pytest tests/ -v
+
+      - name: Start MCP server and check tools/list over HTTP
+        run: |
+          cd ai-services/mcp-server
+          python server.py &
+          sleep 3
+          curl -fsS http://127.0.0.1:6003/health
+          curl -fsS -X POST http://127.0.0.1:6003/mcp -H "Content-Type: application/json" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
