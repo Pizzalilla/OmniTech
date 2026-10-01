@@ -1,9 +1,11 @@
 import os
 import sys
+import requests
 from flask import Flask, abort, jsonify, render_template, request
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+RAG_SERVER_URL = os.getenv("RAG_SERVER_URL", "http://host.docker.internal:6002")
 
 sys.path.insert(0, os.path.join(BASE_DIR, "database"))
 from database import get_db, init_db, seed_db
@@ -297,6 +299,29 @@ def delete_customer_profile_tag(customer_id, tag_id):
         return f"<div class='error'>Customer #{customer_id} not found.</div>"
 
     return render_customer_profile(customer, preferences, tags)
+
+@app.route("/rag-search", methods=["POST"])
+def rag_search():
+    user_query = request.form.get("query", "").strip()
+    if not user_query:
+        return "<p class='error'>Please enter a search query.</p>", 400
+
+    try:
+        response = requests.post(
+            f"{RAG_SERVER_URL}/rag/query",
+            json={"query": user_query},
+            timeout=125
+        )
+        response.raise_for_status()
+        data = response.json()
+    except requests.RequestException:
+        # Fallback if RAG server is offline during local dev
+        data = {
+            "insufficient_context": True,
+            "message": "Unable to connect to the knowledge server."
+        }
+
+    return render_template("rag_result.html", data=data)
 
 def render_customer_profile(customer, preferences, tags):
     html = f"<h3>#{customer['id']} - {customer['first_name']} {customer['last_name']}</h3>"
