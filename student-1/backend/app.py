@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -136,24 +137,61 @@ def _parse_product_id_from_request():
     raise ValueError("missing product_id")
 
 
+def _wants_json():
+    return request.is_json and request.headers.get("HX-Request", "").lower() != "true"
+
+
+def _mcp_fragment(tool_name, arguments, status, error=None, data=None, raw=None):
+    return render_template(
+        "partials/mcp_result.html",
+        tool_name=tool_name,
+        arguments=arguments,
+        status=status,
+        error=error,
+        data=data,
+        raw=raw,
+    )
+
+
 def _call_mcp_tool(tool_name, arguments):
-    """Ask the shared MCP server to run one of our tools and return the JSON result."""
+    """Ask the shared MCP server to run one of our tools."""
+    want_json = _wants_json()
+
     if not MCP_ENABLED:
-        return jsonify({"error": "MCP is disabled (MCP_ENABLED=false)."}), 200
+        if want_json:
+            return jsonify({"error": "MCP is disabled (MCP_ENABLED=false)."}), 200
+        return _mcp_fragment(
+            tool_name, arguments, "error", error="MCP is disabled (MCP_ENABLED=false)."
+        )
 
     try:
         result = McpClient(MCP_HOST, timeout=MCP_TIMEOUT).call_tool(tool_name, arguments)
     except McpError as exc:
-        return jsonify({"error": f"MCP server rejected the call: {exc}"}), 200
+        if want_json:
+            return jsonify({"error": f"MCP server rejected the call: {exc}"}), 200
+        return _mcp_fragment(
+            tool_name, arguments, "error", error=f"MCP server rejected the call: {exc}"
+        )
     except requests.RequestException:
-        return jsonify({
-            "error": (
-                f"MCP server offline at {MCP_HOST}. "
-                "Start it with python server.py in ai-services/mcp-server."
-            )
-        }), 200
+        message = (
+            f"MCP server offline at {MCP_HOST}. "
+            "Start it with python server.py in ai-services/mcp-server."
+        )
+        if want_json:
+            return jsonify({"error": message}), 200
+        return _mcp_fragment(tool_name, arguments, "error", error=message)
 
-    return jsonify(result)
+    if want_json:
+        return jsonify(result)
+
+    raw = json.dumps(result, indent=2)
+    if result.get("isError"):
+        message = result["content"][0]["text"] if result.get("content") else "Tool returned an error"
+        return _mcp_fragment(tool_name, arguments, "warning", error=message, raw=raw)
+
+    return _mcp_fragment(
+        tool_name, arguments, "success", data=result.get("structuredContent"), raw=raw
+    )
 
 
 @app.route("/api/mcp/catalog-product", methods=["POST"])
@@ -161,7 +199,9 @@ def mcp_catalog_product():
     try:
         product_id = _parse_product_id_from_request()
     except (TypeError, ValueError):
-        return jsonify({"error": "product_id is required"}), 400
+        if _wants_json():
+            return jsonify({"error": "product_id is required"}), 400
+        return _mcp_fragment("get_catalog_product", {}, "error", error="Please enter a valid product id.")
     return _call_mcp_tool("get_catalog_product", {"product_id": product_id})
 
 
@@ -170,7 +210,11 @@ def mcp_catalog_specifications():
     try:
         product_id = _parse_product_id_from_request()
     except (TypeError, ValueError):
-        return jsonify({"error": "product_id is required"}), 400
+        if _wants_json():
+            return jsonify({"error": "product_id is required"}), 400
+        return _mcp_fragment(
+            "get_catalog_specifications", {}, "error", error="Please enter a valid product id."
+        )
     return _call_mcp_tool("get_catalog_specifications", {"product_id": product_id})
 
 

@@ -78,4 +78,30 @@
 
     {% include "partials/ai_review_launcher.html" %}
 </section>
+
+<section class="card">
+    <h2>MCP Catalogue Lookup</h2>
+    <p>
+        Runs through this feature's backend to the shared local MCP server.
+        Tools are read-only and pull catalogue data from the Student 1 API.
+    </p>
+
+    <div class="mcp-actions">
+        <form hx-post="{{ url_for('mcp_catalog_product') }}"
+              hx-target="#mcp-result"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type=submit]">
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <button type="submit" class="btn">Look up product via MCP</button>
+        </form>
+        <form hx-post="{{ url_for('mcp_catalog_specifications') }}"
+              hx-target="#mcp-result"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type=submit]">
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <button type="submit" class="btn btn-secondary">Look up specs via MCP</button>
+        </form>
+    </div>
+    <div id="mcp-result"></div>
+</section>
 {% endblock %}
