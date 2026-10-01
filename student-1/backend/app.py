@@ -140,7 +140,12 @@ def _parse_product_id_from_request():
 
 
 def _wants_json():
-    return request.is_json and request.headers.get("HX-Request", "").lower() != "true"
+    # HTMX and normal browser forms get HTML; only JSON API clients get JSON
+    if request.headers.get("HX-Request", "").lower() == "true":
+        return False
+    if request.form:
+        return False
+    return bool(request.is_json)
 
 
 def _mcp_fragment(tool_name, arguments, status, error=None, data=None, raw=None):
