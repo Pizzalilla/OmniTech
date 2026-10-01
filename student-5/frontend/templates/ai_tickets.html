@@ -85,7 +85,7 @@
 
             <div id="resultCard" class="result-card hidden">
                 <div class="result-header">
-                    <h2>AI Evaluation Result</h2>
+                    <h2 id="resultTitle">AI Evaluation Result</h2>
                     <span id="ticketNumber"></span>
                 </div>
 
@@ -99,6 +99,11 @@
                     <div id="reasoning"></div>
                 </div>
 
+                <div id="reviewBox" class="result-box hidden">
+                    <h3>Review Feedback</h3>
+                    <div id="reviewFeedback"></div>
+                </div>
+
                 <div class="result-actions">
                     <button
                         id="updateButton"
@@ -106,6 +111,14 @@
                         onclick="updateTicket()"
                     >
                         Update Ticket
+                    </button>
+
+                    <button
+                        id="reevaluateResultButton"
+                        class="evaluate-button hidden"
+                        onclick="reevaluateTicket()"
+                    >
+                        Re-evaluate
                     </button>
                 </div>
             </div>
@@ -184,25 +197,26 @@
         }
 
         function showVerificationFailure(data) {
-            const errorCard = document.getElementById("errorCard");
-            const errorTitle = document.getElementById("errorTitle");
-            const errorMessage = document.getElementById("errorMessage");
-            const errorDetail = document.getElementById("errorDetail");
-            const reevaluateButton = document.getElementById("reevaluateButton");
+            const resultCard = document.getElementById("resultCard");
+            const resultTitle = document.getElementById("resultTitle");
+            const ticketNumber = document.getElementById("ticketNumber");
+            const decision = document.getElementById("decision");
+            const reasoning = document.getElementById("reasoning");
+            const reviewBox = document.getElementById("reviewBox");
+            const reviewFeedback = document.getElementById("reviewFeedback");
+            const updateButton = document.getElementById("updateButton");
+            const reevaluateButton = document.getElementById("reevaluateResultButton");
+            resultTitle.textContent = "AI Evaluation - Review Failed";
+            ticketNumber.textContent = `Ticket #${data.ticket_id || currentTicketId}`;
+            decision.textContent = data.decision || "No decision returned.";
+            reasoning.textContent = data.reasoning || "No reasoning returned.";
+            reviewFeedback.textContent = data.review?.feedback || "The review agent did not approve the AI evaluation.";
+            reviewBox.classList.remove("hidden");
 
-            errorTitle.textContent = "AI Evaluation Did Not Pass Review";
-
-            errorMessage.textContent =
-                data.error ||
-                "The AI evaluation did not pass verification.";
-
-            errorDetail.textContent =
-                data.review?.feedback ||
-                "The review agent determined that the AI's evaluation was not valid.";
-
+            updateButton.classList.add("hidden");
             reevaluateButton.classList.remove("hidden");
-
-            errorCard.classList.remove("hidden");
+            resultCard.classList.remove("hidden");
+            document.getElementById("errorCard").classList.add("hidden");
         }
 
         async function updateTicket() {

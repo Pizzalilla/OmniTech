@@ -4,11 +4,15 @@ import sys
 STUDENT5_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, STUDENT5_DIR)
 
+import requests
 from flask import Flask, render_template, jsonify, send_from_directory, request
 from database.app import get_db_connection
 from database.init_db import init_db
 
 from agent import run_agentic_evaluation
+import rag_client
+
+RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -227,6 +231,69 @@ def delete_ticket(ticket_id):
         "success": True,
         "message": f"Ticket {ticket_id} removed successfully."
     }), 200
+
+# RAG Implementation
+@app.post("/api/rag/warranty")
+def rag_warranty():
+    data = request.get_json(silent=True) or {}
+
+    order_id = data.get("order_id")
+    ticket_claim = (data.get("ticket_claim") or "").strip()
+
+    if not order_id or not ticket_claim:
+        return jsonify({
+            "success": False,
+            "error": "Order ID and warranty claim are required."
+        }), 400
+
+    conn = get_db_connection()
+
+    order = conn.execute("""
+        SELECT products.product_category
+        FROM orders
+        JOIN products
+            ON orders.product_id = products.product_id
+        WHERE orders.order_id = ?
+    """, (order_id,)).fetchone()
+
+    conn.close()
+
+    if order is None:
+        return jsonify({
+            "success": False,
+            "error": "Order not found."
+        }), 404
+
+    product_category = order["product_category"]
+
+    query = (
+        f"I want to submit a warranty claim for a "
+        f"{product_category}. My current claim is: "
+        f"\"{ticket_claim}\". "
+        f"What additional information should I include "
+        f"so that the claim contains enough information "
+        f"for warranty assessment?"
+    )
+
+    if not RAG_ENABLED:
+        return jsonify({
+            "success": False,
+            "error": "RAG integration is disabled in this environment."
+        }), 503
+
+    try:
+        result = rag_client.ask(query)
+
+        return jsonify({
+            "success": True,
+            "result": result
+        })
+
+    except requests.RequestException:
+        return jsonify({
+            "success": False,
+            "error": "The shared RAG server is not reachable right now."
+        }), 503
 
 @app.route("/shared/css/<path:filename>")
 def shared_css(filename):
