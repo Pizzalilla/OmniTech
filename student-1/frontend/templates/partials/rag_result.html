@@ -1,0 +1,23 @@
+{% if result.error %}
+<div class="rag-result rag-result--error">{{ result.error }}</div>
+{% elif result.insufficient_context %}
+<div class="rag-result rag-result--insufficient">
+    <strong>Insufficient context</strong>
+    <p>{{ result.message }}</p>
+</div>
+{% else %}
+<div class="rag-result">
+    <p class="rag-result__answer">{{ result.answer }}</p>
+    <span class="rag-badge rag-badge--{{ result.confidence }}">{{ result.confidence }} confidence</span>
+    {% if result.citations %}
+    <ul class="rag-result__citations">
+        {% for c in result.citations %}
+        <li>
+            <span class="rag-result__source">{{ c.source }} &mdash; {{ c.section }}</span>
+            <span class="rag-result__snippet">{{ c.snippet }}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endif %}

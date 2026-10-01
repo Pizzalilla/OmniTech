@@ -228,17 +228,24 @@ def rag_query():
     else:
         query_text = (request.form.get("query") or "").strip()
     if not query_text:
-        return jsonify({"error": "query is required"}), 400
+        if _wants_json():
+            return jsonify({"error": "query is required"}), 400
+        return render_template(
+            "partials/rag_result.html",
+            result={"error": "Please enter a question."},
+        )
 
     if not RAG_ENABLED:
-        return jsonify({"error": "RAG is disabled (RAG_ENABLED=false)."}), 200
+        result = {"error": "RAG is disabled (RAG_ENABLED=false)."}
+    else:
+        try:
+            result = rag_client.ask(query_text)
+        except requests.RequestException:
+            result = {"error": "The shared RAG server is not reachable right now."}
 
-    try:
-        result = rag_client.ask(query_text)
-    except requests.RequestException:
-        return jsonify({"error": "The shared RAG server is not reachable right now."}), 200
-
-    return jsonify(result)
+    if _wants_json():
+        return jsonify(result)
+    return render_template("partials/rag_result.html", result=result)
 
 
 @app.route("/admin")

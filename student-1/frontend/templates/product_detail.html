@@ -104,4 +104,25 @@
     </div>
     <div id="mcp-result"></div>
 </section>
+
+<section class="card">
+    <h2>Ask policies &amp; catalogue FAQs (RAG)</h2>
+    <p>
+        Questions go through this backend to the shared local RAG server.
+        Answers use retrieved knowledge, with source citations and a confidence category.
+        If nothing relevant is found, an insufficient-context message is shown instead.
+    </p>
+
+    <form class="rag-form"
+          hx-post="{{ url_for('rag_query') }}"
+          hx-target="#rag-result"
+          hx-swap="innerHTML"
+          hx-disabled-elt="find button[type=submit]">
+        <input class="rag-form__input" name="query" type="text" autocomplete="off"
+               placeholder="e.g. What is your return policy?"
+               required>
+        <button type="submit" class="btn">Ask RAG</button>
+    </form>
+    <div id="rag-result"></div>
+</section>
 {% endblock %}
