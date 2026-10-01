@@ -1,0 +1,23 @@
+<script>(function () {
+    var e = document.querySelector('#chat-messages .empty-inline');
+    if (e) e.remove();
+})();</script>
+
+<div class="msg msg--user">
+    <span class="msg__role">You</span>
+    <div class="msg__bubble">{{ user_message }}</div>
+</div>
+
+<div class="msg msg--ai">
+    <span class="msg__role">Consultant</span>
+    <div class="msg__bubble">{{ ai_reply }}</div>
+    {% if meta.used_fallback %}
+    <span class="msg__note">Offline suggestion &mdash; AI service unavailable, matched from the catalog.</span>
+    {% elif meta.reprompts and meta.reprompts > 0 %}
+    <span class="msg__note">Answer auto-corrected after catalog validation.</span>
+    {% endif %}
+</div>
+
+<div id="reco-list" hx-swap-oob="innerHTML">
+    {% include "partials/recommendations.html" %}
+</div>
