@@ -62,15 +62,15 @@ def init_db():
     """, evaluated_ticket_data)
 
     ticket_data = [
-        (2, 1, "CPU", "The CPU doesn't work.", "Pending"),
-        (3, 2, "GPU", "The GPU blew up.", "Pending"),
-        (4, 3, "PC Case", "The case came in with the front corner of the case being chipped.", "Pending"),
-        (5, 4, "Motherboard", "It doesn't work.", "Pending"),
-        (6, 2, "GPU", "The GPU came in chipped, upon use, the GPU was overheating and eventually blew up most likely due to the chip and fans not spinning as fast.", "Pending"),
-        (7, 4, "Motherboard", "The motherboard has faulty LED lighting and also visible rust on the metal CPU clipping.", "Pending"),
-        (8, 3, "PC Case", "The case looks ugly.", "Pending"),
-        (9, 5, "Hard Drive", "Hard drive is faulty and is corrupted, it is unusable.", "Pending"),
-        (10, 5, "Hard Drive", "It is slow.", "Pending")
+        (2, 2, "GPU", "The GPU blew up during use.", "Pending"),
+        (3, 3, "PC Case", "It is ugly.", "Pending"),
+        (4, 4, "Motherboard", "The socket to the CPU power does not work.", "Pending"),
+        (5, 5, "Hard Drive", "It's slow.", "Pending"),
+        (6, 6, "Fridge", "The fridge's cooling is faulty and does not work.", "Pending"),
+        (7, 7, "Freezer", "The freezer is producing heat instead of cooling.", "Pending"),
+        (8, 8, "Dishwasher", "The dishwasher ripped my clothes and broke.", "Pending"),
+        (9, 9, "Blender", "The blades were rusty and chipped.", "Pending"),
+        (10, 10, "Macboook", "The macbook does not power on even after charging.", "Pending")
     ]
     cursor.executemany("""
         INSERT INTO tickets (customer_id, product_id, product_category, ticket_claim, ticket_status)
@@ -98,15 +98,15 @@ def init_db():
     # Seed data for orders
     order_data = [
         (1, 1, 200.00, "Completed", "2024-9-11 10:43:23"),
-        (2, 1, 200.00, "Completed", "2024-9-11 10:43:23"),
-        (3, 2, 400.00, "Completed", "2024-9-11 10:43:23"),
-        (4, 3, 50.00, "Completed", "2024-9-11 10:43:23"),
-        (5, 4, 150.00, "Completed", "2024-9-11 10:43:23"),
-        (6, 2, 400.00, "Completed", "2022-9-11 10:43:23"),
-        (7, 4, 150.00, "Completed", "2024-9-11 10:43:23"),
-        (8, 3, 50.00, "Completed", "2024-9-11 10:43:23"),
-        (9, 5, 75.00, "Completed", "2024-9-11 10:43:23"),
-        (10, 5, 75.00, "Completed", "2024-9-11 10:43:23")
+        (2, 2, 400.00, "Completed", "2024-9-11 10:43:23"),
+        (3, 3, 50.00, "Completed", "2024-9-11 10:43:23"),
+        (4, 4, 150.00, "Completed", "2024-9-11 10:43:23"),
+        (5, 5, 75.00, "Completed", "2024-9-11 10:43:23"),
+        (6, 6, 400.00, "Completed", "2022-9-11 10:43:23"),
+        (7, 7, 200.00, "Completed", "2024-9-11 10:43:23"),
+        (8, 8, 500.00, "Completed", "2024-9-11 10:43:23"),
+        (9, 9, 300.00, "Completed", "2024-9-11 10:43:23"),
+        (10, 10, 2500.00, "Completed", "2024-9-11 10:43:23")
     ]
     cursor.executemany("""
         INSERT INTO orders (customer_id, product_id, order_price, order_status, order_date)
