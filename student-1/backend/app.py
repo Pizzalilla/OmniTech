@@ -7,8 +7,10 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import requests
 from backend import agent
 from backend.ai import AIUnavailable, summarise_product
+from backend.mcp_client import McpClient, McpError
 from database.db import (
     create_category,
     create_product,
@@ -46,6 +48,11 @@ app = Flask(
 
 # the unified home page
 HOME_URL = os.getenv("HOME_URL", "http://localhost:8080")
+
+# shared local MCP server
+MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() == "true"
+MCP_HOST = os.getenv("MCP_HOST", "http://localhost:6003")
+MCP_TIMEOUT = int(os.getenv("MCP_TIMEOUT", "30"))
 
 
 @app.context_processor
@@ -115,11 +122,56 @@ def product_ai_review(product_id):
     try:
         result = agent.run(product, list_specifications(product_id))
     except AIUnavailable as exc:
-        # htmx ignores the body of an error response, so the failure is
-        # rendered as a normal 200 fragment instead
+        # htmx ignores the body of an error response, so the failure will be rendered as a normal 200 fragment instead
         return render_template("partials/ai_review.html", error=str(exc))
 
     return render_template("partials/ai_review.html", result=result)
+
+
+def _parse_product_id_from_request():
+    if "product_id" in request.form:
+        return int(request.form.get("product_id"))
+    if request.is_json:
+        return int((request.get_json(silent=True) or {}).get("product_id"))
+    raise ValueError("missing product_id")
+
+
+def _call_mcp_tool(tool_name, arguments):
+    """Ask the shared MCP server to run one of our tools and return the JSON result."""
+    if not MCP_ENABLED:
+        return jsonify({"error": "MCP is disabled (MCP_ENABLED=false)."}), 200
+
+    try:
+        result = McpClient(MCP_HOST, timeout=MCP_TIMEOUT).call_tool(tool_name, arguments)
+    except McpError as exc:
+        return jsonify({"error": f"MCP server rejected the call: {exc}"}), 200
+    except requests.RequestException:
+        return jsonify({
+            "error": (
+                f"MCP server offline at {MCP_HOST}. "
+                "Start it with python server.py in ai-services/mcp-server."
+            )
+        }), 200
+
+    return jsonify(result)
+
+
+@app.route("/api/mcp/catalog-product", methods=["POST"])
+def mcp_catalog_product():
+    try:
+        product_id = _parse_product_id_from_request()
+    except (TypeError, ValueError):
+        return jsonify({"error": "product_id is required"}), 400
+    return _call_mcp_tool("get_catalog_product", {"product_id": product_id})
+
+
+@app.route("/api/mcp/catalog-specifications", methods=["POST"])
+def mcp_catalog_specifications():
+    try:
+        product_id = _parse_product_id_from_request()
+    except (TypeError, ValueError):
+        return jsonify({"error": "product_id is required"}), 400
+    return _call_mcp_tool("get_catalog_specifications", {"product_id": product_id})
 
 
 @app.route("/admin")
