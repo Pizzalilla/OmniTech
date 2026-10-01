@@ -1,0 +1,24 @@
+{% if products %}
+<p class="grid-count">{{ products | length }} product{{ '' if products | length == 1 else 's' }}</p>
+<div class="product-grid">
+    {% for product in products %}
+    <a class="product-card" href="{{ url_for('product_detail', product_id=product.id) }}">
+        <h3>{{ product.name }}</h3>
+        <p class="muted">{{ product.brand }} &middot; {{ product.category_name }}</p>
+        <p class="price">${{ '%.2f' | format(product.price) }}</p>
+        {% if product.stock == 0 %}
+        <span class="badge badge-cream">Out of stock</span>
+        {% elif product.stock < 5 %}
+        <span class="badge badge-sand">Low stock ({{ product.stock }})</span>
+        {% else %}
+        <span class="badge">In stock ({{ product.stock }})</span>
+        {% endif %}
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<section class="card">
+    <h2>No products found</h2>
+    <p class="muted">Try clearing a filter or searching for a different term.</p>
+</section>
+{% endif %}

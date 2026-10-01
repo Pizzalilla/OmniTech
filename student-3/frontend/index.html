@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniTech - AI Product Consultant</title>
+    <link rel="stylesheet" href="../../shared/frontend/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="service-header">
+            <h1>AI Product Consultant</h1>
+            <p>Conversational, catalog-grounded product advice for OmniTech Marketplace.</p>
+        </header>
+
+        <section class="card">
+            <h2>Launch the service</h2>
+            <p>The consultant is a Flask microservice. When the shared Docker Compose
+               stack is running it is served on port <strong>5003</strong>.</p>
+            <p style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+                <a class="btn" href="http://localhost:5003/">Open chat</a>
+                <a class="btn btn-secondary" href="http://localhost:5003/dashboard">Open dashboard</a>
+            </p>
+        </section>
+
+        <section class="card">
+            <h2>What it does</h2>
+            <ul class="order-list">
+                <li><span>HTMX chat interface for describing tech requirements</span></li>
+                <li><span>Dashboard of past consultations and saved recommendations</span></li>
+                <li><span>Agentic loop: catalog context, Ollama prompt, output validation, corrective re-prompt</span></li>
+                <li><span>REST API owning the ConsultationSessions, ChatLogs and SavedRecommendations tables</span></li>
+            </ul>
+        </section>
+    </div>
+</body>
+</html>

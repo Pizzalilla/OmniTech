@@ -1,0 +1,13 @@
+Policy Rules
+
+PC Hardware:
+- If the hardware was damaged or defective upon arrival, the claim should be approved.
+- If the hardware develops a fault during normal use and the customer did not cause it, the claim should be approved.
+- If the hardware was physically damaged by the customer, the claim should be rejected.
+- If the hardware was modified, incorrectly installed, or damaged through improper use, the claim should be rejected.
+
+Home Appliances:
+- If the appliance was damaged or defective upon arrival, the claim should be approved.
+- If the appliance stops working during normal use and the customer did not cause the fault, the claim should be approved.
+- If the appliance was physically damaged by the customer, the claim should be rejected.
+- If the appliance was damaged through improper use, misuse, or incorrect installation, the claim should be rejected.

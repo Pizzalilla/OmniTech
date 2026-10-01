@@ -1,0 +1,14 @@
+{% for msg in messages %}
+<div class="msg msg--{{ 'user' if msg.sender == 'user' else 'ai' }}">
+    <span class="msg__role">{{ 'You' if msg.sender == 'user' else 'Consultant' }}</span>
+    <div class="msg__bubble">{{ msg.message_text }}</div>
+    <span class="msg__time">{{ msg.created_at }}</span>
+</div>
+{% else %}
+<div class="empty-inline">
+    <div class="ei-ico">&#129302;</div>
+    <h3>Ask the consultant anything</h3>
+    <p>Describe your budget, use case and must-haves &mdash; you&rsquo;ll get product picks
+       from the OmniTech catalog with a short rationale.</p>
+</div>
+{% endfor %}
