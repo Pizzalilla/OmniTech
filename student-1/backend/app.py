@@ -10,6 +10,7 @@ if str(ROOT) not in sys.path:
 
 import requests
 from backend import agent
+from backend import rag_client
 from backend.ai import AIUnavailable, summarise_product
 from backend.mcp_client import McpClient, McpError
 from database.db import (
@@ -50,10 +51,11 @@ app = Flask(
 # the unified home page
 HOME_URL = os.getenv("HOME_URL", "http://localhost:8080")
 
-# shared local MCP server
+# shared local MCP / RAG servers
 MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() == "true"
 MCP_HOST = os.getenv("MCP_HOST", "http://localhost:6003")
 MCP_TIMEOUT = int(os.getenv("MCP_TIMEOUT", "30"))
+RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
 
 
 @app.context_processor
@@ -216,6 +218,27 @@ def mcp_catalog_specifications():
             "get_catalog_specifications", {}, "error", error="Please enter a valid product id."
         )
     return _call_mcp_tool("get_catalog_specifications", {"product_id": product_id})
+
+
+@app.route("/api/rag/query", methods=["POST"])
+def rag_query():
+    """Forward a question to the shared RAG server."""
+    if request.is_json:
+        query_text = ((request.get_json(silent=True) or {}).get("query") or "").strip()
+    else:
+        query_text = (request.form.get("query") or "").strip()
+    if not query_text:
+        return jsonify({"error": "query is required"}), 400
+
+    if not RAG_ENABLED:
+        return jsonify({"error": "RAG is disabled (RAG_ENABLED=false)."}), 200
+
+    try:
+        result = rag_client.ask(query_text)
+    except requests.RequestException:
+        return jsonify({"error": "The shared RAG server is not reachable right now."}), 200
+
+    return jsonify(result)
 
 
 @app.route("/admin")
