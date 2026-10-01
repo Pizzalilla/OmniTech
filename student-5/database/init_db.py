@@ -70,7 +70,7 @@ def init_db():
         (7, 7, "Freezer", "The freezer is producing heat instead of cooling.", "Pending"),
         (8, 8, "Dishwasher", "The dishwasher ripped my clothes and broke.", "Pending"),
         (9, 9, "Blender", "The blades were rusty and chipped.", "Pending"),
-        (10, 10, "Macboook", "The macbook does not power on even after charging.", "Pending")
+        (10, 10, "Macbook", "The macbook does not power on even after charging.", "Pending")
     ]
     cursor.executemany("""
         INSERT INTO tickets (customer_id, product_id, product_category, ticket_claim, ticket_status)

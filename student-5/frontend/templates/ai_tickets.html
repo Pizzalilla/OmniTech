@@ -179,6 +179,10 @@
                 ticketNumber.textContent = `Ticket #${data.ticket_id}`;
                 decision.textContent = data.decision;
                 reasoning.textContent = data.reasoning;
+                document.getElementById("resultTitle").textContent = "AI Evaluation Result";
+                document.getElementById("reviewBox").classList.add("hidden");
+                document.getElementById("updateButton").classList.remove("hidden");
+                document.getElementById("reevaluateResultButton").classList.add("hidden");
                 resultCard.classList.remove("hidden");
             } catch (error) {
                 console.error(error);
