@@ -1,16 +1,23 @@
 """
-Shared agentic loop validator for MCP and RAG.
+Shared team agentic loop: Plan -> Act -> Observe -> Adapt (spec section 4.3),
+extended for Release 1 with MCP and RAG validation modes alongside the
+Release 0 AI-mode.
 
 Modes:
-    MCP -> validates using the shared MCP server on localhost:6003
-    RAG -> validates using the shared RAG server on localhost:6002
+    ai  -> Release 0 AI-mode: the local LLM answers with no external context
+    mcp -> validates using the shared MCP server on localhost:6003
+    rag -> validates using the shared RAG server on localhost:6002
 
-The loop itself uses local Ollama for:
-    PLAN -> ACT -> REVIEW
+Stages (local Ollama does Act and Observe):
+    PLAN    gather evidence for the mode (MCP tool result, RAG answer, or none)
+    ACT     answer the request (grounded only in the evidence for mcp/rag)
+    OBSERVE check the answer: grounded in the evidence (mcp/rag) or
+            well-formed and on-topic (ai)
+    ADAPT   if OBSERVE rejects, turn its feedback into a correction and retry
 
-ACT generates an answer and reasoning based only on the retrieved evidence.
-REVIEW checks whether the answer and reasoning are supported by that evidence.
-Validation PASS means the reviewer agrees that the output is evidence-grounded.
+PASS means OBSERVE accepted an answer within the retry budget. If PLAN gets
+no evidence (MCP error, RAG insufficient context, server down) the loop fails
+before ACT runs, so it never invents an answer.
 """
 
 import importlib.util
@@ -155,79 +162,121 @@ def rag_validate(ticket):
             "error": str(exc),
         }
 
+# PLAN (Release 0 AI-mode): no external evidence
+def ai_mode_context(ticket):
+    return {
+        "available": True,
+        "mode": "ai",
+        "note": "Release 0 AI-mode: no external context; the local LLM answers directly.",
+    }
+
+
 # ACT
-def act(ticket, evidence, correction=""):
+def act(ticket, evidence, correction="", grounded=True):
+    if grounded:
+        rules = (
+            "Answer the request using ONLY the supplied validation evidence.\n"
+            "Do not invent facts that are not present in the evidence.\n"
+            "The reasoning must explain how the evidence supports the answer."
+        )
+    else:
+        rules = (
+            "Answer the request directly using your own knowledge (Release 0 AI-mode,\n"
+            "no retrieved context). Do not claim to have used any sources.\n"
+            "The reasoning must explain how you reached the answer."
+        )
     prompt = f"""
-You are the ACT agent in a shared agentic-loop validation test.
+You are the ACT step of a Plan -> Act -> Observe -> Adapt agentic loop.
 
-Your job is to answer the user's request using ONLY the supplied validation
-evidence.
+{rules}
 
-TICKET:
+REQUEST:
 {json.dumps(ticket, indent=2)}
 
 VALIDATION EVIDENCE:
 {json.dumps(evidence, indent=2)}
 
-Previous reviewer correction:
+Correction from the previous OBSERVE step (empty on the first attempt):
 {correction}
-
-Generate an answer that is directly supported by the evidence.
-
-Do not invent facts that are not present in the evidence.
 
 Return ONLY JSON in this format:
 
 {{
-  "answer": "your answer based on the evidence",
-  "reasoning": "explain how the evidence supports the answer"
+  "answer": "your answer",
+  "reasoning": "your reasoning"
 }}
-
-The answer must address the request in the ticket.
-The reasoning must explain the connection between the evidence and the answer.
 """
-    
     return ollama_json(prompt)
 
-# REVIEW
-def review(ticket, evaluation, evidence):
+
+# OBSERVE
+def observe(ticket, evaluation, evidence, grounded=True):
+    if grounded:
+        check = (
+            "Check whether the ACT answer and reasoning are supported by the\n"
+            "supplied validation evidence. Reject anything stated that is not in\n"
+            "the evidence. Do NOT introduce outside knowledge."
+        )
+    else:
+        check = (
+            "This is Release 0 AI-mode, so there is no evidence to ground against.\n"
+            "Check that the ACT answer actually addresses the request, that the\n"
+            "reasoning supports the answer, and that it does not claim to cite sources."
+        )
     prompt = f"""
-You are the REVIEW agent in a shared agentic-loop validation test.
+You are the OBSERVE step of a Plan -> Act -> Observe -> Adapt agentic loop.
+Do NOT answer the request yourself; only judge the ACT output.
 
-Your job is to check whether the ACT agent's answer and reasoning are
-supported by the supplied validation evidence.
+{check}
 
-Do NOT answer the ticket yourself.
-Do NOT introduce outside knowledge.
-Only judge whether the ACT output is grounded in the supplied evidence.
-
-TICKET:
+REQUEST:
 {json.dumps(ticket, indent=2)}
 
 VALIDATION EVIDENCE:
 {json.dumps(evidence, indent=2)}
 
-ACT AGENT OUTPUT:
+ACT OUTPUT:
 {json.dumps(evaluation, indent=2)}
 
-If the answer and reasoning are supported by the evidence, return:
-
+If the ACT output passes, return:
 {{
   "status": "APPROVED",
-  "feedback": "The answer and reasoning are supported by the evidence."
+  "feedback": "Why the answer passes."
 }}
 
-If they are not sufficiently supported, return:
-
+If it does not, return:
 {{
   "status": "REJECTED",
-  "feedback": "Explain exactly what information is unsupported, missing, or incorrect."
+  "feedback": "Exactly what is unsupported, missing, or incorrect."
 }}
 
 Return ONLY JSON.
 """
-
     return ollama_json(prompt)
+
+
+# ADAPT
+def adapt(observation):
+    return (
+        "Your previous answer was rejected by the OBSERVE step: "
+        + observation.get("feedback", "Correct the previous answer.")
+        + " Produce a corrected answer that fixes this."
+    )
+
+
+def _ollama_failure(validation_mode, evidence, attempts, exc):
+    """Evidence was retrieved but the local LLM failed - report it, don't crash."""
+    print(f"\nOllama unavailable or returned invalid output: {exc}")
+    return {
+        "status": "FAIL",
+        "validation_mode": validation_mode,
+        "error": f"Ollama unavailable or returned invalid output: {exc}",
+        "evidence": evidence,
+        "attempts": attempts,
+    }
+
+
+_ACCEPTED = {"APPROVED", "PASS", "PASSED", "CORRECT", "VALID", "ACCEPTED"}
 
 
 # SHARED AGENTIC LOOP
@@ -240,91 +289,74 @@ def run_agentic_evaluation(
     max_retries=MAX_RETRIES,
 ):
     print("\n========================================")
-    print("SHARED AGENTIC LOOP")
+    print("SHARED AGENTIC LOOP  (Plan -> Act -> Observe -> Adapt)")
     print("========================================")
     print(f"Validation mode: {validation_mode.upper()}")
 
     # PLAN
     print("\n[PLAN]")
-
     if validation_mode == "mcp":
         if not mcp_tool_name:
-            raise ValueError(
-                "--tool is required when using MCP validation"
-            )
-        evidence = mcp_validate(
-            mcp_tool_name,
-            mcp_arguments,
-        )
+            raise ValueError("--tool is required when using MCP validation")
+        evidence = mcp_validate(mcp_tool_name, mcp_arguments)
     elif validation_mode == "rag":
-
         evidence = rag_validate(ticket)
+    elif validation_mode == "ai":
+        evidence = ai_mode_context(ticket)
     else:
-        raise ValueError(
-            "validation_mode must be 'mcp' or 'rag'"
-        )
-    print(
-        json.dumps(
-            evidence,
-            indent=2,
-        )
-    )
+        raise ValueError("validation_mode must be 'ai', 'mcp' or 'rag'")
+    print(json.dumps(evidence, indent=2))
+
     if not evidence["available"]:
         return {
             "status": "FAIL",
             "validation_mode": validation_mode,
             "error": evidence.get("error"),
+            "evidence": evidence,
         }
+
+    grounded = validation_mode != "ai"
     correction = ""
     attempts = []
 
-    # ACT → REVIEW
     for attempt in range(1, max_retries + 2):
-        print(f"\n[ATTEMPT {attempt}]")
-        evaluation = act(
-            ticket,
-            evidence,
-            correction,
-        )
-        print("AI answer   :", evaluation.get("answer"))
-        print("AI reasoning:", evaluation.get("reasoning"))
+        # ACT
+        print(f"\n[ACT] attempt {attempt}")
+        try:
+            evaluation = act(ticket, evidence, correction, grounded=grounded)
+        except (requests.RequestException, ValueError) as exc:
+            return _ollama_failure(validation_mode, evidence, attempts, exc)
+        if not isinstance(evaluation, dict):
+            evaluation = {}
+        print("Answer   :", evaluation.get("answer"))
+        print("Reasoning:", evaluation.get("reasoning"))
+
+        # OBSERVE
+        print(f"\n[OBSERVE] attempt {attempt}")
         if (
-            not isinstance(evaluation, dict)
-            or "answer" not in evaluation
-            or "reasoning" not in evaluation
-            or not str(evaluation["answer"]).strip()
-            or not str(evaluation["reasoning"]).strip()
+            not str(evaluation.get("answer", "")).strip()
+            or not str(evaluation.get("reasoning", "")).strip()
         ):
-            review_result = {
+            observation = {
                 "status": "REJECTED",
-                "feedback": (
-                    "The AI did not return both required fields: "
-                    "answer and reasoning."
-                ),
+                "feedback": "The AI did not return both required fields: answer and reasoning.",
             }
         else:
-            review_result = review(
-                ticket,
-                evaluation,
-                evidence,
-            )
-        print("Review      :", review_result.get("status"),)
-        print("Feedback    :", review_result.get("feedback"),)
-        attempts.append({
-            "attempt": attempt,
-            "evaluation": evaluation,
-            "review": review_result,
-        })
-        if str(
-            review_result.get("status", "")
-        ).upper() in {
-            "APPROVED",
-            "PASS",
-            "PASSED",
-            "CORRECT",
-            "VALID",
-            "ACCEPTED",
-        }:
+            try:
+                observation = observe(ticket, evaluation, evidence, grounded=grounded)
+            except (requests.RequestException, ValueError) as exc:
+                return _ollama_failure(validation_mode, evidence, attempts, exc)
+            if not isinstance(observation, dict):
+                observation = {
+                    "status": "REJECTED",
+                    "feedback": "The OBSERVE step did not return a JSON object.",
+                }
+        print("Status   :", observation.get("status"))
+        print("Feedback :", observation.get("feedback"))
+
+        attempts.append({"attempt": attempt, "evaluation": evaluation, "observation": observation})
+
+        if str(observation.get("status", "")).upper() in _ACCEPTED:
             return {
                 "status": "PASS",
                 "answer": evaluation.get("answer"),
@@ -333,10 +365,12 @@ def run_agentic_evaluation(
                 "evidence": evidence,
                 "attempts": attempts,
             }
-        correction = review_result.get(
-            "feedback",
-            "Correct the previous answer.",
-        )
+
+        # ADAPT
+        if attempt <= max_retries:
+            print(f"\n[ADAPT] attempt {attempt}")
+            correction = adapt(observation)
+            print(correction)
 
     final = attempts[-1]["evaluation"]
     return {
@@ -347,6 +381,7 @@ def run_agentic_evaluation(
         "evidence": evidence,
         "attempts": attempts,
     }
+
 
 def print_report(result):
     print("\n========================================")
