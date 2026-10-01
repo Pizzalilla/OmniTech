@@ -111,7 +111,8 @@
         Questions go through this backend to the shared local RAG server.
         Answers use retrieved knowledge, with source citations and a confidence category.
         If nothing relevant is found, an insufficient-context message is shown instead.
-        On this page, questions are automatically linked to <strong>{{ product.name }}</strong>.
+        On this page, product questions are linked to <strong>{{ product.name }}</strong>.
+        Policy questions (returns, warranty, shipping) use the shared policy knowledge as-is.
     </p>
 
     <form class="rag-form"
@@ -121,7 +122,7 @@
           hx-disabled-elt="find button[type=submit]">
         <input type="hidden" name="product_id" value="{{ product.id }}">
         <input class="rag-form__input" name="query" type="text" autocomplete="off"
-               placeholder="e.g. What are the specs? or What is the return policy?"
+               placeholder="e.g. What is the capacity? or What is the return policy?"
                required>
         <button type="submit" class="btn">Ask RAG</button>
     </form>

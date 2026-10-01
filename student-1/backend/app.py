@@ -225,6 +225,16 @@ def mcp_catalog_specifications():
     return _call_mcp_tool("get_catalog_specifications", {"product_id": product_id})
 
 
+def _looks_like_policy_question(query_text):
+    policy_words = {
+        "return", "returns", "refund", "warranty", "shipping", "delivery",
+        "privacy", "payment", "account", "policy", "policies", "cancel",
+        "order", "faq",
+    }
+    tokens = {t.strip(".,!?;:").lower() for t in query_text.split()}
+    return bool(tokens & policy_words)
+
+
 @app.route("/api/rag/query", methods=["POST"])
 def rag_query():
     """Forward a question to the shared RAG server."""
@@ -244,14 +254,12 @@ def rag_query():
             result={"error": "Please enter a question."},
         )
 
-    # On a product page, include the product name so shared RAG can match knowledge files
-    if product_id:
+    # Only add the product name/brand for product questions. Avoid injecting generic
+    # words like "capacity" here - they match every category and drown the product.
+    if product_id and not _looks_like_policy_question(query_text):
         product = get_product(int(product_id))
         if product is not None:
-            query_text = (
-                f"About the OmniTech product {product['name']} by {product['brand']}: "
-                f"{query_text}"
-            )
+            query_text = f"{product['name']} {product['brand']}: {query_text}"
 
     if not RAG_ENABLED:
         result = {"error": "RAG is disabled (RAG_ENABLED=false)."}
