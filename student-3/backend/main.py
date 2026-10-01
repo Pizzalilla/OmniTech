@@ -10,10 +10,13 @@ from database import get_db, init_db, seed_db
 import agent
 import catalog
 import rag_client
+from mcp_client import McpClient, McpError
 
 # Retained but disabled during CI/CD (see .github/workflows/student-3.yml) -
-# the shared RAG server is a local-only dependency that CI can't run.
+# the shared RAG and MCP servers are local-only dependencies that CI can't run.
 RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
+MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() == "true"
+mcp = McpClient(os.getenv("MCP_HOST", "http://localhost:6003"))
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
@@ -481,6 +484,33 @@ def rag_query():
 
     if _is_htmx():
         return render_template("partials/rag_result.html", result=result)
+    return jsonify(result)
+
+
+# ── Shared MCP server: verify recommendations via the shared tool registry ──
+
+@app.route("/api/sessions/<int:session_id>/mcp-check", methods=["GET"])
+def mcp_check_recommendations(session_id):
+    """Fetch this session's saved recommendations through the shared MCP
+    server's get_saved_recommendations tool, instead of this service's own
+    /recommendations route - proving the round trip through the shared tool
+    registry (see ai-services/mcp-server/tools/student3.py) rather than just
+    reading the local database directly.
+    """
+    if not MCP_ENABLED:
+        result = {"error": "MCP integration is disabled in this environment."}
+    else:
+        try:
+            call = mcp.call_tool("get_saved_recommendations", {"session_id": session_id})
+            if call["isError"]:
+                result = {"error": call["content"][0]["text"]}
+            else:
+                result = call["structuredContent"]
+        except (requests.RequestException, McpError):
+            result = {"error": "The shared MCP server is not reachable right now."}
+
+    if _is_htmx():
+        return render_template("partials/mcp_result.html", result=result)
     return jsonify(result)
 
 

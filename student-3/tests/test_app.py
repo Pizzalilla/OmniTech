@@ -340,3 +340,72 @@ def test_rag_query_disabled_via_env(client, monkeypatch):
     rv = client.post("/api/rag/query", json={"query": "what is your return policy"})
     assert rv.status_code == 200
     assert "disabled" in rv.get_json()["error"]
+
+
+# ── Shared MCP server integration ────────────────────────────────────────────
+
+def test_mcp_check_returns_tool_result(client, monkeypatch):
+    import main
+
+    def _fake_call_tool(name, arguments):
+        assert name == "get_saved_recommendations"
+        assert arguments == {"session_id": 1}
+        return {
+            "isError": False,
+            "structuredContent": {
+                "session_id": 1,
+                "recommendations": [{"summary": "Workstation laptop.", "product_ids": ["LAP-001"]}],
+            },
+        }
+    monkeypatch.setattr(main.mcp, "call_tool", _fake_call_tool)
+
+    rv = client.get("/api/sessions/1/mcp-check")
+    assert rv.status_code == 200
+    body = rv.get_json()
+    assert body["session_id"] == 1
+    assert body["recommendations"][0]["product_ids"] == ["LAP-001"]
+
+
+def test_mcp_check_htmx_renders_tool_name(client, monkeypatch):
+    import main
+    monkeypatch.setattr(main.mcp, "call_tool", lambda name, arguments: {
+        "isError": False,
+        "structuredContent": {"session_id": 1, "recommendations": []},
+    })
+
+    rv = client.get("/api/sessions/1/mcp-check", headers={"HX-Request": "true"})
+    assert rv.status_code == 200
+    assert b"get_saved_recommendations" in rv.data
+
+
+def test_mcp_check_surfaces_tool_error(client, monkeypatch):
+    import main
+    monkeypatch.setattr(main.mcp, "call_tool", lambda name, arguments: {
+        "isError": True, "content": [{"type": "text", "text": "Session #999 not found"}],
+    })
+
+    rv = client.get("/api/sessions/1/mcp-check")
+    assert rv.status_code == 200
+    assert rv.get_json()["error"] == "Session #999 not found"
+
+
+def test_mcp_check_handles_unreachable_mcp_server(client, monkeypatch):
+    import main
+    import requests
+
+    def _boom(name, arguments):
+        raise requests.ConnectionError("refused")
+    monkeypatch.setattr(main.mcp, "call_tool", _boom)
+
+    rv = client.get("/api/sessions/1/mcp-check")
+    assert rv.status_code == 200
+    assert "not reachable" in rv.get_json()["error"]
+
+
+def test_mcp_check_disabled_via_env(client, monkeypatch):
+    import main
+    monkeypatch.setattr(main, "MCP_ENABLED", False)
+
+    rv = client.get("/api/sessions/1/mcp-check")
+    assert rv.status_code == 200
+    assert "disabled" in rv.get_json()["error"]

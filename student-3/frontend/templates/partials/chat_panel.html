@@ -17,6 +17,10 @@
         <div id="reco-list">
             {% include "partials/recommendations.html" %}
         </div>
+        <button class="btn-mini" style="margin-top:8px"
+                hx-get="/api/sessions/{{ session.id }}/mcp-check"
+                hx-target="#mcp-result" hx-swap="innerHTML">Verify via MCP</button>
+        <div id="mcp-result"></div>
     </div>
 
     <div class="dock">
