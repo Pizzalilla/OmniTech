@@ -63,7 +63,7 @@
             </table>
         </div>
 
-        <!-- AI Evaluation & Update Ticket -->
+        <!-- AI Evaluation, Re-evaluate and Update Ticket -->
         <main class="ticket-section">
             <div id="loading" class="status-card hidden">
                 <div class="spinner"></div>
@@ -71,8 +71,16 @@
             </div>
 
             <div id="errorCard" class="error-card hidden">
-                <h3>Evaluation Failed</h3>
+                <h3 id="errorTitle">Evaluation Failed</h3>
                 <p id="errorMessage"></p>
+                <p id="errorDetail"></p>
+                <button
+                    id="reevaluateButton"
+                    class="evaluate-button hidden"
+                    onclick="reevaluateTicket()"
+                >
+                    Re-evaluate
+                </button>
             </div>
 
             <div id="resultCard" class="result-card hidden">
@@ -109,6 +117,7 @@
         let currentDecision = "";
         let currentReasoning = "";
         async function evaluateTicket(ticketId) {
+            currentTicketId = ticketId;
             const loading = document.getElementById("loading");
             const resultCard = document.getElementById("resultCard");
             const errorCard = document.getElementById("errorCard");
@@ -136,7 +145,17 @@
                     }
                 );
                 const data = await response.json();
-                if (!response.ok || !data.success) {
+                if (!response.ok) {
+                    throw new Error(
+                        data.error || "A server error occurred."
+                    );
+                }
+
+                if (!data.success) {
+                    if (data.failure_type === "verification_failed") {
+                        showVerificationFailure(data);
+                        return;
+                    }
                     throw new Error(
                         data.error || "AI Evaluation failed."
                     );
@@ -155,6 +174,35 @@
             } finally {
                 loading.classList.add("hidden");
             }
+        }
+
+        async function reevaluateTicket() {
+            if (!currentTicketId) {
+                return;
+            }
+            await evaluateTicket(currentTicketId);
+        }
+
+        function showVerificationFailure(data) {
+            const errorCard = document.getElementById("errorCard");
+            const errorTitle = document.getElementById("errorTitle");
+            const errorMessage = document.getElementById("errorMessage");
+            const errorDetail = document.getElementById("errorDetail");
+            const reevaluateButton = document.getElementById("reevaluateButton");
+
+            errorTitle.textContent = "AI Evaluation Did Not Pass Review";
+
+            errorMessage.textContent =
+                data.error ||
+                "The AI evaluation did not pass verification.";
+
+            errorDetail.textContent =
+                data.review?.feedback ||
+                "The review agent determined that the AI's evaluation was not valid.";
+
+            reevaluateButton.classList.remove("hidden");
+
+            errorCard.classList.remove("hidden");
         }
 
         async function updateTicket() {

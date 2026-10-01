@@ -5,8 +5,6 @@ STUDENT5_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, STUDENT5_DIR)
 
 from flask import Flask, render_template, jsonify, send_from_directory, request
-# from llm_client import OLLAMA_MODEL, create_chat_completion
-# from prompt_loader import load_prompt
 from database.app import get_db_connection
 from database.init_db import init_db
 
@@ -25,7 +23,6 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/tickets")
 def tickets():
@@ -89,20 +86,17 @@ def ai_evaluate_ticket(ticket_id):
                 "success": False,
                 "error": f"Ticket {ticket_id} not found."
             }), 404
-
         result = run_agentic_evaluation(ticket)
+
         if not result["success"]:
-            return jsonify({
-                "success": False,
-                "ticket_id": ticket_id,
-                "error": result["error"],
-                "review": result.get("review"),
-                "attempts": result.get("attempts")
-            }), 503
+            if result.get("failure_type") == "verification_failed":
+                return jsonify(result), 200
+
+            return jsonify(result), 500
 
         return jsonify({
             "success": True,
-            "ticket_id": ticket_id,
+            "ticket_id": ticket["ticket_id"],
             "decision": result["decision"],
             "reasoning": result["reasoning"],
             "review": result["review"],

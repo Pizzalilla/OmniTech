@@ -206,11 +206,16 @@ def run_agentic_evaluation(ticket):
     log_agent("FAILED", f"Ticket {ticket['ticket_id']} failed verification.")
 
     return {
-        "success": False,
-        "error": (
-            f"AI evaluation failed verification "
-            f"after {MAX_RETRIES + 1} attempts."
-        ),
-        "review": review,
-        "attempts": MAX_RETRIES + 1
-    }
+    "success": False,
+    "failure_type": "verification_failed",
+    "error": (
+        f"The AI evaluation was rejected by the review agent "
+        f"after {MAX_RETRIES + 1} attempts."
+    ),
+    "message": (
+        "The evaluation completed, but the AI's decision and/or "
+        "reasoning did not pass verification."
+    ),
+    "review": review,
+    "attempts": MAX_RETRIES + 1
+}
