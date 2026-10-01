@@ -228,10 +228,14 @@ def mcp_catalog_specifications():
 @app.route("/api/rag/query", methods=["POST"])
 def rag_query():
     """Forward a question to the shared RAG server."""
+    payload = request.get_json(silent=True) or {}
     if request.is_json:
-        query_text = ((request.get_json(silent=True) or {}).get("query") or "").strip()
+        query_text = (payload.get("query") or "").strip()
+        product_id = payload.get("product_id")
     else:
         query_text = (request.form.get("query") or "").strip()
+        product_id = request.form.get("product_id", type=int)
+
     if not query_text:
         if _wants_json():
             return jsonify({"error": "query is required"}), 400
@@ -239,6 +243,15 @@ def rag_query():
             "partials/rag_result.html",
             result={"error": "Please enter a question."},
         )
+
+    # On a product page, include the product name so shared RAG can match knowledge files
+    if product_id:
+        product = get_product(int(product_id))
+        if product is not None:
+            query_text = (
+                f"About the OmniTech product {product['name']} by {product['brand']}: "
+                f"{query_text}"
+            )
 
     if not RAG_ENABLED:
         result = {"error": "RAG is disabled (RAG_ENABLED=false)."}
