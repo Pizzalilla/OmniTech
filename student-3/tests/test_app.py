@@ -12,7 +12,16 @@ os.environ["DB_PATH"] = os.path.join(tempfile.mkdtemp(), "bootstrap.db")
 
 import agent  # noqa: E402
 import database  # noqa: E402
+import main  # noqa: E402
 from main import app  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def integrations_enabled(monkeypatch):
+    # CI runs with RAG_ENABLED/MCP_ENABLED=false; these tests fake both servers,
+    # so switch the flags on per test (the *_disabled_via_env tests turn them off).
+    monkeypatch.setattr(main, "RAG_ENABLED", True)
+    monkeypatch.setattr(main, "MCP_ENABLED", True)
 
 
 @pytest.fixture

@@ -21,6 +21,8 @@ student-3/
     main.py       Flask app: pages, REST API, HTMX partials
     agent.py      Plan -> Act -> Observe -> Adapt consultation loop
     catalog.py    Mock product catalog + keyword search / validation helpers
+    rag_client.py HTTP client for the shared RAG server (Release 1)
+    mcp_client.py MCP client for the shared MCP server (copied from ai-services/mcp-server)
   database/
     database.py   Schema, connection helper, demo seed data
   frontend/
@@ -36,8 +38,11 @@ student-3/
 
 ### With the shared stack
 
+Ollama, the MCP server and the RAG server run on your machine, not in Docker
+(see the root `README.md`). Start them first, then:
+
 ```
-docker compose up student-3 ollama-service
+docker compose up --build student-3
 ```
 
 Chat UI: <http://localhost:5003/> — Dashboard: <http://localhost:5003/dashboard>
@@ -63,6 +68,12 @@ so the UI still works.
 | `OLLAMA_TIMEOUT`| `120`                    | Per-request timeout (seconds)   |
 | `DB_PATH`       | `database/consultant.db` | SQLite file location            |
 | `PORT`          | `5000`                   | HTTP port                       |
+| `RAG_HOST`      | `http://localhost:6002`  | Shared RAG server               |
+| `RAG_ENABLED`   | `true`                   | `false` in CI (no RAG server there) |
+| `MCP_HOST`      | `http://localhost:6003`  | Shared MCP server               |
+| `MCP_ENABLED`   | `true`                   | `false` in CI (no MCP server there) |
+
+Compose sets `OLLAMA_HOST`, `RAG_HOST` and `MCP_HOST` to `http://host.docker.internal:...`.
 
 ## Data ownership
 
@@ -110,6 +121,27 @@ Other microservices must go through the REST API below.
 | Method | Path | Body | Response |
 |--------|------|------|----------|
 | POST   | `/api/chat` | `{session_id, message}` | JSON, or an HTMX HTML fragment when sent with `HX-Request: true` |
+
+### Release 1: shared RAG and MCP
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| POST   | `/api/rag/query` | `{query}` or form `query` | Grounded answer with `citations` and `confidence`, or `insufficient_context` |
+| GET    | `/api/sessions/<id>/mcp-check` | — | The session's saved recommendations, fetched through the shared MCP tool `get_saved_recommendations` |
+
+Both return JSON, or an HTMX fragment with `HX-Request: true`, and degrade to a
+clear error message if the shared server is down or the flag is disabled.
+
+## Release 1: RAG and MCP integration
+
+* **RAG** - the chat view's "Ask about policies & FAQs" panel calls
+  `/api/rag/query`, which forwards the question to the shared RAG server and
+  shows the answer with a confidence badge and its source citations. Out-of-scope
+  questions show the insufficient-context message instead of a guessed answer.
+* **MCP** - the "Verify via MCP" button under Saved recommendations calls
+  `/api/sessions/<id>/mcp-check`, which runs the `get_saved_recommendations` tool
+  on the shared MCP server. That tool (`ai-services/mcp-server/tools/student3.py`)
+  is read-only: it only GETs this service's own `/api/sessions/<id>/recommendations`.
 
 ## Agentic loop
 
