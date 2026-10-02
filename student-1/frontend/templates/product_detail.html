@@ -78,4 +78,54 @@
 
     {% include "partials/ai_review_launcher.html" %}
 </section>
+
+<section class="card">
+    <h2>MCP Catalogue Lookup</h2>
+    <p>
+        Runs through this feature's backend to the shared local MCP server.
+        Tools are read-only and pull catalogue data from the Student 1 API.
+    </p>
+
+    <div class="mcp-actions">
+        <form hx-post="{{ url_for('mcp_catalog_product') }}"
+              hx-target="#mcp-result"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type=submit]">
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <button type="submit" class="btn">Look up product via MCP</button>
+        </form>
+        <form hx-post="{{ url_for('mcp_catalog_specifications') }}"
+              hx-target="#mcp-result"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type=submit]">
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <button type="submit" class="btn btn-secondary">Look up specs via MCP</button>
+        </form>
+    </div>
+    <div id="mcp-result"></div>
+</section>
+
+<section class="card">
+    <h2>Ask policies &amp; catalogue FAQs (RAG)</h2>
+    <p>
+        Questions go through this backend to the shared local RAG server.
+        Answers use retrieved knowledge, with source citations and a confidence category.
+        If nothing relevant is found, an insufficient-context message is shown instead.
+        On this page, product questions are linked to <strong>{{ product.name }}</strong>.
+        Policy questions (returns, warranty, shipping) use the shared policy knowledge as-is.
+    </p>
+
+    <form class="rag-form"
+          hx-post="{{ url_for('rag_query') }}"
+          hx-target="#rag-result"
+          hx-swap="innerHTML"
+          hx-disabled-elt="find button[type=submit]">
+        <input type="hidden" name="product_id" value="{{ product.id }}">
+        <input class="rag-form__input" name="query" type="text" autocomplete="off"
+               placeholder="e.g. What is the capacity? or What is the return policy?"
+               required>
+        <button type="submit" class="btn">Ask RAG</button>
+    </form>
+    <div id="rag-result"></div>
+</section>
 {% endblock %}

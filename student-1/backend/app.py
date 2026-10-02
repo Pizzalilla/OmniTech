@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import sys
@@ -7,8 +8,11 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+import requests
 from backend import agent
+from backend import rag_client
 from backend.ai import AIUnavailable, summarise_product
+from backend.mcp_client import McpClient, McpError
 from database.db import (
     create_category,
     create_product,
@@ -46,6 +50,12 @@ app = Flask(
 
 # the unified home page
 HOME_URL = os.getenv("HOME_URL", "http://localhost:8080")
+
+# shared local MCP / RAG servers
+MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() == "true"
+MCP_HOST = os.getenv("MCP_HOST", "http://localhost:6003")
+MCP_TIMEOUT = int(os.getenv("MCP_TIMEOUT", "30"))
+RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
 
 
 @app.context_processor
@@ -115,11 +125,153 @@ def product_ai_review(product_id):
     try:
         result = agent.run(product, list_specifications(product_id))
     except AIUnavailable as exc:
-        # htmx ignores the body of an error response, so the failure is
-        # rendered as a normal 200 fragment instead
+        # htmx ignores the body of an error response, so the failure will be rendered as a normal 200 fragment instead
         return render_template("partials/ai_review.html", error=str(exc))
 
     return render_template("partials/ai_review.html", result=result)
+
+
+def _parse_product_id_from_request():
+    if "product_id" in request.form:
+        return int(request.form.get("product_id"))
+    if request.is_json:
+        return int((request.get_json(silent=True) or {}).get("product_id"))
+    raise ValueError("missing product_id")
+
+
+def _wants_json():
+    # HTMX and normal browser forms get HTML; only JSON API clients get JSON
+    if request.headers.get("HX-Request", "").lower() == "true":
+        return False
+    if request.form:
+        return False
+    return bool(request.is_json)
+
+
+def _mcp_fragment(tool_name, arguments, status, error=None, data=None, raw=None):
+    return render_template(
+        "partials/mcp_result.html",
+        tool_name=tool_name,
+        arguments=arguments,
+        status=status,
+        error=error,
+        data=data,
+        raw=raw,
+    )
+
+
+def _call_mcp_tool(tool_name, arguments):
+    """Ask the shared MCP server to run one of our tools."""
+    want_json = _wants_json()
+
+    if not MCP_ENABLED:
+        if want_json:
+            return jsonify({"error": "MCP is disabled (MCP_ENABLED=false)."}), 200
+        return _mcp_fragment(
+            tool_name, arguments, "error", error="MCP is disabled (MCP_ENABLED=false)."
+        )
+
+    try:
+        result = McpClient(MCP_HOST, timeout=MCP_TIMEOUT).call_tool(tool_name, arguments)
+    except McpError as exc:
+        if want_json:
+            return jsonify({"error": f"MCP server rejected the call: {exc}"}), 200
+        return _mcp_fragment(
+            tool_name, arguments, "error", error=f"MCP server rejected the call: {exc}"
+        )
+    except requests.RequestException:
+        message = (
+            f"MCP server offline at {MCP_HOST}. "
+            "Start it with python server.py in ai-services/mcp-server."
+        )
+        if want_json:
+            return jsonify({"error": message}), 200
+        return _mcp_fragment(tool_name, arguments, "error", error=message)
+
+    if want_json:
+        return jsonify(result)
+
+    raw = json.dumps(result, indent=2)
+    if result.get("isError"):
+        message = result["content"][0]["text"] if result.get("content") else "Tool returned an error"
+        return _mcp_fragment(tool_name, arguments, "warning", error=message, raw=raw)
+
+    return _mcp_fragment(
+        tool_name, arguments, "success", data=result.get("structuredContent"), raw=raw
+    )
+
+
+@app.route("/api/mcp/catalog-product", methods=["POST"])
+def mcp_catalog_product():
+    try:
+        product_id = _parse_product_id_from_request()
+    except (TypeError, ValueError):
+        if _wants_json():
+            return jsonify({"error": "product_id is required"}), 400
+        return _mcp_fragment("get_catalog_product", {}, "error", error="Please enter a valid product id.")
+    return _call_mcp_tool("get_catalog_product", {"product_id": product_id})
+
+
+@app.route("/api/mcp/catalog-specifications", methods=["POST"])
+def mcp_catalog_specifications():
+    try:
+        product_id = _parse_product_id_from_request()
+    except (TypeError, ValueError):
+        if _wants_json():
+            return jsonify({"error": "product_id is required"}), 400
+        return _mcp_fragment(
+            "get_catalog_specifications", {}, "error", error="Please enter a valid product id."
+        )
+    return _call_mcp_tool("get_catalog_specifications", {"product_id": product_id})
+
+
+def _looks_like_policy_question(query_text):
+    policy_words = {
+        "return", "returns", "refund", "warranty", "shipping", "delivery",
+        "privacy", "payment", "account", "policy", "policies", "cancel",
+        "order", "faq",
+    }
+    tokens = {t.strip(".,!?;:").lower() for t in query_text.split()}
+    return bool(tokens & policy_words)
+
+
+@app.route("/api/rag/query", methods=["POST"])
+def rag_query():
+    """Forward a question to the shared RAG server."""
+    payload = request.get_json(silent=True) or {}
+    if request.is_json:
+        query_text = (payload.get("query") or "").strip()
+        product_id = payload.get("product_id")
+    else:
+        query_text = (request.form.get("query") or "").strip()
+        product_id = request.form.get("product_id", type=int)
+
+    if not query_text:
+        if _wants_json():
+            return jsonify({"error": "query is required"}), 400
+        return render_template(
+            "partials/rag_result.html",
+            result={"error": "Please enter a question."},
+        )
+
+    # Only add the product name/brand for product questions. Avoid injecting generic
+    # words like "capacity" here - they match every category and drown the product.
+    if product_id and not _looks_like_policy_question(query_text):
+        product = get_product(int(product_id))
+        if product is not None:
+            query_text = f"{product['name']} {product['brand']}: {query_text}"
+
+    if not RAG_ENABLED:
+        result = {"error": "RAG is disabled (RAG_ENABLED=false)."}
+    else:
+        try:
+            result = rag_client.ask(query_text)
+        except requests.RequestException:
+            result = {"error": "The shared RAG server is not reachable right now."}
+
+    if _wants_json():
+        return jsonify(result)
+    return render_template("partials/rag_result.html", result=result)
 
 
 @app.route("/admin")
