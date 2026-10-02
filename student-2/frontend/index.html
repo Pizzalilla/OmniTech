@@ -83,6 +83,17 @@
                 </section>
 
                 <section class="card">
+                    <h2>Customer Support Knowledge Assistant</h2>
+                    <form hx-post="/rag-search" hx-target="#rag-results" hx-indicator="#rag-spinner">
+                        <input type="text" name="query" placeholder="Ask about policies, profiles, or account rules..." required />
+                        <button type="submit">Search Knowledge Base</button>
+                    </form>
+                    
+                    <div id="rag-spinner" class="htmx-indicator">Querying RAG server...</div>
+                    <div id="rag-results"></div>
+                </section>
+
+                <section class="card">
                     <h2>Find Profile by ID</h2>
                     <form hx-get="/customers/by-id" hx-target="#student-result">
                         <label for="student_id">Customer ID</label>
@@ -90,6 +101,19 @@
                         <button type="submit" class="btn">Lookup Profile</button>
                     </form>
                     <div id="student-result" class="panel"></div>
+                </section>
+
+                <section class="card">
+                    <h2>MCP System Diagnostics</h2>
+                    <p>Run a cross-service MCP tool check on a Customer Profile.</p>
+                    
+                    <form hx-post="/mcp-check-profile" hx-target="#mcp-results" hx-indicator="#mcp-spinner">
+                        <input type="number" name="customer_id" placeholder="Enter Customer ID (e.g., 1)" required min="1" />
+                        <button type="submit">Run MCP Tool</button>
+                    </form>
+                    
+                    <div id="mcp-spinner" class="htmx-indicator">Executing MCP tool on port 6003...</div>
+                    <div id="mcp-results"></div>
                 </section>
             </div>
         </div>

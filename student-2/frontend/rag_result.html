@@ -1,24 +1,20 @@
 <div class="rag-response-card">
     {% if data.get('insufficient_context') %}
-        <!-- Insufficient Context Guardrail -->
         <div class="alert alert-warning">
             <strong>Insufficient Context:</strong> {{ data.message }}
         </div>
     {% else %}
-        <!-- Grounded Answer -->
         <div class="rag-answer">
             <h4>Answer</h4>
             <p>{{ data.answer }}</p>
         </div>
 
-        <!-- Confidence Badge -->
         <div class="rag-meta">
             <span class="badge badge-{{ data.confidence }}">
                 Confidence: {{ data.confidence | upper }}
             </span>
         </div>
 
-        <!-- Source Citations -->
         {% if data.citations %}
             <div class="rag-citations">
                 <h5>Source Citations</h5>

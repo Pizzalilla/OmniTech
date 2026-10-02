@@ -32,6 +32,10 @@ RAG_HOST = os.getenv("RAG_HOST", "http://localhost:6002")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
+if not OLLAMA_HOST.startswith("http"):
+    OLLAMA_HOST = f"http://{OLLAMA_HOST}"
+OLLAMA_HOST = OLLAMA_HOST.replace("0.0.0.0", "localhost")
+
 MAX_RETRIES = int(os.getenv("MAX_RETRIES", "1"))
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 RAG_TIMEOUT = int(os.getenv("RAG_TIMEOUT", "125"))
