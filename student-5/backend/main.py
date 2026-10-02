@@ -4,11 +4,15 @@ import sys
 STUDENT5_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, STUDENT5_DIR)
 
+import requests
 from flask import Flask, render_template, jsonify, send_from_directory, request
-from llm_client import OLLAMA_MODEL, create_chat_completion
-from prompt_loader import load_prompt
 from database.app import get_db_connection
 from database.init_db import init_db
+
+from agent import run_agentic_evaluation
+import rag_client
+
+RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -23,7 +27,6 @@ OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 @app.route("/")
 def index():
     return render_template("index.html")
-
 
 @app.route("/tickets")
 def tickets():
@@ -77,68 +80,37 @@ def ai_evaluation():
 def ai_evaluate_ticket(ticket_id):
     try:
         conn = get_db_connection()
-
         ticket = conn.execute(
             "SELECT * FROM tickets WHERE ticket_id = ?",
             (ticket_id,)
         ).fetchone()
         conn.close()
-
         if ticket is None:
             return jsonify({
                 "success": False,
                 "error": f"Ticket {ticket_id} not found."
             }), 404
+        result = run_agentic_evaluation(ticket)
 
-        system_prompt = load_prompt("system_prompt.txt")
-        policy_rules_prompt = load_prompt("policy_rules_prompt.txt")
-        task_prompt = load_prompt("task_prompt.txt")
+        if not result["success"]:
+            if result.get("failure_type") == "verification_failed":
+                return jsonify(result), 200
 
-        final_prompt = f"""
-{task_prompt}
-
-{policy_rules_prompt}
-
-Product Category: {ticket["product_category"]}
-Warranty Claim: {ticket["ticket_claim"]}
-"""
-
-        ai_response = create_chat_completion(
-            [
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": final_prompt
-                }
-            ],
-            max_tokens=300,
-            temperature=0.2,
-            model=OLLAMA_MODEL,
-        )
-
-        ai_response = ai_response.strip()
-        decision = ""
-        reasoning = ""
-        for line in ai_response.splitlines():
-            if line.lower().startswith("decision:"):
-                decision = line.split(":", 1)[1].strip()
-
-            elif line.lower().startswith("reasoning:"):
-                reasoning = line.split(":", 1)[1].strip()
+            return jsonify(result), 500
 
         return jsonify({
             "success": True,
-            "ticket_id": ticket_id,
-            "decision": decision,
-            "reasoning": reasoning
+            "ticket_id": ticket["ticket_id"],
+            "decision": result["decision"],
+            "reasoning": result["reasoning"],
+            "review": result["review"],
+            "attempts": result["attempts"]
         }), 200
 
     except Exception as exc:
-        print(f"AI evaluation failed for ticket {ticket_id}: {exc}")
-
+        print(
+            f"AI evaluation failed for ticket {ticket_id}: {exc}"
+        )
         return jsonify({
             "success": False,
             "error": "Evaluation request failed."
@@ -259,6 +231,69 @@ def delete_ticket(ticket_id):
         "success": True,
         "message": f"Ticket {ticket_id} removed successfully."
     }), 200
+
+# RAG Implementation
+@app.post("/api/rag/warranty")
+def rag_warranty():
+    data = request.get_json(silent=True) or {}
+
+    order_id = data.get("order_id")
+    ticket_claim = (data.get("ticket_claim") or "").strip()
+
+    if not order_id or not ticket_claim:
+        return jsonify({
+            "success": False,
+            "error": "Order ID and warranty claim are required."
+        }), 400
+
+    conn = get_db_connection()
+
+    order = conn.execute("""
+        SELECT products.product_category
+        FROM orders
+        JOIN products
+            ON orders.product_id = products.product_id
+        WHERE orders.order_id = ?
+    """, (order_id,)).fetchone()
+
+    conn.close()
+
+    if order is None:
+        return jsonify({
+            "success": False,
+            "error": "Order not found."
+        }), 404
+
+    product_category = order["product_category"]
+
+    query = (
+        f"I want to submit a warranty claim for a "
+        f"{product_category}. My current claim is: "
+        f"\"{ticket_claim}\". "
+        f"What additional information should I include "
+        f"so that the claim contains enough information "
+        f"for warranty assessment?"
+    )
+
+    if not RAG_ENABLED:
+        return jsonify({
+            "success": False,
+            "error": "RAG integration is disabled in this environment."
+        }), 503
+
+    try:
+        result = rag_client.ask(query)
+
+        return jsonify({
+            "success": True,
+            "result": result
+        })
+
+    except requests.RequestException:
+        return jsonify({
+            "success": False,
+            "error": "The shared RAG server is not reachable right now."
+        }), 503
 
 @app.route("/shared/css/<path:filename>")
 def shared_css(filename):

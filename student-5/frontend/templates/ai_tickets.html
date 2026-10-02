@@ -63,7 +63,7 @@
             </table>
         </div>
 
-        <!-- AI Evaluation & Update Ticket -->
+        <!-- AI Evaluation, Re-evaluate and Update Ticket -->
         <main class="ticket-section">
             <div id="loading" class="status-card hidden">
                 <div class="spinner"></div>
@@ -71,13 +71,21 @@
             </div>
 
             <div id="errorCard" class="error-card hidden">
-                <h3>Evaluation Failed</h3>
+                <h3 id="errorTitle">Evaluation Failed</h3>
                 <p id="errorMessage"></p>
+                <p id="errorDetail"></p>
+                <button
+                    id="reevaluateButton"
+                    class="evaluate-button hidden"
+                    onclick="reevaluateTicket()"
+                >
+                    Re-evaluate
+                </button>
             </div>
 
             <div id="resultCard" class="result-card hidden">
                 <div class="result-header">
-                    <h2>AI Evaluation Result</h2>
+                    <h2 id="resultTitle">AI Evaluation Result</h2>
                     <span id="ticketNumber"></span>
                 </div>
 
@@ -91,6 +99,11 @@
                     <div id="reasoning"></div>
                 </div>
 
+                <div id="reviewBox" class="result-box hidden">
+                    <h3>Review Feedback</h3>
+                    <div id="reviewFeedback"></div>
+                </div>
+
                 <div class="result-actions">
                     <button
                         id="updateButton"
@@ -98,6 +111,14 @@
                         onclick="updateTicket()"
                     >
                         Update Ticket
+                    </button>
+
+                    <button
+                        id="reevaluateResultButton"
+                        class="evaluate-button hidden"
+                        onclick="reevaluateTicket()"
+                    >
+                        Re-evaluate
                     </button>
                 </div>
             </div>
@@ -109,6 +130,7 @@
         let currentDecision = "";
         let currentReasoning = "";
         async function evaluateTicket(ticketId) {
+            currentTicketId = ticketId;
             const loading = document.getElementById("loading");
             const resultCard = document.getElementById("resultCard");
             const errorCard = document.getElementById("errorCard");
@@ -136,7 +158,17 @@
                     }
                 );
                 const data = await response.json();
-                if (!response.ok || !data.success) {
+                if (!response.ok) {
+                    throw new Error(
+                        data.error || "A server error occurred."
+                    );
+                }
+
+                if (!data.success) {
+                    if (data.failure_type === "verification_failed") {
+                        showVerificationFailure(data);
+                        return;
+                    }
                     throw new Error(
                         data.error || "AI Evaluation failed."
                     );
@@ -147,6 +179,10 @@
                 ticketNumber.textContent = `Ticket #${data.ticket_id}`;
                 decision.textContent = data.decision;
                 reasoning.textContent = data.reasoning;
+                document.getElementById("resultTitle").textContent = "AI Evaluation Result";
+                document.getElementById("reviewBox").classList.add("hidden");
+                document.getElementById("updateButton").classList.remove("hidden");
+                document.getElementById("reevaluateResultButton").classList.add("hidden");
                 resultCard.classList.remove("hidden");
             } catch (error) {
                 console.error(error);
@@ -155,6 +191,36 @@
             } finally {
                 loading.classList.add("hidden");
             }
+        }
+
+        async function reevaluateTicket() {
+            if (!currentTicketId) {
+                return;
+            }
+            await evaluateTicket(currentTicketId);
+        }
+
+        function showVerificationFailure(data) {
+            const resultCard = document.getElementById("resultCard");
+            const resultTitle = document.getElementById("resultTitle");
+            const ticketNumber = document.getElementById("ticketNumber");
+            const decision = document.getElementById("decision");
+            const reasoning = document.getElementById("reasoning");
+            const reviewBox = document.getElementById("reviewBox");
+            const reviewFeedback = document.getElementById("reviewFeedback");
+            const updateButton = document.getElementById("updateButton");
+            const reevaluateButton = document.getElementById("reevaluateResultButton");
+            resultTitle.textContent = "AI Evaluation - Review Failed";
+            ticketNumber.textContent = `Ticket #${data.ticket_id || currentTicketId}`;
+            decision.textContent = data.decision || "No decision returned.";
+            reasoning.textContent = data.reasoning || "No reasoning returned.";
+            reviewFeedback.textContent = data.review?.feedback || "The review agent did not approve the AI evaluation.";
+            reviewBox.classList.remove("hidden");
+
+            updateButton.classList.add("hidden");
+            reevaluateButton.classList.remove("hidden");
+            resultCard.classList.remove("hidden");
+            document.getElementById("errorCard").classList.add("hidden");
         }
 
         async function updateTicket() {

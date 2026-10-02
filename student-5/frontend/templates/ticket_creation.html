@@ -81,11 +81,12 @@
                     id="order-id"
                     name="order_id"
                 >
-
+                
                 <div class="form-group">
                     <label for="ticket-claim">
                         Warranty Claim
                     </label>
+
                     <textarea
                         id="ticket-claim"
                         name="ticket_claim"
@@ -93,6 +94,24 @@
                         placeholder="Describe the problem with the product..."
                         required
                     ></textarea>
+
+                    <button
+                        type="button"
+                        class="make-ticket-button"
+                        onclick="getRagWarrantyGuidance()"
+                    >
+                        Get Claim Guidance
+                    </button>
+
+                    <div id="rag-guidance" class="hidden">
+                        <strong>Warranty Claim Guidance</strong>
+                        <p id="rag-guidance-text"></p>
+                    </div>
+
+                    <div id="rag-citations-container" class="hidden">
+                        <strong>Sources:</strong>
+                        <ul id="rag-citations"></ul>
+                    </div>
                 </div>
 
                 <div class="form-actions">
@@ -127,6 +146,73 @@
         document.getElementById("selected-product-category").textContent = productCategory;
         document.getElementById("ticket-form-container").classList.remove("hidden");
         document.getElementById("ticket-form-container").scrollIntoView({behavior: "smooth"});
+    }
+
+    async function getRagWarrantyGuidance() {
+        const orderId = document.getElementById("order-id").value;
+        const ticketClaim = document.getElementById("ticket-claim").value.trim();
+        const guidanceBox = document.getElementById("rag-guidance");
+        const guidanceText = document.getElementById("rag-guidance-text");
+        const citationsContainer = document.getElementById("rag-citations-container");
+        const citationsList = document.getElementById("rag-citations");
+        if (!orderId) {
+            alert("Please select an order first.");
+            return;
+        }
+
+        if (!ticketClaim) {
+            alert("Please describe the problem before requesting guidance.");
+            return;
+        }
+
+        guidanceBox.classList.remove("hidden");
+        guidanceText.textContent = "Getting warranty guidance...";
+        citationsContainer.classList.add("hidden");
+        citationsList.innerHTML = "";
+        try {
+            const response = await fetch("/api/rag/warranty", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    order_id: orderId,
+                    ticket_claim: ticketClaim
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(
+                    data.error || "Failed to get warranty guidance."
+                );
+            }
+
+            const result = data.result;
+            guidanceText.textContent =
+                result.answer ||
+                result.message ||
+                "No guidance was returned.";
+
+            if (result.citations && result.citations.length > 0) {
+                citationsList.innerHTML = "";
+                result.citations.forEach(citation => {
+                    const li = document.createElement("li");
+                    li.textContent = citation;
+                    if (typeof citation === "string") {
+                        li.textContent = citation;
+                    } else {
+                        li.textContent =
+                            `${citation.source || citation.title || "Source"}` +
+                            (citation.page ? `, page ${citation.page}` : "");
+                    }
+                    citationsList.appendChild(li);
+                });
+                citationsContainer.classList.remove("hidden");
+            }
+        } catch (error) {
+            console.error(error);
+            guidanceText.textContent = error.message;
+        }
     }
 
     function closeTicketForm() {
