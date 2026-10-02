@@ -46,8 +46,10 @@ SYSTEM_INSTRUCTIONS = (
     "question using ONLY the SOURCE EXCERPTS below - do not use outside "
     "knowledge and do not guess. If the excerpts do not answer the question, "
     "say so plainly instead of making something up.\n"
+    "Reply with one or two full sentences in plain English for a shopper. "
+    "Never answer with only a short label like 'Capacity / place settings 15'.\n"
     "Answer with ONE JSON object and nothing else: "
-    '{"answer": "<your answer, grounded in the excerpts>"}'
+    '{"answer": "<your full-sentence answer>"}'
 )
 
 
@@ -57,6 +59,36 @@ def _build_prompt(query, chunks):
         lines.append(f"[{i}] ({chunk['source']} - {chunk['heading']}) {chunk['text']}")
     lines += ["", f"Customer question: {query}"]
     return "\n".join(lines)
+
+
+def _looks_like_label_answer(answer):
+    text = (answer or "").strip()
+    if not text:
+        return True
+    if len(text) < 45:
+        return True
+    if "/" in text and len(text.split()) <= 8:
+        return True
+    return False
+
+
+def _full_sentence_answer(answer, chunks):
+    """Turn terse model labels into a shopper sentence using the top chunk."""
+    heading = chunks[0]["heading"]
+    text = (answer or "").strip()
+    match = re.match(
+        r"(?i)capacity\s*/\s*place settings\s+(\d+)\.?$", text
+    )
+    if match:
+        return (
+            f"The {heading} has a capacity of {match.group(1)} place settings."
+        )
+    match = re.match(r"(?i)capacity\s+(\d+\s*[a-zA-Z]*)\.?$", text)
+    if match:
+        return f"The {heading} has a capacity of {match.group(1)}."
+    if text and not text.endswith((".", "!", "?")):
+        text = text + "."
+    return f"For the {heading}, {text[0].lower() + text[1:] if text else chunks[0]['text']}"
 
 
 def _extract_answer(raw, chunks):
@@ -72,7 +104,10 @@ def _extract_answer(raw, chunks):
             except ValueError:
                 data = None
     if isinstance(data, dict) and str(data.get("answer", "")).strip():
-        return str(data["answer"]).strip()
+        answer = str(data["answer"]).strip()
+        if _looks_like_label_answer(answer):
+            return _full_sentence_answer(answer, chunks)
+        return answer
     return _excerpt_answer(chunks)
 
 

@@ -225,14 +225,31 @@ def mcp_catalog_specifications():
     return _call_mcp_tool("get_catalog_specifications", {"product_id": product_id})
 
 
+def _question_tokens(query_text):
+    return {t.strip(".,!?;:").lower() for t in query_text.split()}
+
+
 def _looks_like_policy_question(query_text):
     policy_words = {
         "return", "returns", "refund", "warranty", "shipping", "delivery",
         "privacy", "payment", "account", "policy", "policies", "cancel",
         "order", "faq",
     }
-    tokens = {t.strip(".,!?;:").lower() for t in query_text.split()}
-    return bool(tokens & policy_words)
+    return bool(_question_tokens(query_text) & policy_words)
+
+
+def _looks_like_product_question(query_text):
+    """Only these get the product name prepended for RAG retrieval."""
+    product_words = {
+        "capacity", "energy", "rating", "price", "cost", "stock", "brand",
+        "dimension", "dimensions", "noise", "power", "watt", "watts", "btu",
+        "spin", "water", "usage", "feature", "features", "spec", "specs",
+        "specification", "specifications", "model", "weight", "size",
+        "dishwasher", "fridge", "refrigerator", "washer", "dryer", "oven",
+        "cooktop", "microwave", "freezer", "appliance", "compare",
+        "difference", "freestanding", "slimline", "portable", "split",
+    }
+    return bool(_question_tokens(query_text) & product_words)
 
 
 @app.route("/api/rag/query", methods=["POST"])
@@ -254,12 +271,18 @@ def rag_query():
             result={"error": "Please enter a question."},
         )
 
-    # Only add the product name/brand for product questions. Avoid injecting generic
-    # words like "capacity" here - they match every category and drown the product.
-    if product_id and not _looks_like_policy_question(query_text):
-        product = get_product(int(product_id))
-        if product is not None:
-            query_text = f"{product['name']} {product['brand']}: {query_text}"
+    # Prepend product name only for real product/spec questions.
+    # Use the full product name (not bare brand) so Freestanding does not
+    # also pull in Slimline just because both say "AquaJet".
+    scoped_product = None
+    if (
+        product_id
+        and not _looks_like_policy_question(query_text)
+        and _looks_like_product_question(query_text)
+    ):
+        scoped_product = get_product(int(product_id))
+        if scoped_product is not None:
+            query_text = f"{scoped_product['name']}: {query_text}"
 
     if not RAG_ENABLED:
         result = {"error": "RAG is disabled (RAG_ENABLED=false)."}
@@ -268,6 +291,16 @@ def rag_query():
             result = rag_client.ask(query_text)
         except requests.RequestException:
             result = {"error": "The shared RAG server is not reachable right now."}
+
+    # Prefer citations for this page's product when we scoped the question.
+    if scoped_product and isinstance(result, dict) and result.get("citations"):
+        name = scoped_product["name"].lower()
+        focused = [
+            c for c in result["citations"]
+            if name in f"{c.get('section', '')} {c.get('snippet', '')}".lower()
+        ]
+        if focused:
+            result = {**result, "citations": focused}
 
     if _wants_json():
         return jsonify(result)
