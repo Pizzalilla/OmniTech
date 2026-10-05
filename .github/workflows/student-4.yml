@@ -55,11 +55,12 @@ jobs:
           pytest student-4/tests/test_orders_api.py -v \
             --deselect student-4/tests/test_orders_api.py::test_ai_helper_custom_question \
             --deselect student-4/tests/test_orders_api.py::test_ai_helper_grounded_json \
-            --deselect student-4/tests/test_orders_api.py::test_mcp_order_lookup_live
+            --deselect student-4/tests/test_orders_api.py::test_mcp_order_lookup_live \
+            --deselect student-4/tests/test_orders_api.py::test_rag_card_live
 
       - name: Run AI Agent + MCP Tests (Release 1 - fake LLM, RAG and MCP, no servers needed)
         run: |
-          pytest student-4/tests/test_agent.py student-4/tests/test_mcp.py -v
+          pytest student-4/tests/test_agent.py student-4/tests/test_mcp.py student-4/tests/test_rag_card.py -v
 
       - name: Run Shared RAG Server Tests (Student 4 knowledge + /rag/retrieve)
         run: |

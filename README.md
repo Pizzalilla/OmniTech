@@ -35,13 +35,22 @@ git clone https://github.com/YOUR-ORG/OmniTech.git
 cd OmniTech
 ```
 
-### 2. Build and Run All Services
+### 2. Start the local AI services (on the PC, not in Docker)
+
+AI-Mode, MCP, RAG and the agentic loop are **not containerised** (Release 1 rule).
+
+1. **Ollama (AI-Mode):** install Ollama, then `ollama pull llama3.2`. It must listen on all
+   interfaces so containers can reach it (Windows/macOS app: set `OLLAMA_HOST=0.0.0.0:11434`).
+2. **RAG server (port 6002):** `cd ai-services/rag-server && python server.py`
+3. **MCP server (port 6003):** `cd ai-services/mcp-server && python server.py`
+
+### 3. Build and Run the Feature Microservices
 
 ```bash
 docker-compose up --build
 ```
 
-This starts 7 containers on a shared network (`omnitech-net`):
+This starts 6 containers on a shared network (`omnitech-net`):
 
 | Service        | URL                        |
 |----------------|----------------------------|
@@ -51,26 +60,9 @@ This starts 7 containers on a shared network (`omnitech-net`):
 | Student 3      | http://localhost:5003       |
 | Student 4      | http://localhost:5004       |
 | Student 5      | http://localhost:5005       |
-| Ollama (AI)    | http://localhost:11434      |
 
-The shared RAG server runs on the PC, outside Docker (see
-`ai-services/rag-server/README.md`): `cd ai-services/rag-server && python server.py`
-(port 6002). Containers reach it through `RAG_HOST=http://host.docker.internal:6002`.
-
-### 3. Pull an AI Model
-
-Once the Ollama container is running, pull a model:
-
-```bash
-cd ai-services/ai-mode
-./pull-model.sh llama3.2
-```
-
-Or pull a different model (e.g. `qwen2.5`, `deepseek-r1`):
-
-```bash
-./pull-model.sh qwen2.5
-```
+Every backend gets `OLLAMA_HOST`, `RAG_HOST` and `MCP_HOST` pointing at
+`host.docker.internal` (11434 / 6002 / 6003), so the containers use the local AI services above.
 
 ### 4. Open the Home Page
 
@@ -78,7 +70,7 @@ Open [http://localhost:8080](http://localhost:8080). It lists the five student s
 
 ## Connecting to Ollama from Your Flask App
 
-Each student container has the environment variable `OLLAMA_HOST` set to `http://ollama-service:11434`. Use it in your code:
+Each student container has the environment variable `OLLAMA_HOST` set to `http://host.docker.internal:11434` (Ollama on the PC). Use it in your code:
 
 ```python
 import os, requests

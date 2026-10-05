@@ -280,3 +280,10 @@ def test_agent_retries_when_answer_makes_a_hardwiring_claim(setup, monkeypatch):
     assert result["status"] == "verified" and result["attempts"] == 2
     assert "hardwiring" in prompts[1]
     assert "no hardwiring or electrician needed" in prompts[0]      # plug-in fact is spelled out
+
+
+def test_markdown_bold_is_rendered_but_html_still_escaped(setup, monkeypatch):
+    fake_llm(monkeypatch, ["**Power:** use separate 10A power points <b>x</b>"])
+    html = setup.post("/api/orders/ai-validate-cart", data={"question": "Power?"}).get_data(as_text=True)
+    assert "<strong>Power:</strong>" in html and "**" not in html
+    assert "&lt;b&gt;x&lt;/b&gt;" in html

@@ -1,3 +1,6 @@
+# Release 1: AI-Mode (Ollama), the MCP server, the RAG server and the agentic loop
+# run locally on the PC and are NOT compose services. Each backend reaches them
+# through host.docker.internal (OLLAMA_HOST / RAG_HOST / MCP_HOST).
 services:
   home:
     image: nginx:alpine
@@ -18,12 +21,12 @@ services:
       - ./student-1:/app
     environment:
       - FLASK_ENV=development
-      - OLLAMA_HOST=http://ollama-service:11434
+      - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
       - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
-    depends_on:
-      - ollama-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - omnitech-net
 
@@ -36,12 +39,12 @@ services:
       - ./student-2:/app
     environment:
       - FLASK_ENV=development
-      - OLLAMA_HOST=http://ollama-service:11434
+      - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
       - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
-    depends_on:
-      - ollama-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - omnitech-net
 
@@ -54,12 +57,12 @@ services:
       - ./student-3:/app
     environment:
       - FLASK_ENV=development
-      - OLLAMA_HOST=http://ollama-service:11434
+      - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
       - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
-    depends_on:
-      - ollama-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - omnitech-net
 
@@ -72,12 +75,12 @@ services:
       - ./student-4:/app
     environment:
       - FLASK_ENV=development
-      - OLLAMA_HOST=http://ollama-service:11434
+      - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
       - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
-    depends_on:
-      - ollama-service
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - omnitech-net
 
@@ -90,23 +93,13 @@ services:
       - ./student-5:/app
     environment:
       - FLASK_ENV=development
-      - OLLAMA_HOST=http://ollama-service:11434
-      - OLLAMA_BASE_URL=http://ollama-service:11434/v1
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
       - OLLAMA_MODEL=llama3.2
       - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
-    depends_on:
-      - ollama-service
-    networks:
-      - omnitech-net
-
-  ollama-service:
-    image: ollama/ollama:latest
-    container_name: ollama-service
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-data:/root/.ollama
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - omnitech-net
 
@@ -114,5 +107,3 @@ networks:
   omnitech-net:
     driver: bridge
 
-volumes:
-  ollama-data:

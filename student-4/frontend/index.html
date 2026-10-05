@@ -121,6 +121,25 @@
                         <small style="color: var(--text-muted);">Asks the shared MCP server to run the <code>get_order_status</code> tool.</small>
                     </div>
                 </div>
+
+                <!-- RAG Store Policy: grounded answer from the shared RAG server (citations + confidence) -->
+                <div class="ai-helper-card rag-card">
+                    <div class="ai-helper-header">
+                        <h4>📚 Store policy <span class="mcp-tag">RAG</span></h4>
+                    </div>
+                    <form hx-post="/api/rag/ask" hx-target="#rag-result" class="ai-input-row">
+                        <input type="text" id="rag-question-input" name="question" placeholder="e.g. What is your return policy?" required>
+                        <button type="submit" class="btn-ai-ask">Ask</button>
+                    </form>
+                    <div class="quick-queries">
+                        <button type="button" class="quick-btn" onclick="setRagQuestion('What is your return policy?')">↩️ Returns</button>
+                        <button type="button" class="quick-btn" onclick="setRagQuestion('Can I run two kitchen appliances on one power point?')">⚡ Power points</button>
+                        <button type="button" class="quick-btn" onclick="setRagQuestion('Who won the football last night?')">❓ Off-topic</button>
+                    </div>
+                    <div id="rag-result">
+                        <small style="color: var(--text-muted);">Asks the shared RAG server for a grounded answer with citations and a confidence level.</small>
+                    </div>
+                </div>
             </section>
 
         </div>
@@ -147,6 +166,10 @@
         function setFulfillment(mode) {
             document.getElementById('btn-delivery').classList.toggle('active', mode === 'delivery');
             document.getElementById('btn-pickup').classList.toggle('active', mode === 'pickup');
+        }
+
+        function setRagQuestion(text) {
+            document.getElementById('rag-question-input').value = text;
         }
 
         function setPrompt(text) {

@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+import re
 import sys
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
@@ -419,9 +420,12 @@ def render_ai_result_html(result):
 
     trace = "".join(f"<li>{escape(t)}</li>" for t in result["trace"])
 
+    # BOLD: the model writes **text** (markdown) - show it as bold, everything else stays escaped
+    answer_html = bold_html(result["answer"])
+
     return f"""
     <div class='ai-alert-box {box_class}'>
-        <div class='ai-output-text'>{escape(result['answer'])}</div>
+        <div class='ai-output-text'>{answer_html}</div>
         <ul class='ai-checks'>{checks}</ul>
         <div class='ai-sources'><strong>Sources:</strong> {' · '.join(sources)}</div>
         <div class='ai-rag'>{rag}</div>
@@ -440,6 +444,70 @@ def ai_helper_audit():
     if request.is_json:
         return jsonify(result), 200
     return render_ai_result_html(result), 200
+
+
+# BOLD: escape text, then turn **text** into <strong>text</strong>
+def bold_html(text):
+    return re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", str(escape(text)))
+
+
+# ---------------------------------------------------------------------------
+# RAG: store-policy question answered by the shared RAG server (POST /rag/query)
+# ---------------------------------------------------------------------------
+
+RAG_QUERY_TIMEOUT = int(os.getenv("RAG_QUERY_TIMEOUT", "150"))
+
+
+# RAG RESULT HTML: grounded answer + citations + confidence (or insufficient context)
+def render_rag_html(question, box_class, body_html):
+    return f"""
+    <div class='ai-alert-box {box_class}'>
+        <div class='mcp-call'>📚 RAG server · <code>POST /rag/query</code> · "{escape(question)}"</div>
+        {body_html}
+    </div>
+    """
+
+
+@app.post("/api/rag/ask")
+def rag_ask():
+    data = request.get_json(silent=True) or request.form
+    question = str(data.get("question", "")).strip()
+    if not question:
+        return render_rag_html("", "error", "<div>Please type a question.</div>"), 200
+    if not agent.RAG_ENABLED:
+        return render_rag_html(question, "error", "<div>RAG is disabled (RAG_ENABLED=false).</div>"), 200
+
+    try:
+        resp = requests.post(f"{agent.RAG_HOST}/rag/query", json={"query": question}, timeout=RAG_QUERY_TIMEOUT)
+        resp.raise_for_status()
+        body = resp.json()
+    except (requests.RequestException, ValueError):
+        return render_rag_html(question, "error",
+                               f"<div><strong>RAG server offline</strong> at {escape(agent.RAG_HOST)}. "
+                               "Start it with <code>python server.py</code> in ai-services/rag-server.</div>"), 200
+
+    if request.is_json:
+        return jsonify(body), 200
+
+    if body.get("insufficient_context"):
+        return render_rag_html(question, "warning",
+                               f"<div>📚 {escape(body.get('message', 'Not enough information to answer that.'))}</div>"
+                               "<small class='ai-footnote'>Insufficient context: no relevant store knowledge was found, "
+                               "so no answer was generated.</small>"), 200
+
+    confidence = str(body.get("confidence") or "low")
+    citations = "".join(
+        f"<li><strong>{escape(c.get('source', ''))} › {escape(c.get('section', ''))}</strong><br>"
+        f"<small>{escape(c.get('snippet', ''))}</small></li>"
+        for c in body.get("citations", [])
+    )
+    result_html = f"""
+        <div class='ai-output-text'>{bold_html(body.get('answer', ''))}</div>
+        <div class='ai-rag'><span class='rag-badge {escape(confidence)}'>Confidence: {escape(confidence)}</span></div>
+        <div class='ai-sources'><strong>Sources (citations):</strong></div>
+        <ul class='rag-citations'>{citations}</ul>
+    """
+    return render_rag_html(question, "success", result_html), 200
 
 
 # ---------------------------------------------------------------------------

@@ -172,3 +172,11 @@ def test_mcp_order_lookup_live():
     res = requests.post(f"{BASE_URL}/api/mcp/order-status", data={"order_id": "1"}, timeout=30)
     assert "MCP server offline" not in res.text, "start ai-services/mcp-server/server.py first"
     assert "ai-alert-box success" in res.text and "Order #1" in res.text
+
+# RAG LIVE TEST: needs the shared RAG server (ai-services/rag-server/server.py) and Ollama
+def test_rag_card_live():
+    ok = requests.post(f"{BASE_URL}/api/rag/ask", data={"question": "What is your return policy?"}, timeout=200).text
+    assert "RAG server offline" not in ok, "start ai-services/rag-server/server.py first"
+    assert "ai-alert-box success" in ok and "Confidence:" in ok and "rag-citations" in ok
+    none = requests.post(f"{BASE_URL}/api/rag/ask", data={"question": "Who won the football last night?"}, timeout=200).text
+    assert "Insufficient context" in none
