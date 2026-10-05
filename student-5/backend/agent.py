@@ -8,7 +8,7 @@ from prompt_loader import load_prompt
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
-MAX_RETRIES = 1
+MAX_RETRIES = 2
 
 def log_agent(stage, message):
     print(f"\n[{datetime.now().strftime('%H:%M:%S')}] [{stage}]", flush=True)
@@ -157,14 +157,25 @@ def adapt(review, attempt):
         "ADAPT",
         f"Attempt {attempt}: creating correction from reviewer feedback."
     )
-
     return f"""
-The previous evaluation failed review.
+The previous AI evaluation failed review.
 
 Reviewer feedback:
 {review["feedback"]}
 
-Re-evaluate the claim and correct the previous decision or reasoning.
+You must correct the specific issue identified by the reviewer.
+
+Before producing your new evaluation:
+1. Re-read the original warranty claim.
+2. Re-check the relevant policy rule.
+3. Identify the specific fact from the claim that determines the outcome.
+4. Make sure the reasoning directly supports the decision.
+5. Do not repeat the error identified by the reviewer.
+
+Return exactly:
+
+DECISION: <Approved or Rejected>
+REASONING: <Why the decision follows from the claim and policy>
 """
 
 def run_agentic_evaluation(ticket):
