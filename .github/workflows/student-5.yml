@@ -49,6 +49,9 @@ jobs:
           sleep 3
 
       - name: Run tests
+        env:
+          RAG_ENABLED: "false"
+          MCP_ENABLED: "false"
         run: |
           cd student-5
           python -m pytest tests/ -v
