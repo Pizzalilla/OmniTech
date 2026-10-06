@@ -268,7 +268,7 @@
                 const product = data.result.structuredContent;
                 document.getElementById("productName").textContent = product.product_name;
                 document.getElementById("productCategory").textContent = product.product_category;
-                document.getElementById("productPrice").textContent = product.product_price;
+                document.getElementById("productPrice").textContent = "$" + product.product_price;
                 document.getElementById("productWarranty").textContent = product.product_warranty_years;
                 document.getElementById("productDescription").textContent = product.product_description;
                 mcpProductBox.classList.remove("hidden");
