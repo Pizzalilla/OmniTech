@@ -112,6 +112,11 @@
                         <strong>Sources:</strong>
                         <ul id="rag-citations"></ul>
                     </div>
+
+                    <div id="rag-confidence-score-container" class="hidden">
+                        <strong>Confidence Score:</strong>
+                        <ul id="rag-confidence-score"></ul>
+                    </div>
                 </div>
 
                 <div class="form-actions">
@@ -155,6 +160,8 @@
         const guidanceText = document.getElementById("rag-guidance-text");
         const citationsContainer = document.getElementById("rag-citations-container");
         const citationsList = document.getElementById("rag-citations");
+        const confidenceScoreContainer = document.getElementById("rag-confidence-score-container");
+        const confidenceScoreList = document.getElementById("rag-confidence-score");
         if (!orderId) {
             alert("Please select an order first.");
             return;
@@ -169,6 +176,8 @@
         guidanceText.textContent = "Getting warranty guidance...";
         citationsContainer.classList.add("hidden");
         citationsList.innerHTML = "";
+        confidenceScoreContainer.classList.add("hidden");
+        confidenceScoreList.innerHTML = "";
         try {
             const response = await fetch("/api/rag/warranty", {
                 method: "POST",
@@ -208,6 +217,14 @@
                     citationsList.appendChild(li);
                 });
                 citationsContainer.classList.remove("hidden");
+            }
+
+            if (result.confidence) {
+                confidenceScoreList.innerHTML = "";
+                const li = document.createElement("li");
+                li.textContent = result.confidence;
+                confidenceScoreList.appendChild(li);
+                confidenceScoreContainer.classList.remove("hidden");
             }
         } catch (error) {
             console.error(error);

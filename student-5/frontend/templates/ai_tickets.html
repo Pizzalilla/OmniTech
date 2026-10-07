@@ -6,12 +6,14 @@
     <title>OmniTech - Ticket Evaluator</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
     <div class="container">
         <header class="header">
             <h1>OmniTech</h1>
             <p>Warranty Ticket Evaluator</p>
         </header>
+
         <!-- Back Button -->
         <a href="{{ url_for('index') }}" class="back-button">
             ← Back
@@ -30,10 +32,11 @@
                         <th>Remove</th>
                     </tr>
                 </thead>
+
                 <tbody>
                     {% for ticket in tickets %}
                     <tr id="ticket-row-{{ ticket['ticket_id'] }}">
-                        <td>{{ ticket["ticket_id"] }}</td>
+                        <td>{{ ticket["ticket_id"] }} </td>
                         <td>{{ ticket["product_category"] }}</td>
                         <td>{{ ticket["ticket_claim"] }}</td>
                         <td id="status-{{ ticket['ticket_id'] }}">
@@ -43,9 +46,9 @@
                             <button
                                 class="evaluate-button"
                                 data-ticket-id="{{ ticket['ticket_id'] }}"
-                                onclick="evaluateTicket(this.dataset.ticketId)"
+                                onclick="selectTicket(this.dataset.ticketId)"
                             >
-                                Evaluate
+                                Select
                             </button>
                         </td>
                         <td>
@@ -63,14 +66,87 @@
             </table>
         </div>
 
-        <!-- AI Evaluation, Re-evaluate and Update Ticket -->
-        <main class="ticket-section">
+            <!-- Ticket Card -->
+            <div id="ticketReportCard" class="result-card hidden">
+                <div class="result-header">
+                    <h2>Ticket Report</h2>
+                    <span id="reportTicketNumber"></span>
+                </div>
+
+                <div class="result-box">
+                    <button
+                        type="button"
+                        class="section-toggle"
+                        onclick="toggleSection('ticketInfoContent', this)"
+                    >
+                        Warranty Claim
+                        <span>▼</span>
+                    </button>
+
+                    <div id="ticketInfoContent" class="section-content">
+                        <h4>Product Category:</h4>
+                        <div id="reportCategory"></div>
+
+                        <h4>Claim:</h4>
+                        <div id="reportClaim"></div>
+                    </div>
+
+                </div>
+
+                <!-- MCP Product Information Card -->
+                <div id="mcpProductBox" class="result-box hidden">
+                    <button
+                        type="button"
+                        class="section-toggle"
+                        onclick="toggleSection('mcpProductContent', this)"
+                    >
+                        Product Information
+                        <span>▼</span>
+                    </button>
+
+                    <div id="mcpProductContent" class="section-content">
+                        <h4>Product Name:</h4>
+                        <div id="productName"></div>
+
+                        <h4>Product Category:</h4>
+                        <div id="productCategory"></div>
+
+                        <h4>Product Price:</h4>
+                        <div id="productPrice"></div>
+
+                        <h4>Warranty:</h4>
+                        <div id="productWarranty"></div>
+
+                        <h4>Description:</h4>
+                        <div id="productDescription"></div>
+                    </div>
+                </div>
+
+                <div class="result-actions">
+                    <button
+                        id="mcpButton"
+                        class="evaluate-button"
+                        onclick="getProductInformation()"
+                    >
+                        Get Product Information
+                    </button>
+
+                    <button
+                        id="evaluateSelectedButton"
+                        class="evaluate-button"
+                        onclick="evaluateSelectedTicket()"
+                    >
+                        Evaluate Ticket
+                    </button>
+                </div>
+            </div>
+
             <div id="loading" class="status-card hidden">
                 <div class="spinner"></div>
                 <p>AI is evaluating the warranty claim...</p>
             </div>
 
-            <div id="errorCard" class="error-card hidden">
+            <div id="errorCard"class="error-card hidden">
                 <h3 id="errorTitle">Evaluation Failed</h3>
                 <p id="errorMessage"></p>
                 <p id="errorDetail"></p>
@@ -124,11 +200,98 @@
             </div>
         </main>
     </div>
-
     <script>
         let currentTicketId = null;
         let currentDecision = "";
         let currentReasoning = "";
+
+        function selectTicket(ticketId) {
+            currentDecision = "";
+            currentReasoning = "";
+            document.getElementById("resultCard").classList.add("hidden");
+            document.getElementById("errorCard").classList.add("hidden");
+            document.getElementById("loading").classList.add("hidden");
+            document.getElementById("decision").textContent = "";
+            document.getElementById("reasoning").textContent = "";
+            document.getElementById("reviewFeedback").textContent = "";
+            document.getElementById("reviewBox").classList.add("hidden");
+            document.getElementById("updateButton").classList.remove("hidden");
+            document.getElementById("reevaluateResultButton").classList.add("hidden");
+            currentTicketId = ticketId;
+            const reportCard = document.getElementById("ticketReportCard");
+            const mcpProductBox = document.getElementById("mcpProductBox");
+            const mcpContent = document.getElementById("mcpProductContent");
+            const row = document.getElementById(`ticket-row-${ticketId}`);
+            if (!row) {
+                return;
+            }
+            
+            const cells = row.querySelectorAll("td");
+            const category = cells[1].textContent.trim();
+            const claim = cells[2].textContent.trim();
+            document.getElementById("reportTicketNumber").textContent = `Ticket #${ticketId}`;
+            document.getElementById("reportCategory").textContent = category;
+
+            document.getElementById("reportClaim").textContent = claim;
+            mcpProductBox.classList.add("hidden");
+            mcpContent.classList.remove("collapsed");
+            const mcpToggle = mcpProductBox.querySelector(".section-toggle");
+            mcpToggle.querySelector("span").textContent = "▼";
+            reportCard.classList.remove("hidden");
+            reportCard.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+
+        async function getProductInformation() {
+            if (!currentTicketId) {
+                return;
+            }
+
+            const mcpButton = document.getElementById("mcpButton");
+            const mcpProductBox = document.getElementById("mcpProductBox");
+            mcpButton.disabled = true;
+            mcpButton.textContent = "Getting Information...";
+            try {
+                const response = await fetch(
+                    `/api/tickets/${currentTicketId}/product-info`
+                );
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.error ||
+                        "Failed to retrieve product information."
+                    );
+                };
+
+                const product = data.result.structuredContent;
+                document.getElementById("productName").textContent = product.product_name;
+                document.getElementById("productCategory").textContent = product.product_category;
+                document.getElementById("productPrice").textContent = "$" + product.product_price;
+                document.getElementById("productWarranty").textContent = product.product_warranty_years;
+                document.getElementById("productDescription").textContent = product.product_description;
+                mcpProductBox.classList.remove("hidden");
+            } catch (error) {
+                console.error(
+                    "MCP product information error:",
+                    error
+                );
+                alert(error.message);
+            } finally {
+                mcpButton.disabled = false;
+                mcpButton.textContent = "Get Product Information";
+            }
+        }
+
+        async function evaluateSelectedTicket() {
+            if (!currentTicketId) {
+                alert("Please select a ticket.");
+                return;
+            }
+            await evaluateTicket(currentTicketId);
+        }
+
         async function evaluateTicket(ticketId) {
             currentTicketId = ticketId;
             const loading = document.getElementById("loading");
@@ -144,6 +307,7 @@
                 resultCard.classList.add("hidden");
                 return;
             }
+
             errorCard.classList.add("hidden");
             resultCard.classList.add("hidden");
             loading.classList.remove("hidden");
@@ -159,20 +323,28 @@
                 );
                 const data = await response.json();
                 if (!response.ok) {
+
                     throw new Error(
-                        data.error || "A server error occurred."
+                        data.error ||
+                        "A server error occurred."
                     );
+
                 }
 
                 if (!data.success) {
-                    if (data.failure_type === "verification_failed") {
+                    if (
+                        data.failure_type === "verification_failed"
+                    ) {
                         showVerificationFailure(data);
                         return;
                     }
+
                     throw new Error(
-                        data.error || "AI Evaluation failed."
+                        data.error ||
+                        "AI Evaluation failed."
                     );
                 }
+
                 currentTicketId = data.ticket_id;
                 currentDecision = data.decision;
                 currentReasoning = data.reasoning;
@@ -212,15 +384,35 @@
             const reevaluateButton = document.getElementById("reevaluateResultButton");
             resultTitle.textContent = "AI Evaluation - Review Failed";
             ticketNumber.textContent = `Ticket #${data.ticket_id || currentTicketId}`;
-            decision.textContent = data.decision || "No decision returned.";
-            reasoning.textContent = data.reasoning || "No reasoning returned.";
-            reviewFeedback.textContent = data.review?.feedback || "The review agent did not approve the AI evaluation.";
-            reviewBox.classList.remove("hidden");
+            decision.textContent =
+                data.decision ||
+                "No decision returned.";
 
+            reasoning.textContent =
+                data.reasoning ||
+                "No reasoning returned.";
+
+            reviewFeedback.textContent =
+                data.review?.feedback ||
+                "The review agent did not approve the AI evaluation.";
+
+            reviewBox.classList.remove("hidden");
             updateButton.classList.add("hidden");
             reevaluateButton.classList.remove("hidden");
             resultCard.classList.remove("hidden");
             document.getElementById("errorCard").classList.add("hidden");
+        }
+
+        function toggleSection(contentId, button) {
+            const content = document.getElementById(contentId);
+            const arrow = button.querySelector("span");
+            if (content.classList.contains("collapsed")) {
+                content.classList.remove("collapsed");
+                arrow.textContent = "▼";
+            } else {
+                content.classList.add("collapsed");
+                arrow.textContent = "▶";
+            }
         }
 
         async function updateTicket() {
@@ -233,19 +425,30 @@
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({
-                            decision: currentDecision,
-                            reasoning: currentReasoning
+                            decision:
+                                currentDecision,
+
+                            reasoning:
+                                currentReasoning
                         })
                     }
                 );
+
                 const data = await response.json();
-                if (!response.ok || !data.success) {
+                if (
+                    !response.ok ||
+                    !data.success
+                ) {
                     throw new Error(
-                        data.error || "Failed to update ticket."
+                        data.error ||
+                        "Failed to update ticket."
                     );
                 }
+
                 document.getElementById(`status-${currentTicketId}`).textContent = currentDecision;
                 document.getElementById("resultCard").classList.add("hidden");
+                document.getElementById("ticketReportCard").classList.add("hidden");
+                currentTicketId = null;
                 alert("Ticket updated successfully.");
             } catch (error) {
                 console.error(error);
@@ -277,9 +480,18 @@
                     row.remove();
                 }
 
+                if (
+                    currentTicketId === ticketId
+                ) {
+                    currentTicketId = null;
+                    document.getElementById("ticketReportCard").classList.add("hidden");
+                }
                 alert("Ticket removed successfully.");
             } catch (error) {
-                console.error("Error removing ticket:", error);
+                console.error(
+                    "Error removing ticket:",
+                    error
+                );
                 alert("An error occurred while removing the ticket.");
             }
         }

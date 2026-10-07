@@ -11,8 +11,11 @@ from database.init_db import init_db
 
 from agent import run_agentic_evaluation
 import rag_client
+from mcp_client import McpClient
 
 RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
+MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() == "true"
+MCP_HOST = os.getenv("MCP_HOST", "http://localhost:6003")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -232,6 +235,36 @@ def delete_ticket(ticket_id):
         "message": f"Ticket {ticket_id} removed successfully."
     }), 200
 
+@app.get("/api/products/<int:product_id>")
+def get_product(product_id):
+    conn = get_db_connection()
+    product = conn.execute("""
+        SELECT
+            product_id,
+            product_name,
+            product_category,
+            product_price,
+            product_description,
+            product_warranty_years
+        FROM products
+        WHERE product_id = ?
+    """, (product_id,)).fetchone()
+    conn.close()
+    if product is None:
+        return jsonify({
+            "success": False,
+            "error": "Product not found."
+        }), 404
+
+    return jsonify({
+        "product_id": product["product_id"],
+        "product_name": product["product_name"],
+        "product_category": product["product_category"],
+        "product_price": product["product_price"],
+        "product_description": product["product_description"],
+        "product_warranty_years": product["product_warranty_years"]
+    })
+
 # RAG Implementation
 @app.post("/api/rag/warranty")
 def rag_warranty():
@@ -293,6 +326,48 @@ def rag_warranty():
         return jsonify({
             "success": False,
             "error": "The shared RAG server is not reachable right now."
+        }), 503
+
+# MCP Implementation
+@app.get("/api/tickets/<int:ticket_id>/product-info")
+def get_ticket_product_info(ticket_id):
+    conn = get_db_connection()
+    ticket = conn.execute("""
+        SELECT ticket_id, product_id, product_category, ticket_claim
+        FROM tickets
+        WHERE ticket_id = ?
+    """, (ticket_id,)).fetchone()
+    conn.close()
+    if ticket is None:
+        return jsonify({
+            "success": False,
+            "error": "Ticket not found."
+        }), 404
+
+    if not MCP_ENABLED:
+            return jsonify({
+                "success": False,
+                "error": "MCP integration is disabled in this environment."
+            }), 503
+
+    try:
+        mcp = McpClient(MCP_HOST)
+        mcp.initialize()
+        result = mcp.call_tool(
+            "get_warranty_product",
+            {
+                "product_id": ticket["product_id"]
+            }
+        )
+        return jsonify({
+            "success": True,
+            "ticket_id": ticket["ticket_id"],
+            "result": result
+        })
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": f"MCP product information request failed: {str(e)}"
         }), 503
 
 @app.route("/shared/css/<path:filename>")
