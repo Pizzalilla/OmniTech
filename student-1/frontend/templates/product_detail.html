@@ -111,8 +111,9 @@
         Questions go through this backend to the shared local RAG server.
         Answers use retrieved knowledge, with source citations and a confidence category.
         If nothing relevant is found, an insufficient-context message is shown instead.
-        On this page, product questions are linked to <strong>{{ product.name }}</strong>.
-        Policy questions (returns, warranty, shipping) use the shared policy knowledge as-is.
+        Spec questions (capacity, energy, price, etc.) are linked to
+        <strong>{{ product.name }}</strong>. Policy questions use the shared
+        policy knowledge. Unrelated questions show insufficient context.
     </p>
 
     <form class="rag-form"

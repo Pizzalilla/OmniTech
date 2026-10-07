@@ -35,10 +35,10 @@ PolarAir Window 12 - $699.00 - PolarAir - Air Conditioners. Cooling Capacity 120
 PolarAir Compact 7 - $429.00 - PolarAir - Air Conditioners. Cooling Capacity 7000 BTU, Coverage 18 sqm, Noise Level 44 dB. Small through-window cooler for bedrooms and studies.
 
 ## AquaJet Slimline 14
-AquaJet Slimline 14 - $899.00 - AquaJet - Dishwashers. Capacity / place settings 14, Water Usage 9.5 L per cycle, Noise Level 44 dB. Slimline dishwasher with a quiet night cycle.
+The AquaJet Slimline 14 is an AquaJet dishwasher priced at $899.00. It has a capacity of 14 place settings, uses 9.5 L of water per cycle, and runs at 44 dB. It is a slimline dishwasher with a quiet night cycle.
 
 ## AquaJet Freestanding 15
-AquaJet Freestanding 15 - $1049.00 - AquaJet - Dishwashers. Capacity / place settings 15, Water Usage 11 L per cycle, Noise Level 46 dB. Freestanding dishwasher for larger kitchens.
+The AquaJet Freestanding 15 is an AquaJet dishwasher priced at $1049.00. It has a capacity of 15 place settings, uses 11 L of water per cycle, and runs at 46 dB. It is a freestanding dishwasher for larger kitchens.
 
 ## HeatWave Pyrolytic 90
 HeatWave Pyrolytic 90 - $1799.00 - HeatWave - Ovens & Cooktops. Oven Capacity 105 L, Cleaning Pyrolytic, Energy Rating 4 stars. Wide oven with steam assist.
