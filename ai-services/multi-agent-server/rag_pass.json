@@ -1,0 +1,38 @@
+{
+  "status": "PASS",
+  "answer": "You can return items within 30 days of delivery for a full refund, provided they are unused and in their original packaging, and return shipping is free for defective items, with a $5.99 fee for change-of-mind returns.",
+  "reasoning": "The validation evidence provides a detailed explanation of the return policy, including the time frame for returns, conditions for full refunds, and specific details about return shipping costs. The evidence also cites specific sections from the 'shipping-and-returns.md' source, which lends credibility to the information. The confidence level of 'medium' suggests that the information is accurate, but not necessarily definitive.",
+  "validation_mode": "rag",
+  "evidence": {
+    "available": true,
+    "data": {
+      "answer": "You can return items within 30 days of delivery for a full refund, provided they are unused and in their original packaging, and return shipping is free for defective items, with a $5.99 fee for change-of-mind returns.",
+      "citations": [
+        {
+          "section": "Return Window",
+          "snippet": "Items can be returned within 30 days of delivery for a full refund, provided\nthey are unused and in their original packaging. Opened software licenses and\ngift cards are not eligible for return.",
+          "source": "shipping-and-returns.md"
+        },
+        {
+          "section": "How to Start a Return",
+          "snippet": "Start a return from the \"Past Orders\" section of your account, or contact\nsupport with your order number. Once approved, we email a prepaid return\nlabel - return shipping is free for defective items and $5.99 for\nchange-",
+          "source": "shipping-and-returns.md"
+        }
+      ],
+      "confidence": "medium"
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "evaluation": {
+        "answer": "You can return items within 30 days of delivery for a full refund, provided they are unused and in their original packaging, and return shipping is free for defective items, with a $5.99 fee for change-of-mind returns.",
+        "reasoning": "The validation evidence provides a detailed explanation of the return policy, including the time frame for returns, conditions for full refunds, and specific details about return shipping costs. The evidence also cites specific sections from the 'shipping-and-returns.md' source, which lends credibility to the information. The confidence level of 'medium' suggests that the information is accurate, but not necessarily definitive."
+      },
+      "observation": {
+        "status": "APPROVED",
+        "feedback": "The answer is supported by the validation evidence, which provides a detailed explanation of the return policy, including the time frame for returns, conditions for full refunds, and specific details about return shipping costs. The evidence also cites specific sections from the 'shipping-and-returns.md' source, which lends credibility to the information. The confidence level of 'medium' suggests that the information is accurate, but not necessarily definitive."
+      }
+    }
+  ]
+}

@@ -272,8 +272,6 @@ def rag_query():
         )
 
     # Prepend product name only for real product/spec questions.
-    # Use the full product name (not bare brand) so Freestanding does not
-    # also pull in Slimline just because both say "AquaJet".
     scoped_product = None
     if (
         product_id
@@ -292,7 +290,7 @@ def rag_query():
         except requests.RequestException:
             result = {"error": "The shared RAG server is not reachable right now."}
 
-    # Prefer citations for this page's product when we scoped the question.
+    # Citations for this page's product when scoped
     if scoped_product and isinstance(result, dict) and result.get("citations"):
         name = scoped_product["name"].lower()
         focused = [

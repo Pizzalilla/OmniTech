@@ -45,21 +45,3 @@ def get_catalog_specifications(product_id):
             {"name": s["spec_name"], "value": s["spec_value"]} for s in specs
         ],
     }
-
-
-@tool(
-    name="list_catalog_categories",
-    description="List every product category in the OmniTech catalogue with its description.",
-    example={},
-)
-def list_catalog_categories():
-    categories = service_get(SERVICE, "/api/categories")
-    if categories is None:
-        raise ToolError("Student 1 API has no /api/categories endpoint")
-    return {
-        "count": len(categories),
-        "categories": [
-            {"id": c["id"], "name": c["name"], "description": c.get("description") or ""}
-            for c in categories
-        ],
-    }
