@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Pull a model into the running Ollama container.
+# Pull a model into the locally running Ollama (AI-Mode is not containerised).
 # Usage: ./pull-model.sh [model-name]
 # Defaults to llama3.2 if no argument is given.
 

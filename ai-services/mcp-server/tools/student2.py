@@ -1,0 +1,43 @@
+"""
+TEMPLATE - copy this file to tools/studentN.py (no leading underscore) to add
+your own tools. Files starting with _ are not loaded.
+
+Rules (the tool boundary):
+  * Tools are READ-ONLY. Get data only through service_get(), which does a GET
+    on your own service's REST API. Never open another student's database.
+  * Give every input a type in `properties`; the server rejects bad inputs
+    before your function runs.
+  * Raise ToolError("message") when the tool can't do its job (e.g. not found);
+    the caller gets it back as an error result instead of a crash.
+  * Add an `example` - validate.py uses it to call your tool.
+"""
+
+from registry import ToolError, service_get, tool
+
+SERVICE = "student-2"   # student-1 ... student-5 (see SERVICES in registry.py)
+
+
+@tool(
+    name="get_customer_profile",
+    description="Fetch a customer's profile details and ecosystem preferences by ID.",
+    properties={
+        "customer_id": {
+            "type": "integer", 
+            "minimum": 1, 
+            "description": "The unique ID of the customer."
+        }
+    },
+    required=["customer_id"],
+    example={"customer_id": 1},
+)
+
+def get_customer_profile(customer_id):
+    data = service_get(SERVICE, "/api/customers/by-id", params={"customer_id": customer_id})
+    
+    if data is None:
+        raise ToolError(f"Customer #{customer_id} not found")
+        
+    return {
+        "customer_id": customer_id,
+        "profile": data
+    }

@@ -1,6 +1,4 @@
-# Release 1: AI-Mode (Ollama), the MCP server, the RAG server and the agentic loop
-# run locally on the PC and are NOT compose services. Each backend reaches them
-# through host.docker.internal (OLLAMA_HOST / RAG_HOST / MCP_HOST).
+# AI-Mode (Ollama), MCP, RAG and the agentic loop run on the host, not in Compose (Release 1 brief).
 services:
   home:
     image: nginx:alpine
@@ -23,8 +21,8 @@ services:
       - FLASK_ENV=development
       - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
-      - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
+      - RAG_HOST=http://host.docker.internal:6002
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -41,8 +39,8 @@ services:
       - FLASK_ENV=development
       - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
-      - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
+      - RAG_HOST=http://host.docker.internal:6002
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -59,8 +57,8 @@ services:
       - FLASK_ENV=development
       - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
-      - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
+      - RAG_HOST=http://host.docker.internal:6002
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -77,8 +75,8 @@ services:
       - FLASK_ENV=development
       - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_MODEL=llama3.2
-      - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
+      - RAG_HOST=http://host.docker.internal:6002
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -96,8 +94,8 @@ services:
       - OLLAMA_HOST=http://host.docker.internal:11434
       - OLLAMA_BASE_URL=http://host.docker.internal:11434/v1
       - OLLAMA_MODEL=llama3.2
-      - RAG_HOST=http://host.docker.internal:6002
       - MCP_HOST=http://host.docker.internal:6003
+      - RAG_HOST=http://host.docker.internal:6002
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -106,4 +104,3 @@ services:
 networks:
   omnitech-net:
     driver: bridge
-

@@ -16,8 +16,12 @@ OmniTech/
 │   ├── templates/        # Jinja2 / HTMX templates
 │   ├── Dockerfile
 │   └── requirements.txt
-├── ai-services/ai-mode/  # Ollama AI runtime helpers
-├── docker-compose.yml    # Orchestrates all 6 services
+├── ai-services/          # Shared local AI services (not containerised)
+│   ├── ai-mode/          # Ollama helpers
+│   ├── mcp-server/       # Shared MCP server (port 6003)
+│   ├── rag-server/       # Shared RAG server (port 6002)
+│   └── multi-agent-server/  # Shared agentic loop (MCP/RAG validation modes)
+├── docker-compose.yml    # Home page + the 5 student services
 └── .gitignore
 ```
 
@@ -27,6 +31,8 @@ OmniTech/
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
 - [Git](https://git-scm.com/)
+- [Ollama](https://ollama.com/) installed and running on your machine
+- Python 3.x (for the local MCP and RAG servers)
 
 ### 1. Clone the Repository
 
@@ -35,34 +41,51 @@ git clone https://github.com/YOUR-ORG/OmniTech.git
 cd OmniTech
 ```
 
-### 2. Start the local AI services (on the PC, not in Docker)
+### 2. Start the Local AI Services
 
-AI-Mode, MCP, RAG and the agentic loop are **not containerised** (Release 1 rule).
-
-1. **Ollama (AI-Mode):** install Ollama, then `ollama pull llama3.2`. It must listen on all
-   interfaces so containers can reach it (Windows/macOS app: set `OLLAMA_HOST=0.0.0.0:11434`).
-2. **RAG server (port 6002):** `cd ai-services/rag-server && python server.py`
-3. **MCP server (port 6003):** `cd ai-services/mcp-server && python server.py`
-
-### 3. Build and Run the Feature Microservices
+AI-Mode (Ollama), the MCP server, the RAG server and the agentic loop run on
+your machine, **not** in Docker Compose. Make sure Ollama is running and has a
+model:
 
 ```bash
-docker-compose up --build
+ollama pull llama3.2
 ```
 
-This starts 6 containers on a shared network (`omnitech-net`):
+(`ai-services/ai-mode/pull-model.sh qwen2.5` pulls a different model the same way.)
 
-| Service        | URL                        |
-|----------------|----------------------------|
-| Home           | http://localhost:8080       |
-| Student 1      | http://localhost:5001       |
-| Student 2      | http://localhost:5002       |
-| Student 3      | http://localhost:5003       |
-| Student 4      | http://localhost:5004       |
-| Student 5      | http://localhost:5005       |
+Then start the shared MCP and RAG servers, each in its own terminal (details in
+`ai-services/mcp-server/README.md` and `ai-services/rag-server/README.md`):
 
-Every backend gets `OLLAMA_HOST`, `RAG_HOST` and `MCP_HOST` pointing at
-`host.docker.internal` (11434 / 6002 / 6003), so the containers use the local AI services above.
+```bash
+cd ai-services/mcp-server && pip install -r requirements.txt && python server.py
+```
+
+```bash
+cd ai-services/rag-server && pip install -r requirements.txt && python server.py
+```
+
+### 3. Build and Run the Containerised Services
+
+```bash
+docker compose up --build
+```
+
+This starts 6 containers on a shared network (`omnitech-net`). Containers reach
+the local AI services through `host.docker.internal`:
+
+| Service        | URL                        | Runs in |
+|----------------|----------------------------|---------|
+| Home           | http://localhost:8080       | Docker |
+| Student 1      | http://localhost:5001       | Docker |
+| Student 2      | http://localhost:5002       | Docker |
+| Student 3      | http://localhost:5003       | Docker |
+| Student 4      | http://localhost:5004       | Docker |
+| Student 5      | http://localhost:5005       | Docker |
+| Ollama (AI-Mode) | http://localhost:11434    | Local |
+| RAG server     | http://localhost:6002       | Local |
+| MCP server     | http://localhost:6003       | Local |
+
+On Linux, start Ollama with `OLLAMA_HOST=0.0.0.0 ollama serve` so containers can reach it.
 
 ### 4. Open the Home Page
 
@@ -70,7 +93,8 @@ Open [http://localhost:8080](http://localhost:8080). It lists the five student s
 
 ## Connecting to Ollama from Your Flask App
 
-Each student container has the environment variable `OLLAMA_HOST` set to `http://host.docker.internal:11434` (Ollama on the PC). Use it in your code:
+Each student container has `OLLAMA_HOST=http://host.docker.internal:11434`, plus
+`MCP_HOST` and `RAG_HOST` for the shared MCP and RAG servers. Use them in your code:
 
 ```python
 import os, requests

@@ -1,6 +1,7 @@
 import os
 import sys
 
+import requests
 from flask import Flask, abort, jsonify, render_template, request
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "database"))
@@ -8,6 +9,14 @@ from database import get_db, init_db, seed_db
 
 import agent
 import catalog
+import rag_client
+from mcp_client import McpClient, McpError
+
+# Retained but disabled during CI/CD (see .github/workflows/student-3.yml) -
+# the shared RAG and MCP servers are local-only dependencies that CI can't run.
+RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
+MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() == "true"
+mcp = McpClient(os.getenv("MCP_HOST", "http://localhost:6003"))
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
 
@@ -446,6 +455,63 @@ def chat():
         "saved_recommendation": _reco_view(saved_reco) if saved_reco else None,
         "meta": result["meta"],
     })
+
+
+# ── Shared RAG server: grounded policy / FAQ answers ────────────────────────
+
+@app.route("/api/rag/query", methods=["POST"])
+def rag_query():
+    """Ask the shared RAG server a grounded question (policies, FAQs, etc.).
+
+    Accepts JSON {query} or an HTMX form post with the same field. Returns
+    JSON by default, or an HTML fragment when called from HTMX. Distinct from
+    /api/chat - this does not touch the catalog or a session's chat history.
+    """
+    if request.is_json:
+        query_text = ((request.get_json(silent=True) or {}).get("query") or "").strip()
+    else:
+        query_text = (request.form.get("query") or "").strip()
+    if not query_text:
+        abort(400, description="query is required")
+
+    if not RAG_ENABLED:
+        result = {"error": "RAG integration is disabled in this environment."}
+    else:
+        try:
+            result = rag_client.ask(query_text)
+        except requests.RequestException:
+            result = {"error": "The shared RAG server is not reachable right now."}
+
+    if _is_htmx():
+        return render_template("partials/rag_result.html", result=result)
+    return jsonify(result)
+
+
+# ── Shared MCP server: verify recommendations via the shared tool registry ──
+
+@app.route("/api/sessions/<int:session_id>/mcp-check", methods=["GET"])
+def mcp_check_recommendations(session_id):
+    """Fetch this session's saved recommendations through the shared MCP
+    server's get_saved_recommendations tool, instead of this service's own
+    /recommendations route - proving the round trip through the shared tool
+    registry (see ai-services/mcp-server/tools/student3.py) rather than just
+    reading the local database directly.
+    """
+    if not MCP_ENABLED:
+        result = {"error": "MCP integration is disabled in this environment."}
+    else:
+        try:
+            call = mcp.call_tool("get_saved_recommendations", {"session_id": session_id})
+            if call["isError"]:
+                result = {"error": call["content"][0]["text"]}
+            else:
+                result = call["structuredContent"]
+        except (requests.RequestException, McpError):
+            result = {"error": "The shared MCP server is not reachable right now."}
+
+    if _is_htmx():
+        return render_template("partials/mcp_result.html", result=result)
+    return jsonify(result)
 
 
 # ── HTMX partials ────────────────────────────────────────────────────────────

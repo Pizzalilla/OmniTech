@@ -1,9 +1,13 @@
 import os
 import sys
-from flask import Flask, abort, jsonify, render_template, request
+import requests
+from flask import Flask, abort, jsonify, render_template, request, render_template_string
+from mcp_client import McpClient, McpError
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
+RAG_SERVER_URL = os.getenv("RAG_SERVER_URL", "http://host.docker.internal:6002")
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://host.docker.internal:6003")
 
 sys.path.insert(0, os.path.join(BASE_DIR, "database"))
 from database import get_db, init_db, seed_db
@@ -297,6 +301,107 @@ def delete_customer_profile_tag(customer_id, tag_id):
         return f"<div class='error'>Customer #{customer_id} not found.</div>"
 
     return render_customer_profile(customer, preferences, tags)
+
+@app.route("/api/customers/by-id", methods=["GET"])
+def api_get_customer_by_id():
+    customer_id = request.args.get("customer_id")
+    
+    if not customer_id or not str(customer_id).isdigit():
+        return jsonify({"error": "Valid numeric customer_id required"}), 400
+
+    db = get_db()
+    
+    customer = db.execute("SELECT * FROM Customers WHERE id = ?", (customer_id,)).fetchone()
+    
+    if not customer:
+        db.close()
+        return jsonify({"error": f"Customer #{customer_id} not found"}), 404
+
+    profile_data = dict(customer)
+
+
+    prefs = db.execute(
+        "SELECT ecosystem, budget_tier, notes FROM Preferences WHERE customer_id = ?", 
+        (customer_id,)
+    ).fetchone()
+    
+    if prefs:
+        profile_data.update(dict(prefs))
+
+    tags = db.execute(
+        "SELECT tag_name FROM PreferenceTags WHERE customer_id = ?", 
+        (customer_id,)
+    ).fetchall()
+    
+    profile_data["tags"] = [t["tag_name"] for t in tags]
+
+    db.close()
+
+    return jsonify(profile_data)
+
+@app.route("/rag-search", methods=["POST"])
+def rag_search():
+    user_query = request.form.get("query", "").strip()
+    if not user_query:
+        return "<p class='error'>Please enter a search query.</p>", 400
+
+    try:
+        response = requests.post(
+            f"{RAG_SERVER_URL}/rag/query",
+            json={"query": user_query},
+            timeout=125
+        )
+        response.raise_for_status()
+        data = response.json()
+
+    except requests.RequestException:
+        data = {
+            "insufficient_context": True,
+            "message": "Unable to connect to the knowledge server."
+        }
+
+    return render_template("rag_result.html", data=data)
+
+@app.route("/mcp-check-profile", methods=["POST"])
+def mcp_check_profile():
+    customer_id = request.form.get("customer_id")
+    if not customer_id or not customer_id.isdigit():
+        return "<p style='color: red;'>Please enter a valid numeric Customer ID.</p>", 400
+
+    mcp = McpClient(host=MCP_SERVER_URL)
+    
+    try:
+        mcp.initialize("student-2-frontend")
+        
+        result = mcp.call_tool("get_customer_profile", {"customer_id": int(customer_id)})
+        
+        if result.get("isError"):
+            data = {"error": result["content"][0]["text"]}
+        else:
+            data = result.get("structuredContent", {})
+            
+    except McpError as e:
+        data = {"error": str(e)}
+    except Exception as e:
+        data = {"error": f"Failed to connect to MCP Server: {e}"}
+
+    template = """
+    <div style="border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-top: 15px;">
+        <h4>MCP Tool Result: <code>get_customer_profile</code></h4>
+        
+        {% if data.error %}
+            <div style="color: red; background: #fee; padding: 10px; border-radius: 4px;">
+                <strong>Tool Error:</strong> {{ data.error }}
+            </div>
+        {% else %}
+            <div style="background: #f8f9fa; padding: 10px; border-radius: 4px;">
+                <pre style="margin: 0; font-size: 0.9em; white-space: pre-wrap;">{{ data | tojson(indent=2) }}</pre>
+            </div>
+        {% endif %}
+    </div>
+    """
+    
+    return render_template_string(template, data=data)
 
 def render_customer_profile(customer, preferences, tags):
     html = f"<h3>#{customer['id']} - {customer['first_name']} {customer['last_name']}</h3>"

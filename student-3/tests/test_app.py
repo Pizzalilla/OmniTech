@@ -12,7 +12,16 @@ os.environ["DB_PATH"] = os.path.join(tempfile.mkdtemp(), "bootstrap.db")
 
 import agent  # noqa: E402
 import database  # noqa: E402
+import main  # noqa: E402
 from main import app  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def integrations_enabled(monkeypatch):
+    # CI runs with RAG_ENABLED/MCP_ENABLED=false; these tests fake both servers,
+    # so switch the flags on per test (the *_disabled_via_env tests turn them off).
+    monkeypatch.setattr(main, "RAG_ENABLED", True)
+    monkeypatch.setattr(main, "MCP_ENABLED", True)
 
 
 @pytest.fixture
@@ -265,3 +274,147 @@ def test_stylesheet_served(client):
     assert rv.status_code == 200
     assert b".panel" in rv.data
     assert b"--primary" in rv.data
+
+
+# ── Shared RAG server integration ────────────────────────────────────────────
+
+def test_rag_query_requires_query(client):
+    rv = client.post("/api/rag/query", json={})
+    assert rv.status_code == 400
+
+
+def test_rag_query_returns_grounded_answer(client, monkeypatch):
+    import rag_client
+
+    def _fake_ask(query):
+        return {
+            "answer": "Items can be returned within 30 days of delivery.",
+            "citations": [{"source": "shipping-and-returns.md", "section": "Return Window",
+                           "snippet": "Items can be returned within 30 days..."}],
+            "confidence": "high",
+        }
+    monkeypatch.setattr(rag_client, "ask", _fake_ask)
+
+    rv = client.post("/api/rag/query", json={"query": "What is your return policy?"})
+    assert rv.status_code == 200
+    body = rv.get_json()
+    assert body["confidence"] == "high"
+    assert body["citations"][0]["source"] == "shipping-and-returns.md"
+
+
+def test_rag_query_htmx_renders_confidence_badge(client, monkeypatch):
+    import rag_client
+    monkeypatch.setattr(rag_client, "ask", lambda query: {
+        "answer": "Standard shipping is free over $75.",
+        "citations": [{"source": "shipping-and-returns.md", "section": "Shipping Options",
+                       "snippet": "Standard shipping..."}],
+        "confidence": "medium",
+    })
+
+    rv = client.post("/api/rag/query", data={"query": "how much is shipping"},
+                      headers={"HX-Request": "true"})
+    assert rv.status_code == 200
+    assert b"rag-badge--medium" in rv.data
+    assert b"shipping-and-returns.md" in rv.data
+
+
+def test_rag_query_reports_insufficient_context(client, monkeypatch):
+    import rag_client
+    monkeypatch.setattr(rag_client, "ask", lambda query: {
+        "insufficient_context": True, "message": "Not enough information.",
+    })
+
+    rv = client.post("/api/rag/query", json={"query": "what is the capital of France"})
+    assert rv.status_code == 200
+    assert rv.get_json()["insufficient_context"] is True
+
+
+def test_rag_query_handles_unreachable_rag_server(client, monkeypatch):
+    import rag_client
+    import requests
+
+    def _boom(query):
+        raise requests.ConnectionError("refused")
+    monkeypatch.setattr(rag_client, "ask", _boom)
+
+    rv = client.post("/api/rag/query", json={"query": "what is your warranty policy"})
+    assert rv.status_code == 200
+    assert "not reachable" in rv.get_json()["error"]
+
+
+def test_rag_query_disabled_via_env(client, monkeypatch):
+    import main
+    monkeypatch.setattr(main, "RAG_ENABLED", False)
+
+    rv = client.post("/api/rag/query", json={"query": "what is your return policy"})
+    assert rv.status_code == 200
+    assert "disabled" in rv.get_json()["error"]
+
+
+# ── Shared MCP server integration ────────────────────────────────────────────
+
+def test_mcp_check_returns_tool_result(client, monkeypatch):
+    import main
+
+    def _fake_call_tool(name, arguments):
+        assert name == "get_saved_recommendations"
+        assert arguments == {"session_id": 1}
+        return {
+            "isError": False,
+            "structuredContent": {
+                "session_id": 1,
+                "recommendations": [{"summary": "Workstation laptop.", "product_ids": ["LAP-001"]}],
+            },
+        }
+    monkeypatch.setattr(main.mcp, "call_tool", _fake_call_tool)
+
+    rv = client.get("/api/sessions/1/mcp-check")
+    assert rv.status_code == 200
+    body = rv.get_json()
+    assert body["session_id"] == 1
+    assert body["recommendations"][0]["product_ids"] == ["LAP-001"]
+
+
+def test_mcp_check_htmx_renders_tool_name(client, monkeypatch):
+    import main
+    monkeypatch.setattr(main.mcp, "call_tool", lambda name, arguments: {
+        "isError": False,
+        "structuredContent": {"session_id": 1, "recommendations": []},
+    })
+
+    rv = client.get("/api/sessions/1/mcp-check", headers={"HX-Request": "true"})
+    assert rv.status_code == 200
+    assert b"get_saved_recommendations" in rv.data
+
+
+def test_mcp_check_surfaces_tool_error(client, monkeypatch):
+    import main
+    monkeypatch.setattr(main.mcp, "call_tool", lambda name, arguments: {
+        "isError": True, "content": [{"type": "text", "text": "Session #999 not found"}],
+    })
+
+    rv = client.get("/api/sessions/1/mcp-check")
+    assert rv.status_code == 200
+    assert rv.get_json()["error"] == "Session #999 not found"
+
+
+def test_mcp_check_handles_unreachable_mcp_server(client, monkeypatch):
+    import main
+    import requests
+
+    def _boom(name, arguments):
+        raise requests.ConnectionError("refused")
+    monkeypatch.setattr(main.mcp, "call_tool", _boom)
+
+    rv = client.get("/api/sessions/1/mcp-check")
+    assert rv.status_code == 200
+    assert "not reachable" in rv.get_json()["error"]
+
+
+def test_mcp_check_disabled_via_env(client, monkeypatch):
+    import main
+    monkeypatch.setattr(main, "MCP_ENABLED", False)
+
+    rv = client.get("/api/sessions/1/mcp-check")
+    assert rv.status_code == 200
+    assert "disabled" in rv.get_json()["error"]

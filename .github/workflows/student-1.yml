@@ -18,6 +18,9 @@ jobs:
   validate:
     name: validate product catalog sources
     runs-on: ubuntu-latest
+    env:
+      MCP_ENABLED: "false"
+      RAG_ENABLED: "false"
     defaults:
       run:
         working-directory: student-1
@@ -50,7 +53,11 @@ jobs:
         run: docker build -t student-1:ci ./student-1
 
       - name: start container
-        run: docker run -d --name student-1-ci -p 5001:5000 student-1:ci
+        run: >
+          docker run -d --name student-1-ci -p 5001:5000
+          -e MCP_ENABLED=false
+          -e RAG_ENABLED=false
+          student-1:ci
 
       - name: wait for health endpoint
         run: |

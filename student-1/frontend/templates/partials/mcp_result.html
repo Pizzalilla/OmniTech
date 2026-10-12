@@ -1,0 +1,65 @@
+<div class="mcp-result mcp-result--{{ status }}">
+    <p class="mcp-result__call">
+        <code>{{ tool_name }}({{ arguments | tojson }})</code>
+    </p>
+
+    {% if error %}
+    <p class="mcp-result__error">{{ error }}</p>
+    {% elif data %}
+    <div class="mcp-result__body">
+        {% if data.name is defined %}
+        <p>
+            <strong>#{{ data.product_id }} {{ data.name }}</strong>
+            {% if data.brand %} &middot; {{ data.brand }}{% endif %}
+            {% if data.category %} &middot; {{ data.category }}{% endif %}
+        </p>
+        {% if data.price is defined %}
+        <p>Price: ${{ '%.2f' | format(data.price) }} &middot; Stock: {{ data.stock }}</p>
+        {% endif %}
+        {% if data.description %}
+        <p>{{ data.description }}</p>
+        {% endif %}
+        {% endif %}
+
+        {% if data.specifications is defined %}
+        <p>
+            <strong>{{ data.product_name or ('Product #' ~ data.product_id) }}</strong>
+            &mdash; {{ data.spec_count }} specification{{ '' if data.spec_count == 1 else 's' }}
+        </p>
+        {% if data.specifications %}
+        <table class="data-table">
+            <tbody>
+                {% for spec in data.specifications %}
+                <tr>
+                    <th style="width: 45%;">{{ spec.name }}</th>
+                    <td>{{ spec.value }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: var(--text-muted);">No specifications recorded.</p>
+        {% endif %}
+        {% endif %}
+
+        {% if data.categories is defined %}
+        <p><strong>{{ data.count }} categories</strong></p>
+        <ul class="mcp-result__list">
+            {% for category in data.categories %}
+            <li>
+                <strong>{{ category.name }}</strong>
+                {% if category.description %} &mdash; {{ category.description }}{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if raw %}
+    <details class="mcp-result__raw">
+        <summary>Raw MCP result</summary>
+        <pre>{{ raw }}</pre>
+    </details>
+    {% endif %}
+</div>

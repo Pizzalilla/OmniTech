@@ -32,9 +32,14 @@ jobs:
           python -m py_compile student-3/backend/main.py
           python -m py_compile student-3/backend/agent.py
           python -m py_compile student-3/backend/catalog.py
+          python -m py_compile student-3/backend/rag_client.py
+          python -m py_compile student-3/backend/mcp_client.py
           python -m py_compile student-3/database/database.py
 
       - name: Run tests
+        env:
+          RAG_ENABLED: "false"
+          MCP_ENABLED: "false"
         run: |
           cd student-3
           python -m pytest tests/ -v
