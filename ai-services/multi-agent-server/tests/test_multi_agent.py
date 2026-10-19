@@ -104,6 +104,12 @@ def test_reviewer_unknown_verdict_becomes_needs_changes(monkeypatch):
     assert agents.reviewer("t", plan, EVIDENCE, work)["verdict"] == "needs_changes"
 
 
+def test_ollama_url_handles_windows_listen_address():
+    assert agents.ollama_url("0.0.0.0:11434") == "http://127.0.0.1:11434"
+    assert agents.ollama_url("http://host.docker.internal:11434/") == "http://host.docker.internal:11434"
+    assert agents.ollama_url(None) == "http://127.0.0.1:11434"
+
+
 def test_ollama_down_raises_agent_error(monkeypatch):
     def boom(*a, **k):
         raise requests.ConnectionError("refused")
