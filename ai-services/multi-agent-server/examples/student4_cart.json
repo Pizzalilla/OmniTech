@@ -1,0 +1,22 @@
+{
+  "cart": {
+    "user_id": 101,
+    "fulfillment": "delivery",
+    "delivery_address": "123 Tech Lane, Sydney NSW 2000",
+    "items": [
+      {"product_id": 511, "product_name": "Samsung Fridge 500L", "unit_price": 1499.0, "quantity": 1, "in_stock": true},
+      {"product_id": 512, "product_name": "Induction Cooktop 2000W", "unit_price": 799.0, "quantity": 1, "in_stock": true},
+      {"product_id": 513, "product_name": "Microwave Oven 1000W", "unit_price": 249.0, "quantity": 1, "in_stock": false}
+    ],
+    "subtotal": 2547.0,
+    "delivery_fee": 15.0,
+    "total": 2562.0
+  },
+  "safety_checks": [
+    "Microwave Oven 1000W: out of stock - goes on backorder.",
+    "Induction Cooktop 2000W + Microwave Oven 1000W = 3000W (12.5A) together - more than one 10A power point (2400W)."
+  ],
+  "store_policy": [
+    {"source": "shipping-and-returns.md", "heading": "Delivery", "text": "Standard delivery is $15 within the Sydney metro area. Large appliances need two people for delivery."}
+  ]
+}
