@@ -13,6 +13,8 @@ on:
       - "student-1/**"
       - ".github/workflows/student-1.yml"
   workflow_dispatch:
+  # lets cloud-deployment.yml run this workflow as a gate before deploying
+  workflow_call:
 
 jobs:
   validate:
