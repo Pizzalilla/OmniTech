@@ -7,6 +7,8 @@ cd "$(dirname "$0")/../../.."
 source scripts/deploy/azure/config.sh
 
 az account show -o none 2>/dev/null || { echo "Not logged in to Azure. Run: az login"; exit 1; }
+# Images are built with Docker and pushed (Azure for Students blocks cloud builds via ACR Tasks).
+docker info >/dev/null 2>&1 || { echo "Docker is not running. Start Docker Desktop and re-run."; exit 1; }
 SUB_ID=$(az account show --query id -o tsv)
 # Registry names must be globally unique and alphanumeric; derive one from the subscription.
 AZ_ACR="${AZ_ACR:-omnitech${SUB_ID:0:8}}"
@@ -24,10 +26,16 @@ echo "==> Resource group, registry and Container Apps environment"
 az group show -n "$AZ_RG" -o none 2>/dev/null || az group create -n "$AZ_RG" -l "$AZ_LOCATION" -o none
 az acr show -n "$AZ_ACR" -g "$AZ_RG" -o none 2>/dev/null \
   || az acr create -n "$AZ_ACR" -g "$AZ_RG" --sku Basic --admin-enabled false -o none
+# WorkloadProfiles (Consumption profile, pay-per-use): the default "Express" mode cannot
+# pull images with a managed identity.
 az containerapp env show -n "$AZ_ENV" -g "$AZ_RG" -o none 2>/dev/null \
-  || az containerapp env create -n "$AZ_ENV" -g "$AZ_RG" -l "$AZ_LOCATION" -o none
+  || az containerapp env create -n "$AZ_ENV" -g "$AZ_RG" -l "$AZ_LOCATION" \
+       --environment-mode WorkloadProfiles -o none
+ENV_MODE=$(az containerapp env show -n "$AZ_ENV" -g "$AZ_RG" --query properties.environmentMode -o tsv)
+[[ "$ENV_MODE" != "Express" ]] || { echo "$AZ_ENV is an Express environment; delete it and re-run."; exit 1; }
 DOMAIN=$(az containerapp env show -n "$AZ_ENV" -g "$AZ_RG" --query properties.defaultDomain -o tsv)
 REGISTRY="$AZ_ACR.azurecr.io"
+az acr login -n "$AZ_ACR" --only-show-errors
 url() { echo "https://omnitech-$1.$DOMAIN"; }
 
 LINK_ENV=("HOME_URL=$(url home)")
@@ -39,8 +47,10 @@ for spec in "${SERVICES[@]}"; do
   image="$REGISTRY/omnitech-$name:$IMAGE_TAG"
   if [[ "$name" == "home" ]]; then env_vars=("${LINK_ENV[@]}"); else env_vars=("${AI_DISABLED_ENV[@]}" "${LINK_ENV[@]}"); fi
 
-  echo "==> $app: building $image"
-  az acr build -r "$AZ_ACR" -t "omnitech-$name:$IMAGE_TAG" -f "$dockerfile" "$context" --only-show-errors -o none
+  echo "==> $app: building and pushing $image"
+  # Azure runs amd64; --platform also makes Apple-silicon Macs build the right architecture.
+  docker build --platform linux/amd64 -t "$image" -f "$dockerfile" "$context"
+  docker push "$image"
 
   if az containerapp show -n "$app" -g "$AZ_RG" -o none 2>/dev/null; then
     echo "==> $app: rolling out new image"

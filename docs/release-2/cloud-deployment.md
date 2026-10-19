@@ -9,7 +9,7 @@ CRUD working.
 | File | Purpose |
 |---|---|
 | `scripts/deploy/azure/config.sh` | Region, names, services, cloud environment variables |
-| `scripts/deploy/azure/deploy.sh` | Creates or updates everything; builds images in Azure (no local Docker needed) |
+| `scripts/deploy/azure/deploy.sh` | Creates or updates everything; builds the images with Docker and pushes them to the registry |
 | `scripts/deploy/azure/smoke_test.py` | Checks every service and writes the cloud deployment report |
 | `scripts/deploy/azure/setup_github_oidc.sh` | One-time: lets GitHub Actions deploy without stored passwords |
 | `scripts/deploy/azure/teardown.sh` | Deletes everything (stops all charges) |
@@ -27,7 +27,9 @@ Each feature's SQLite data lives inside its container and is re-seeded on restar
 ## First deployment (one person, from a terminal)
 
 1. Activate **Azure for Students** (UTS email, no credit card).
-2. Install the Azure CLI: `brew install azure-cli`, then `az login`.
+2. Install the Azure CLI: `brew install azure-cli`, then `az login`. Start Docker Desktop:
+   Azure for Students blocks cloud builds (ACR Tasks), so images are built locally for
+   `linux/amd64` and pushed.
 3. Deploy and check it:
    ```bash
    bash scripts/deploy/azure/deploy.sh

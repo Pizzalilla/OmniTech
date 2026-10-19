@@ -2,7 +2,11 @@
 AZ_LOCATION="${AZ_LOCATION:-australiaeast}"
 AZ_RG="${AZ_RG:-omnitech-rg}"
 AZ_ENV="${AZ_ENV:-omnitech-env}"
-IMAGE_TAG="${IMAGE_TAG:-$(git rev-parse --short HEAD)}"
+# Commit hash; uncommitted changes get a timestamp so Azure always rolls out a new revision.
+if [[ -z "${IMAGE_TAG:-}" ]]; then
+  IMAGE_TAG="$(git rev-parse --short HEAD)"
+  [[ -z "$(git status --porcelain)" ]] || IMAGE_TAG="$IMAGE_TAG-dirty-$(date +%Y%m%d%H%M%S)"
+fi
 
 # name | build context | Dockerfile | container port
 SERVICES=(

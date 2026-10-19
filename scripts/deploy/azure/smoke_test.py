@@ -7,6 +7,7 @@ Each student can add checks for their own feature to CHECKS below.
 """
 
 import json
+import ssl
 import sys
 import time
 import urllib.error
@@ -16,6 +17,13 @@ from pathlib import Path
 
 EVIDENCE = Path(__file__).resolve().parents[3] / "docs" / "release-2" / "evidence" / "cloud"
 COLD_START_WAIT = 150  # apps scale to zero, so the first request can take a while
+
+# python.org builds on macOS ship without root certificates; use certifi's bundle when present.
+try:
+    import certifi
+    SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    SSL_CONTEXT = ssl.create_default_context()
 
 # service -> list of (description, method, path, json body or None, expected status, text expected in body)
 CHECKS = {
@@ -41,21 +49,23 @@ def request(method, url, body, timeout):
     headers = {"Content-Type": "application/json"} if data else {}
     req = urllib.request.Request(url, data=data, method=method, headers=headers)  # noqa: S310 - scheme checked above
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:  # noqa: S310 - scheme checked above
+        with urllib.request.urlopen(req, timeout=timeout, context=SSL_CONTEXT) as resp:  # noqa: S310 - scheme checked above
             return resp.status, resp.read().decode(errors="replace")
     except urllib.error.HTTPError as err:
         return err.code, err.read().decode(errors="replace")
 
 
 def wake(url):
-    deadline = time.time() + COLD_START_WAIT
+    """Return None once the service answers, or the last error if it never does."""
+    deadline, error = time.time() + COLD_START_WAIT, "timed out"
     while time.time() < deadline:
         try:
             request("GET", url, None, timeout=30)
-            return True
-        except (urllib.error.URLError, TimeoutError):
+            return None
+        except (urllib.error.URLError, TimeoutError) as err:
+            error = str(getattr(err, "reason", err))
             time.sleep(5)
-    return False
+    return error
 
 
 def main():
@@ -65,18 +75,20 @@ def main():
         base = deployment["services"].get(service)
         if not base:
             continue
-        awake = wake(base + "/")
+        wake_error = wake(base + "/")
         for desc, method, path, body, want, text in checks:
             start = time.time()
             try:
-                status, page = request(method, base + path, body, timeout=60) if awake else (0, "service did not start")
+                status, page = (0, f"service did not start: {wake_error}") if wake_error \
+                    else request(method, base + path, body, timeout=60)
             except (urllib.error.URLError, TimeoutError) as err:
-                status, page = 0, str(err)
+                status, page = 0, str(getattr(err, "reason", err))
             ok = status == want and (text is None or text in page)
             results.append({"service": service, "check": desc, "method": method, "url": base + path,
                             "expected": want, "status": status, "passed": ok,
                             "ms": round((time.time() - start) * 1000)})
-            print(f"{'PASS' if ok else 'FAIL'}  {service:10} {desc} ({method} {path} -> {status})")
+            reason = "" if ok or status else f"  [{page[:120]}]"
+            print(f"{'PASS' if ok else 'FAIL'}  {service:10} {desc} ({method} {path} -> {status}){reason}", flush=True)
 
     passed = sum(r["passed"] for r in results)
     (EVIDENCE / "cloud-smoke-results.json").write_text(json.dumps(
