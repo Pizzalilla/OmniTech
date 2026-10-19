@@ -42,3 +42,6 @@ docker-compose.override.yml
 .coverage
 htmlcov/
 .pytest_cache/
+
+# Multi-Agent Server run logs (copy what you need into your evidence folder)
+ai-services/multi-agent-server/logs/
