@@ -18,12 +18,19 @@ az identity show -n "$IDENTITY" -g "$AZ_RG" -o none 2>/dev/null \
 CLIENT_ID=$(az identity show -n "$IDENTITY" -g "$AZ_RG" --query clientId -o tsv)
 PRINCIPAL_ID=$(az identity show -n "$IDENTITY" -g "$AZ_RG" --query principalId -o tsv)
 
-# Only workflow runs on this repo's main branch can use the identity.
-az identity federated-credential show -n github-main --identity-name "$IDENTITY" -g "$AZ_RG" -o none 2>/dev/null \
-  || az identity federated-credential create -n github-main --identity-name "$IDENTITY" -g "$AZ_RG" \
-       --issuer "https://token.actions.githubusercontent.com" \
-       --subject "repo:$REPO:ref:refs/heads/main" \
-       --audiences "api://AzureADTokenExchange" -o none
+# Only workflow runs on this repo's main branch can use the identity. GitHub may send the subject
+# with numeric owner/repo IDs (repo:owner@123/name@456:...) or by name only, so register both.
+IDS=$(curl -fsS "https://api.github.com/repos/$REPO" | python3 -c \
+  "import json,sys; d=json.load(sys.stdin); print(d['owner']['id'], d['id'])")
+read -r OWNER_ID REPO_ID <<< "$IDS"
+SUBJECT_IDS="repo:${REPO%%/*}@$OWNER_ID/${REPO##*/}@$REPO_ID:ref:refs/heads/main"
+for entry in "github-main|repo:$REPO:ref:refs/heads/main" "github-main-ids|$SUBJECT_IDS"; do
+  IFS="|" read -r cred subject <<< "$entry"
+  az identity federated-credential show -n "$cred" --identity-name "$IDENTITY" -g "$AZ_RG" -o none 2>/dev/null \
+    || az identity federated-credential create -n "$cred" --identity-name "$IDENTITY" -g "$AZ_RG" \
+         --issuer "https://token.actions.githubusercontent.com" \
+         --subject "$subject" --audiences "api://AzureADTokenExchange" -o none
+done
 
 # Contributor on the project's resource group only (not the whole subscription).
 az role assignment create --assignee-object-id "$PRINCIPAL_ID" --assignee-principal-type ServicePrincipal \
