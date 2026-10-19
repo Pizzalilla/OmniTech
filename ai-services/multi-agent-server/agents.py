@@ -12,7 +12,17 @@ import os
 
 import requests
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+
+# OLLAMA ADDRESS: Windows often has OLLAMA_HOST=0.0.0.0:11434 (a listen address),
+# so add http:// and swap 0.0.0.0 for 127.0.0.1 to get an address we can call
+def ollama_url(raw):
+    url = (raw or "127.0.0.1:11434").strip().rstrip("/")
+    if "://" not in url:
+        url = "http://" + url
+    return url.replace("://0.0.0.0", "://127.0.0.1")
+
+
+OLLAMA_HOST = ollama_url(os.getenv("OLLAMA_HOST"))
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 
