@@ -1,0 +1,9 @@
+# Release 2 pre-commit security scan: Ruff's security rules only (flake8-bandit, "S").
+[lint]
+select = ["S"]
+
+[lint.per-file-ignores]
+# pytest checks results with assert, which is fine in test code.
+"**/tests/**" = ["S101"]
+# Dev scripts only run fixed tools (git, ruff, pip-audit) on paths from git, never user input.
+"scripts/**" = ["S603", "S607"]

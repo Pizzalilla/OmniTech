@@ -1,0 +1,4 @@
+# Only the cloud home-page image builds from the repo root; send it just what it needs.
+*
+!shared/frontend
+!scripts/deploy/azure/home

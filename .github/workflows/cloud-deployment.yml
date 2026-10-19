@@ -1,0 +1,58 @@
+name: Cloud Deployment (Azure)
+
+# Deploys the integrated app to Azure Container Apps only after every student's
+# CI/CD workflow passes. Any team member can run it from the Actions tab.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write   # short-lived OIDC login to Azure, no stored passwords
+
+concurrency:
+  group: cloud-deployment
+  cancel-in-progress: false
+
+jobs:
+  student-1:
+    uses: ./.github/workflows/student-1.yml
+  student-2:
+    uses: ./.github/workflows/student-2.yml
+  student-3:
+    uses: ./.github/workflows/student-3.yml
+  student-4:
+    uses: ./.github/workflows/student-4.yml
+  student-5:
+    uses: ./.github/workflows/student-5.yml
+
+  deploy:
+    needs: [student-1, student-2, student-3, student-4, student-5]
+    # Skipped until the Azure login variables are set (see docs/release-2/cloud-deployment.md).
+    if: ${{ vars.AZURE_CLIENT_ID != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Azure (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and deploy to Azure Container Apps
+        run: bash scripts/deploy/azure/deploy.sh
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+
+      - name: Smoke test the deployment
+        run: python3 scripts/deploy/azure/smoke_test.py
+
+      - name: Save cloud deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cloud-deployment-evidence
+          path: docs/release-2/evidence/cloud/
