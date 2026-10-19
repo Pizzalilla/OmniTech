@@ -99,6 +99,32 @@
                         <small style="color: var(--text-muted);">Click a metric prompt above or click "Auto Audit Cart" for Australian safety checks.</small>
                     </div>
                 </div>
+
+                <!-- Multi-Agent cart review (Release 2): Planner -> Worker -> Reviewer, then a human decides -->
+                <div class="ai-helper-card multi-agent-card">
+                    <div class="ai-helper-header">
+                        <h4>🧠 Cart review <span class="mcp-tag">Multi-Agent</span></h4>
+                        <button type="button" class="btn-ai-audit" hx-get="/api/multi-agent/history" hx-target="#multi-agent-history">
+                            Recent reviews
+                        </button>
+                    </div>
+                    <form hx-post="/api/multi-agent/review-cart" hx-target="#multi-agent-result" hx-indicator="#multi-agent-working" class="ai-input-row">
+                        <input type="text" id="multi-agent-task" name="task" maxlength="500" placeholder="Leave blank to check the cart is ready for checkout">
+                        <button type="submit" class="btn-ai-ask">Run review</button>
+                    </form>
+                    <div class="quick-queries">
+                        <button type="button" class="quick-btn" onclick="setReviewTask('Check this cart is ready for checkout.')">🛒 Ready for checkout?</button>
+                        <button type="button" class="quick-btn" onclick="setReviewTask('Check the delivery and installation needs for every item in this cart.')">🚚 Delivery &amp; install</button>
+                        <button type="button" class="quick-btn" onclick="setReviewTask('Check which items can share a power point and which need their own.')">⚡ Power points</button>
+                    </div>
+                    <div id="multi-agent-working" class="htmx-indicator ma-working">
+                        Planner → Worker → Reviewer are working on it… this can take a minute.
+                    </div>
+                    <div id="multi-agent-result">
+                        <small style="color: var(--text-muted);">Sends the cart, product specs (MCP), safety checks and store policy (RAG) to the shared Multi-Agent server. You make the final call.</small>
+                    </div>
+                    <div id="multi-agent-history"></div>
+                </div>
             </section>
 
             <!-- Right: Order Summary -->
@@ -166,6 +192,10 @@
         function setFulfillment(mode) {
             document.getElementById('btn-delivery').classList.toggle('active', mode === 'delivery');
             document.getElementById('btn-pickup').classList.toggle('active', mode === 'pickup');
+        }
+
+        function setReviewTask(text) {
+            document.getElementById('multi-agent-task').value = text;
         }
 
         function setRagQuestion(text) {

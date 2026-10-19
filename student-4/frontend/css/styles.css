@@ -395,6 +395,45 @@ a { color: inherit; text-decoration: none; }
 .ai-trace summary { cursor: pointer; }
 .ai-trace ol { margin: 4px 0 0 18px; padding: 0; }
 
+/* MULTI-AGENT (Release 2): planner / worker / reviewer boxes + human decision */
+.ma-working { display: none; margin-bottom: 10px; font-size: 12.5px; color: var(--ink-dim); font-style: italic; }
+.ma-working.htmx-request { display: block; }
+.ma-result { border-bottom-left-radius: 16px; }
+.ma-steps { display: grid; gap: 10px; margin-top: 10px; }
+.ma-step, .ma-decision {
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+}
+.ma-step-title { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink-dim); }
+.ma-goal { font-weight: 600; }
+.ma-sub { margin-top: 6px; font-size: 12px; font-weight: 600; }
+.ma-list { margin: 4px 0 0 18px; padding: 0; font-size: 13px; }
+.ma-empty { display: block; margin-top: 4px; font-size: 11.5px; color: var(--ink-dim); }
+.ma-decision { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.ma-decision.done { display: block; }
+.ma-decision input, .ma-decision textarea {
+    padding: 8px 12px;
+    font: inherit;
+    font-size: 13px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    color: var(--ink);
+    resize: vertical;
+}
+.ma-decision input:focus, .ma-decision textarea:focus { outline: none; border-color: var(--color-slate-blue); background: #fff; }
+.ma-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn-decision { padding: 7px 14px; border: 1px solid var(--line); border-radius: 999px; background: #fff; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+.btn-decision.approve { background: #e3f4e8; color: #1f7a3a; border-color: #bfe3c9; }
+.btn-decision.correct, .btn-decision.partial { background: #fff6e0; color: #7a4b00; border-color: #f0dca8; }
+.btn-decision.reject { background: #fdecec; color: #9b1c1c; border-color: #f3c4c4; }
+.btn-decision:hover { transform: translateY(-1px); }
+.ma-error { margin: 0; }
+.ma-history { list-style: none; margin: 10px 0 0; padding: 0; font-size: 12px; }
+.ma-history li { padding: 4px 0; border-top: 1px solid var(--line); }
+
 /* ── Order summary ─────────────────────────────────────────────────────── */
 .summary-breakdown { display: flex; flex-direction: column; gap: 10px; font-size: 13.5px; }
 .summary-line { display: flex; justify-content: space-between; }

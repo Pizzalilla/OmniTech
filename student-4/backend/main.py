@@ -561,5 +561,276 @@ def mcp_order_status():
     return render_mcp_html(tool_name, arguments, "success", body, raw), 200
 
 
+# ---------------------------------------------------------------------------
+# MULTI-AGENT (Release 2): cart review through the shared Multi-Agent server
+# Planner -> Worker -> Reviewer run on the server, the human decides here
+# ---------------------------------------------------------------------------
+
+DEFAULT_REVIEW_TASK = (
+    "Check this cart is ready for checkout. Confirm stock, prices and the total, and list anything "
+    "the customer must know before paying (delivery, power points, installation)."
+)
+WORKFLOW_ID = re.compile(r"^wf-[0-9a-f]{8}$")
+VERDICT_BADGE = {"pass": "high", "needs_changes": "medium", "fail": "low"}
+STATUS_BADGE = {"approved": "high", "corrected": "medium", "partially_accepted": "medium", "rejected": "low"}
+DECISION_BUTTONS = [("approve", "✓ Approve"), ("correct", "✎ Correct"), ("partial", "½ Partial"), ("reject", "✕ Reject")]
+
+
+# EVIDENCE: the facts we hand to the agents (cart, specs via MCP, safety checks, RAG policy)
+def build_cart_evidence():
+    subtotal, fee, total = cart_totals()
+    facts = agent.get_cart_facts(CUSTOMER_CART["items"])
+    checks = agent.run_cart_checks(facts)
+    knowledge, rag_status, _ = agent.retrieve_knowledge(agent.AUDIT_QUERY)
+
+    evidence = {
+        "cart": {
+            "fulfillment": CUSTOMER_CART["fulfillment"],
+            "items": [
+                {k: i[k] for k in ("product_id", "product_name", "quantity", "unit_price", "in_stock")}
+                for i in CUSTOMER_CART["items"]
+            ],
+            "subtotal": round(subtotal, 2),
+            "delivery_fee": fee,
+            "total": round(total, 2),
+        },
+        "product_specs": [
+            {k: v for k, v in f.items() if k not in ("has_specs", "specs_source") and v is not None}
+            for f in facts if f["has_specs"]
+        ],
+        "safety_checks": [c["text"] for c in checks],
+    }
+    if knowledge:
+        evidence["store_policy"] = [
+            {"source": k.get("source"), "heading": k.get("heading"), "text": k.get("text")} for k in knowledge
+        ]
+
+    sources = {
+        "specs": facts[0]["specs_source"] if facts else "database",
+        "rag": rag_status,
+    }
+    return evidence, sources
+
+
+def bullet_list(items, empty="None"):
+    if not items:
+        return f"<small class='ma-empty'>{escape(empty)}</small>"
+    return "<ul class='ma-list'>" + "".join(f"<li>{escape(i)}</li>" for i in items) + "</ul>"
+
+
+def render_ma_message(box_class, text_html):
+    return f"""
+    <div class='ai-alert-box {box_class}'>
+        <div class='mcp-call'>🧠 Multi-Agent server</div>
+        <div>{text_html}</div>
+    </div>
+    """
+
+
+# WORKFLOW HTML: planner, worker and reviewer boxes, then the human step
+def render_workflow_html(w, sources=None, error=None):
+    plan, work, review = w["plan"], w["work"], w["review"]
+    verdict = review["verdict"]
+
+    source_line = ""
+    if sources:
+        rag = {"ok": "RAG", "insufficient": "RAG (nothing relevant)", "offline": "RAG offline",
+               "disabled": "RAG off"}.get(sources["rag"], sources["rag"])
+        specs = "MCP" if sources["specs"] == "mcp" else "database"
+        source_line = f"<div class='ai-sources'><strong>Evidence sent:</strong> cart · specs ({specs}) · safety checks · {rag}</div>"
+
+    error_html = f"<div class='ai-alert-box error ma-error'>{escape(error)}</div>" if error else ""
+
+    steps = f"""
+    <div class='ma-steps'>
+        <div class='ma-step'>
+            <div class='ma-step-title'>1 · Planner</div>
+            <div class='ma-goal'>{escape(plan['goal'])}</div>
+            <ol class='ma-list'>{''.join(f'<li>{escape(s)}</li>' for s in plan['steps'])}</ol>
+            <small class='ma-empty'>Evidence needed: {escape(', '.join(plan['evidence_needed']) or 'not stated')}</small>
+        </div>
+        <div class='ma-step'>
+            <div class='ma-step-title'>2 · Worker</div>
+            <div class='ai-output-text'>{bold_html(work['answer'])}</div>
+            <small class='ma-empty'>Evidence used: {escape(', '.join(work['evidence_used']) or 'not stated')}</small>
+            {bullet_list(work['issues'], empty='No issues reported')}
+        </div>
+        <div class='ma-step'>
+            <div class='ma-step-title'>3 · Reviewer
+                <span class='rag-badge {VERDICT_BADGE.get(verdict, "none")}'>{escape(verdict.replace('_', ' '))}</span>
+            </div>
+            <div>{escape(review['summary'])}</div>
+            <div class='ma-sub'>Risks</div>{bullet_list(review['risks'])}
+            <div class='ma-sub'>Recommendations</div>{bullet_list(review['recommendations'])}
+            {bullet_list(review['checks'], empty='') if review['checks'] else ''}
+        </div>
+    </div>
+    """
+
+    if w["status"] == "awaiting_human":
+        buttons = "".join(
+            f"""<button type='button' class='btn-decision {value}' hx-post='/api/multi-agent/decision'
+                    hx-target='#multi-agent-result' hx-include='closest form'
+                    hx-vals='{{"decision": "{value}"}}'>{label}</button>"""
+            for value, label in DECISION_BUTTONS
+        )
+        human = f"""
+        <form class='ma-decision'>
+            <div class='ma-step-title'>4 · Human review</div>
+            {error_html}
+            <input type='hidden' name='workflow_id' value='{escape(w['id'])}'>
+            <input type='text' name='reviewer' value='staff' maxlength='50' placeholder='Your name'>
+            <textarea name='note' rows='2' placeholder='Note - needed for Partial and Reject'></textarea>
+            <textarea name='corrected_answer' rows='2' placeholder='Corrected answer - needed for Correct'></textarea>
+            <div class='ma-buttons'>{buttons}</div>
+        </form>
+        """
+    else:
+        h = w["human"]
+        final = (f"<div class='ai-output-text'>{bold_html(w['final_answer'])}</div>" if w["final_answer"]
+                 else "<small class='ma-empty'>Rejected - nothing is shown to the customer.</small>")
+        note = f"<div><strong>Note:</strong> {escape(h['note'])}</div>" if h["note"] else ""
+        human = f"""
+        <div class='ma-decision done'>
+            <div class='ma-step-title'>4 · Human review
+                <span class='rag-badge {STATUS_BADGE.get(w['status'], "none")}'>{escape(w['status'].replace('_', ' '))}</span>
+            </div>
+            <div><strong>By:</strong> {escape(h['reviewer'])} · {escape(h['decided_at'])}</div>
+            {note}
+            <div class='ma-sub'>Final answer</div>
+            {final}
+        </div>
+        """
+
+    return f"""
+    <div class='ai-alert-box ma-result'>
+        <div class='mcp-call'>🧠 Multi-Agent server · workflow <code>{escape(w['id'])}</code></div>
+        {source_line}
+        {steps}
+        {human}
+    </div>
+    """
+
+
+def fetch_workflow(workflow_id):
+    try:
+        resp = requests.get(f"{agent.MULTI_AGENT_HOST}/workflow/{workflow_id}", timeout=10)
+        return resp.json() if resp.status_code == 200 else None
+    except (requests.RequestException, ValueError):
+        return None
+
+
+def multi_agent_offline():
+    return (f"<strong>Multi-Agent server offline</strong> at {escape(agent.MULTI_AGENT_HOST)}. "
+            "Start it with <code>python server.py</code> in ai-services/multi-agent-server.")
+
+
+DISABLED_MSG = "Multi-agent review is turned off in this deployment (AI_ENABLED / MULTI_AGENT_ENABLED = false)."
+
+
+# START: send the cart to the Planner -> Worker -> Reviewer workflow
+@app.post("/api/multi-agent/review-cart")
+def multi_agent_review_cart():
+    data = request.get_json(silent=True) or request.form
+    task = str(data.get("task", "")).strip()[:500] or DEFAULT_REVIEW_TASK
+
+    if not agent.MULTI_AGENT_ENABLED:
+        if request.is_json:
+            return jsonify({"error": DISABLED_MSG}), 503
+        return render_ma_message("error", escape(DISABLED_MSG)), 200
+    if not CUSTOMER_CART["items"]:
+        if request.is_json:
+            return jsonify({"error": "cart is empty"}), 400
+        return render_ma_message("warning", "Your cart is empty - add something first."), 200
+
+    evidence, sources = build_cart_evidence()
+    try:
+        resp = requests.post(
+            f"{agent.MULTI_AGENT_HOST}/workflow/start",
+            json={"student": "student-4", "task": task, "evidence": evidence},
+            timeout=agent.MULTI_AGENT_TIMEOUT,
+        )
+        body = resp.json()
+    except (requests.RequestException, ValueError):
+        if request.is_json:
+            return jsonify({"error": "multi-agent server offline"}), 503
+        return render_ma_message("error", multi_agent_offline()), 200
+
+    if request.is_json:
+        return jsonify(body), resp.status_code
+    if resp.status_code == 503 or body.get("status") == "failed":
+        return render_ma_message("error", f"The agents couldn't finish: {escape(body.get('error', 'unknown error'))}. "
+                                          "Is Ollama running on port 11434?"), 200
+    if resp.status_code != 201:
+        return render_ma_message("error", escape(body.get("error", f"server returned {resp.status_code}"))), 200
+    return render_workflow_html(body, sources), 200
+
+
+# HUMAN DECISION: approve / correct / partial / reject
+@app.post("/api/multi-agent/decision")
+def multi_agent_decision():
+    data = request.get_json(silent=True) or request.form
+    workflow_id = str(data.get("workflow_id", "")).strip()
+    payload = {
+        "decision": str(data.get("decision", "")),
+        "reviewer": str(data.get("reviewer", "")).strip() or "staff",
+        "note": str(data.get("note", "")),
+        "corrected_answer": str(data.get("corrected_answer", "")),
+    }
+
+    if not agent.MULTI_AGENT_ENABLED:
+        if request.is_json:
+            return jsonify({"error": DISABLED_MSG}), 503
+        return render_ma_message("error", escape(DISABLED_MSG)), 200
+    # the id goes into the server URL, so only accept the real format
+    if not WORKFLOW_ID.match(workflow_id):
+        if request.is_json:
+            return jsonify({"error": "unknown workflow id"}), 400
+        return render_ma_message("error", "Unknown workflow id."), 200
+
+    try:
+        resp = requests.post(f"{agent.MULTI_AGENT_HOST}/workflow/{workflow_id}/decision", json=payload, timeout=30)
+        body = resp.json()
+    except (requests.RequestException, ValueError):
+        if request.is_json:
+            return jsonify({"error": "multi-agent server offline"}), 503
+        return render_ma_message("error", multi_agent_offline()), 200
+
+    if request.is_json:
+        return jsonify(body), resp.status_code
+    if resp.status_code == 200:
+        return render_workflow_html(body), 200
+
+    # missing note / corrected answer: show the same workflow again with the message
+    if resp.status_code == 400:
+        current = fetch_workflow(workflow_id)
+        if current and current.get("status") == "awaiting_human":
+            return render_workflow_html(current, error=body.get("error")), 200
+    return render_ma_message("error", escape(body.get("error", f"server returned {resp.status_code}"))), 200
+
+
+# HISTORY: last few student-4 workflows from the server
+@app.get("/api/multi-agent/history")
+def multi_agent_history():
+    if not agent.MULTI_AGENT_ENABLED:
+        return render_ma_message("error", escape(DISABLED_MSG)), 200
+    try:
+        resp = requests.get(f"{agent.MULTI_AGENT_HOST}/workflows",
+                            params={"student": "student-4", "limit": 5}, timeout=10)
+        items = resp.json()["workflows"]
+    except (requests.RequestException, ValueError, KeyError):
+        return render_ma_message("error", multi_agent_offline()), 200
+
+    if not items:
+        return "<small class='ma-empty'>No reviews yet.</small>", 200
+    rows = "".join(
+        f"<li><code>{escape(i['id'])}</code> · {escape(i['created_at'] or '')} · reviewer "
+        f"<span class='rag-badge {VERDICT_BADGE.get(i['reviewer_verdict'], 'none')}'>{escape((i['reviewer_verdict'] or '-').replace('_', ' '))}</span> · "
+        f"<strong>{escape((i['status'] or '').replace('_', ' '))}</strong></li>"
+        for i in items
+    )
+    return f"<ul class='ma-history'>{rows}</ul>", 200
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5004, threaded=True, debug=False)

@@ -38,6 +38,13 @@ MCP_HOST = os.getenv("MCP_HOST", "http://127.0.0.1:6003")
 MCP_TIMEOUT = int(os.getenv("MCP_TIMEOUT", "10"))
 MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() != "false"   # CI sets MCP_ENABLED=false
 
+# MULTI-AGENT: shared Planner -> Worker -> Reviewer server (Release 2)
+# AI_ENABLED=false turns it off along with the rest of the AI (cloud default)
+AI_ENABLED = os.getenv("AI_ENABLED", "true").lower() != "false"
+MULTI_AGENT_HOST = os.getenv("MULTI_AGENT_HOST", "http://127.0.0.1:6004")
+MULTI_AGENT_TIMEOUT = int(os.getenv("MULTI_AGENT_TIMEOUT", "400"))
+MULTI_AGENT_ENABLED = AI_ENABLED and os.getenv("MULTI_AGENT_ENABLED", "true").lower() != "false"
+
 VOLTS = 240
 SOCKET_10A_W = 2400   # 240V x 10A
 HEAVY_ITEM_KG = 30
