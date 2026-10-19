@@ -6,21 +6,25 @@ on:
       - 'student-4/**'
       - 'ai-services/rag-server/**'
       - 'ai-services/mcp-server/**'
+      - 'ai-services/multi-agent-server/**'
       - '.github/workflows/student-4.yml'
   pull_request:
     paths:
       - 'student-4/**'
       - 'ai-services/rag-server/**'
       - 'ai-services/mcp-server/**'
+      - 'ai-services/multi-agent-server/**'
       - '.github/workflows/student-4.yml'
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     env:
-      # No RAG/MCP servers in CI: keep them switched off (tests use fake responses)
+      # No AI servers in CI: keep them switched off (tests use fake responses)
+      AI_ENABLED: "false"
       RAG_ENABLED: "false"
       MCP_ENABLED: "false"
+      MULTI_AGENT_ENABLED: "false"
 
     steps:
       - name: Check out repository
@@ -58,9 +62,9 @@ jobs:
             --deselect student-4/tests/test_orders_api.py::test_mcp_order_lookup_live \
             --deselect student-4/tests/test_orders_api.py::test_rag_card_live
 
-      - name: Run AI Agent + MCP Tests (Release 1 - fake LLM, RAG and MCP, no servers needed)
+      - name: Run AI Agent, MCP, RAG and Multi-Agent card tests (all faked, no servers needed)
         run: |
-          pytest student-4/tests/test_agent.py student-4/tests/test_mcp.py student-4/tests/test_rag_card.py -v
+          pytest student-4/tests/test_agent.py student-4/tests/test_mcp.py student-4/tests/test_rag_card.py student-4/tests/test_multi_agent_card.py -v
 
       - name: Run Shared RAG Server Tests (Student 4 knowledge + /rag/retrieve)
         run: |
@@ -69,6 +73,10 @@ jobs:
       - name: Run Shared MCP Server Tests (Student 4 tools)
         run: |
           cd ai-services/mcp-server && python -m pytest tests/ -v
+
+      - name: Run Shared Multi-Agent Server Tests (Ollama faked)
+        run: |
+          cd ai-services/multi-agent-server && python -m pytest tests/test_multi_agent.py -v
 
       - name: Build Docker Image
         run: |
