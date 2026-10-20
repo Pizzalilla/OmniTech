@@ -31,16 +31,19 @@ def ollama_url(raw):
 OLLAMA_HOST = ollama_url(os.getenv("OLLAMA_HOST"))
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "90"))
+
+# AI SWITCH: AI_ENABLED=false turns off Ollama, RAG, MCP and the Multi-Agent server
+# in one go (the cloud default). Each one can still be turned off on its own.
+AI_ENABLED = os.getenv("AI_ENABLED", "true").lower() != "false"
+
 RAG_HOST = os.getenv("RAG_HOST", "http://127.0.0.1:6002")
 RAG_TIMEOUT = int(os.getenv("RAG_TIMEOUT", "10"))
-RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() != "false"   # CI sets RAG_ENABLED=false
+RAG_ENABLED = AI_ENABLED and os.getenv("RAG_ENABLED", "true").lower() != "false"
 MCP_HOST = os.getenv("MCP_HOST", "http://127.0.0.1:6003")
 MCP_TIMEOUT = int(os.getenv("MCP_TIMEOUT", "10"))
-MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() != "false"   # CI sets MCP_ENABLED=false
+MCP_ENABLED = AI_ENABLED and os.getenv("MCP_ENABLED", "true").lower() != "false"
 
 # MULTI-AGENT: shared Planner -> Worker -> Reviewer server (Release 2)
-# AI_ENABLED=false turns it off along with the rest of the AI (cloud default)
-AI_ENABLED = os.getenv("AI_ENABLED", "true").lower() != "false"
 MULTI_AGENT_HOST = os.getenv("MULTI_AGENT_HOST", "http://127.0.0.1:6004")
 MULTI_AGENT_TIMEOUT = int(os.getenv("MULTI_AGENT_TIMEOUT", "400"))
 MULTI_AGENT_ENABLED = AI_ENABLED and os.getenv("MULTI_AGENT_ENABLED", "true").lower() != "false"
@@ -323,6 +326,11 @@ def run_cart_agent(question, items):
         "specs_source": specs_source,
         "facts_used": sum(f["has_specs"] for f in facts), "trace": trace,
     }
+
+    # AI OFF (cloud): don't call Ollama - the Python safety checks still run
+    if not AI_ENABLED:
+        trace.append("Act: AI is turned off in this deployment (AI_ENABLED=false), Ollama was not called.")
+        return {**result, "status": "disabled", "answer": facts_only_answer(facts, checks)}
 
     feedback = None
     for attempt in (1, 2):

@@ -200,7 +200,18 @@ def home():
 
 @app.get("/api/health")
 def health_check():
-    return jsonify({"service": "student-4", "status": "healthy", "port": 5004})
+    return jsonify({
+        "service": "student-4",
+        "status": "healthy",
+        "port": 5004,
+        # which AI features this deployment has switched on (all false in the cloud)
+        "ai": {
+            "ai_enabled": agent.AI_ENABLED,
+            "rag": agent.RAG_ENABLED,
+            "mcp": agent.MCP_ENABLED,
+            "multi_agent": agent.MULTI_AGENT_ENABLED,
+        },
+    })
 
 
 @app.get("/api/cart/view")
@@ -391,6 +402,7 @@ AI_STATUS = {
     "fallback": ("warning", "⚠ The AI used numbers that aren't in our data, so these are the facts straight from the database."),
     "offline": ("error", "<strong>AI Helper Offline:</strong> showing the facts straight from the database. "
                          "Ensure Ollama is running locally on port 11434."),
+    "disabled": ("warning", "AI is turned off in this deployment, so these are the facts straight from the database."),
 }
 CHECK_ICONS = {"warn": "⚠", "info": "ℹ", "ok": "✓"}
 
@@ -475,7 +487,7 @@ def rag_ask():
     if not question:
         return render_rag_html("", "error", "<div>Please type a question.</div>"), 200
     if not agent.RAG_ENABLED:
-        return render_rag_html(question, "error", "<div>RAG is disabled (RAG_ENABLED=false).</div>"), 200
+        return render_rag_html(question, "error", "<div>RAG is disabled in this deployment (AI_ENABLED / RAG_ENABLED = false).</div>"), 200
 
     try:
         resp = requests.post(f"{agent.RAG_HOST}/rag/query", json={"query": question}, timeout=RAG_QUERY_TIMEOUT)
@@ -536,7 +548,7 @@ def mcp_order_status():
     arguments = {"order_id": order_id}
 
     if not agent.MCP_ENABLED:
-        return render_mcp_html(tool_name, arguments, "error", "<div>MCP is disabled (MCP_ENABLED=false).</div>"), 200
+        return render_mcp_html(tool_name, arguments, "error", "<div>MCP is disabled in this deployment (AI_ENABLED / MCP_ENABLED = false).</div>"), 200
 
     try:
         res = McpClient(agent.MCP_HOST, timeout=agent.MCP_TIMEOUT).call_tool(tool_name, arguments)
