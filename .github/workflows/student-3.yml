@@ -36,15 +36,45 @@ jobs:
           python -m py_compile student-3/backend/catalog.py
           python -m py_compile student-3/backend/rag_client.py
           python -m py_compile student-3/backend/mcp_client.py
+          python -m py_compile student-3/backend/multi_agent_client.py
           python -m py_compile student-3/database/database.py
 
-      - name: Run tests
+      # Release 2 post-commit endpoint testing: the two endpoint functions
+      # create_session() POST /api/sessions and chat() POST /api/chat.
+      # The shared AI services are local-only, so they stay off in CI.
+      - name: Endpoint tests (POST /api/sessions, POST /api/chat)
         env:
           RAG_ENABLED: "false"
           MCP_ENABLED: "false"
+          MULTI_AGENT_ENABLED: "false"
+        run: |
+          set -o pipefail
+          cd student-3
+          python -m pytest tests/test_endpoints.py -v --junitxml=endpoint-results.xml | tee endpoint-results.txt
+          {
+            echo "## Student 3 endpoint tests"
+            echo '```'
+            tail -n 20 endpoint-results.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Full test suite
+        env:
+          RAG_ENABLED: "false"
+          MCP_ENABLED: "false"
+          MULTI_AGENT_ENABLED: "false"
         run: |
           cd student-3
           python -m pytest tests/ -v
+
+      - name: Upload endpoint test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-3-endpoint-tests
+          path: |
+            student-3/endpoint-results.xml
+            student-3/endpoint-results.txt
 
       - name: Build Docker image
         run: docker build -t student-3 ./student-3

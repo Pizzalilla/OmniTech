@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 import requests
@@ -9,13 +10,17 @@ from database import get_db, init_db, seed_db
 
 import agent
 import catalog
+import multi_agent_client
 import rag_client
 from mcp_client import McpClient, McpError
+from multi_agent_client import MultiAgentError
 
 # Retained but disabled during CI/CD (see .github/workflows/student-3.yml) -
 # the shared RAG and MCP servers are local-only dependencies that CI can't run.
 RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
 MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() == "true"
+# Release 2 shared Multi-Agent Server - also local-only, so off in CI and the cloud.
+MULTI_AGENT_ENABLED = os.getenv("MULTI_AGENT_ENABLED", "true").lower() == "true"
 mcp = McpClient(os.getenv("MCP_HOST", "http://localhost:6003"))
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
@@ -514,6 +519,176 @@ def mcp_check_recommendations(session_id):
     return jsonify(result)
 
 
+# ── Shared Multi-Agent Server: Planner → Worker → Reviewer → Human review ───
+
+MA_TASK = (
+    "Check whether this saved product recommendation fits what the customer asked "
+    "for (needs, budget and preferences), using only the evidence. Then write a "
+    "short final recommendation the customer can read. Only mention products that "
+    "appear in the evidence, by name and id."
+)
+MA_TAGS = {
+    "approved": "agent-approved",
+    "corrected": "agent-corrected",
+    "partially_accepted": "agent-partial",
+    "rejected": "agent-rejected",
+}
+PRODUCT_ID = re.compile(r"\b[A-Z]{3}-\d{3}\b")
+
+
+def _ma_evidence(conn, reco):
+    """Everything the agents may use: the recommendation with full product
+    details, what the customer actually asked, other catalog matches to compare
+    against, and store policy from the shared RAG server when it is available."""
+    requests_from_customer = [
+        r["message_text"] for r in conn.execute(
+            "SELECT message_text FROM ChatLogs WHERE session_id = ? AND sender = 'user' "
+            "ORDER BY id DESC LIMIT 5", (reco["session_id"],)
+        ).fetchall()
+    ][::-1]
+    query = " ".join(requests_from_customer) or reco["summary"] or ""
+    alternatives = [p for p in catalog.search(query, limit=5) if p["id"] not in reco["product_ids"]]
+    evidence = {
+        "recommendation": {
+            "summary": reco["summary"],
+            "tags": reco["tags"],
+            "products": reco["products"],
+        },
+        "customer_requests": requests_from_customer or ["(no chat messages - only the summary)"],
+        "other_catalog_matches": alternatives[:3],
+    }
+    if RAG_ENABLED and query:
+        try:
+            policy = rag_client.retrieve(query, limit=2)
+            if policy:
+                evidence["store_policy"] = policy
+        except requests.RequestException:
+            pass  # policy is optional evidence; the review still runs without it
+    return evidence
+
+
+def _unknown_product_ids(text):
+    """Product ids in an agent's answer that are not in the catalog - the same
+    hallucination guard the consultant loop uses, shown to the human reviewer."""
+    return catalog.unknown_ids(PRODUCT_ID.findall(text or ""))
+
+
+def _ma_reply(workflow=None, error=None, reco=None, reco_id=None, status=200):
+    if _is_htmx():
+        return render_template(
+            "partials/multi_agent.html", w=workflow, error=error, reco=reco, reco_id=reco_id,
+            unknown_ids=_unknown_product_ids(((workflow or {}).get("work") or {}).get("answer")),
+        )
+    if error and not workflow:
+        return jsonify(error=error), status
+    body = dict(workflow or {})
+    if error:
+        body["message"] = error
+    if reco:
+        body["recommendation"] = reco
+    return jsonify(body), status
+
+
+MA_OFFLINE = "The shared Multi-Agent server is not reachable right now."
+MA_DISABLED = "Multi-Agent review is disabled in this environment."
+
+
+@app.route("/api/recommendations/<int:reco_id>/multi-agent-review", methods=["POST"])
+def multi_agent_review(reco_id):
+    """Send one saved recommendation through the shared Multi-Agent workflow.
+    The result waits for a human decision (see /api/multi-agent/decision)."""
+    conn = get_db()
+    row = conn.execute("SELECT * FROM SavedRecommendations WHERE id = ?", (reco_id,)).fetchone()
+    if row is None:
+        conn.close()
+        abort(404, description="Recommendation not found")
+    if not MULTI_AGENT_ENABLED:
+        conn.close()
+        return _ma_reply(error=MA_DISABLED, status=503)
+    evidence = _ma_evidence(conn, _reco_view(row))
+    conn.close()
+
+    try:
+        workflow = multi_agent_client.start(MA_TASK, evidence)
+    except (requests.RequestException, ValueError):
+        return _ma_reply(error=MA_OFFLINE, status=503)
+    except MultiAgentError as exc:
+        return _ma_reply(error=str(exc), status=400)
+    if workflow.get("status") == "failed":
+        # the server answered but the agents could not reach Ollama
+        return _ma_reply(workflow, error=workflow.get("error") or "The agents could not finish.",
+                         reco_id=reco_id, status=503)
+    return _ma_reply(workflow, reco_id=reco_id, status=201)
+
+
+@app.route("/api/multi-agent/decision", methods=["POST"])
+def multi_agent_decision():
+    """Record the human decision. Approve / correct / partial replace the
+    recommendation's summary with the final answer; every decision adds an
+    agent-* tag so the outcome is kept in this service's own database."""
+    data = request.get_json(silent=True) if request.is_json else request.form
+    data = data or {}
+    workflow_id = str(data.get("workflow_id", "")).strip()
+    reco_id = data.get("reco_id")
+    try:
+        reco_id = int(reco_id) if reco_id not in (None, "") else None
+    except (TypeError, ValueError):
+        abort(400, description="reco_id must be a number")
+    if not multi_agent_client.WORKFLOW_ID.match(workflow_id):
+        abort(400, description="A valid workflow_id is required")
+    if not MULTI_AGENT_ENABLED:
+        return _ma_reply(error=MA_DISABLED, status=503)
+
+    try:
+        workflow = multi_agent_client.decide(
+            workflow_id,
+            str(data.get("decision", "")),
+            reviewer=str(data.get("reviewer", "staff")),
+            note=str(data.get("note", "")),
+            corrected_answer=str(data.get("corrected_answer", "")),
+        )
+    except (requests.RequestException, ValueError):
+        return _ma_reply(error=MA_OFFLINE, status=503)
+    except MultiAgentError as exc:
+        # e.g. a missing note: show the same workflow again with the message
+        try:
+            current = multi_agent_client.get(workflow_id)
+        except (requests.RequestException, ValueError, MultiAgentError):
+            current = None
+        return _ma_reply(current, error=str(exc), reco_id=reco_id, status=400)
+
+    reco = None
+    if reco_id is not None:
+        conn = get_db()
+        row = conn.execute("SELECT * FROM SavedRecommendations WHERE id = ?", (reco_id,)).fetchone()
+        if row is not None:
+            tags = [t for t in (row["tags"] or "").split(",") if t and not t.startswith("agent-")]
+            tags.append(MA_TAGS.get(workflow["status"], "agent-reviewed"))
+            summary = workflow.get("final_answer") or row["summary"]
+            conn.execute("UPDATE SavedRecommendations SET summary = ?, tags = ? WHERE id = ?",
+                         (summary, ",".join(tags), reco_id))
+            conn.commit()
+            reco = _reco_view(conn.execute(
+                "SELECT * FROM SavedRecommendations WHERE id = ?", (reco_id,)).fetchone())
+        conn.close()
+    return _ma_reply(workflow, reco=reco, reco_id=reco_id)
+
+
+@app.route("/api/multi-agent/history", methods=["GET"])
+def multi_agent_history():
+    """This feature's recent workflows, from the server's shared history."""
+    if not MULTI_AGENT_ENABLED:
+        result = {"error": MA_DISABLED}
+    else:
+        try:
+            result = {"workflows": multi_agent_client.history(limit=5)}
+        except (requests.RequestException, ValueError, MultiAgentError):
+            result = {"error": MA_OFFLINE}
+    if _is_htmx():
+        return render_template("partials/multi_agent_history.html", result=result)
+    return jsonify(result), 503 if "error" in result else 200
+
+
 # ── HTMX partials ────────────────────────────────────────────────────────────
 
 @app.route("/partials/session-list")
@@ -568,4 +743,8 @@ with app.app_context():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    # Debug only when asked for (FLASK_DEBUG=1); the interactive debugger must never
+    # be reachable in the container or the cloud.
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    # 0.0.0.0 so Docker can publish the port; the container is the boundary.
+    app.run(host="0.0.0.0", port=port, debug=debug)  # noqa: S104

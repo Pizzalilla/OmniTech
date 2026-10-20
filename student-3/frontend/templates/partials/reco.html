@@ -1,4 +1,4 @@
-<article class="reco-card" data-id="{{ r.id }}">
+<article class="reco-card" id="reco-{{ r.id }}" data-id="{{ r.id }}"{% if oob %} hx-swap-oob="true"{% endif %}>
     <div class="reco-card__main">
         <div class="reco-card__head">
             <div style="flex:1">
@@ -12,6 +12,11 @@
                 <div class="reco-prod"><span class="reco-prod__name">{{ r.product_ids | join(', ') }}</span></div>
                 {% endfor %}
             </div>
+            <button class="btn-mini"
+                    hx-post="/api/recommendations/{{ r.id }}/multi-agent-review"
+                    hx-target="#ma-result" hx-swap="innerHTML"
+                    hx-indicator="#ma-spinner" hx-disabled-elt="this"
+                    title="Planner, Worker and Reviewer agents check this, then you decide">Review with agents</button>
             <button class="btn-mini" onclick="this.closest('.reco-card').classList.add('confirming')">Remove</button>
         </div>
 
