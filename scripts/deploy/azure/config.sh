@@ -36,3 +36,11 @@ AI_DISABLED_ENV=(
   "MULTI_AGENT_HOST=${DISABLED_AI}:6004"
   "FLASK_DEBUG=0"
 )
+
+# Cloud security (bonus): every app sits behind the gateway sidecar, which asks for a login.
+# The password lives only in Azure Key Vault (see setup_cloud_security.sh).
+AZ_APPS_IDENTITY="${AZ_APPS_IDENTITY:-omnitech-apps}"
+GITHUB_DEPLOY_IDENTITY="omnitech-github-deploy"
+GATEWAY_USER="${GATEWAY_USER:-omnitech}"
+GATEWAY_PORT=8080
+GATEWAY_SECRET="gateway-password"  # name of the Key Vault entry, not a value  # pragma: allowlist secret

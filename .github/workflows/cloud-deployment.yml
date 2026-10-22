@@ -47,8 +47,22 @@ jobs:
         env:
           IMAGE_TAG: ${{ github.sha }}
 
+      # Every app is behind the login gateway. The password is read from Azure Key Vault with
+      # the same OIDC identity and masked in the logs; it is never stored in GitHub.
+      - name: Read the gateway login from Key Vault
+        run: |
+          SUB_ID=$(az account show --query id -o tsv)
+          PASSWORD=$(az keyvault secret show --vault-name "omnitech-kv-${SUB_ID:0:8}" \
+            -n gateway-password --query value -o tsv)
+          echo "::add-mask::$PASSWORD"
+          echo "SMOKE_AUTH=omnitech:$PASSWORD" >> "$GITHUB_ENV"
+
       - name: Smoke test the deployment
         run: python3 scripts/deploy/azure/smoke_test.py
+
+      - name: Validate cloud security controls
+        if: always()
+        run: python3 scripts/deploy/azure/security_check.py
 
       - name: Save cloud deployment evidence
         if: always()
