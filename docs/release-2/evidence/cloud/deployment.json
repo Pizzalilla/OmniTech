@@ -1,7 +1,7 @@
 {
-  "deployed_at": "2026-10-19T12:27:57Z",
-  "commit": "ffa47c9",
-  "image_tag": "ffa47c9-dirty-20261019232548",
+  "deployed_at": "2026-10-22T10:58:53Z",
+  "commit": "38ec341",
+  "image_tag": "4619928",
   "resource_group": "omnitech-rg",
   "region": "australiaeast",
   "services": {
