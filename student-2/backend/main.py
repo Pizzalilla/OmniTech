@@ -8,6 +8,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_DIR = os.path.join(BASE_DIR, "frontend")
 RAG_SERVER_URL = os.getenv("RAG_SERVER_URL", "http://host.docker.internal:6002")
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://host.docker.internal:6003")
+MULTI_AGENT_URL = os.getenv("MULTI_AGENT_URL", "http://host.docker.internal:6004")
 
 sys.path.insert(0, os.path.join(BASE_DIR, "database"))
 from database import get_db, init_db, seed_db
@@ -207,36 +208,52 @@ def generate_ai_suggestions():
     if not cid:
         return "<div class='error'>Please enter a customer ID.</div>"
 
+    # 1. Gather Evidence Locally (Microservice boundary)
     conn = get_db()
     customer = conn.execute("SELECT * FROM Customers WHERE id = ?", (cid,)).fetchone()
     if not customer:
         conn.close()
         return f"<div class='error'>Customer #{cid} not found.</div>"
-
     preferences = conn.execute("SELECT * FROM Preferences WHERE customer_id = ?", (cid,)).fetchall()
     conn.close()
-    
-    res = agent.generate_user_tags(dict(customer), [dict(p) for p in preferences])
-    recommended_tags = res.get("recommended_tags", [])
-    tags_str = ",".join(recommended_tags)
 
-    html = "<div class='ai-response'>"
-    html += f"<h4>{customer['first_name']} {customer['last_name']}</h4>"
-    html += "<p><strong>Suggested Preference Tags:</strong></p>"
-    for tag in recommended_tags:
-        html += f"<span class='badge' style='margin-right:4px;'>{tag}</span>"
-    html += f"<p><em><strong>Reasoning:</strong> {res.get('reasoning')}</em></p>"
-    
-    html += f"""
-    <form hx-post='/apply-tags' hx-target='#context-result' style='margin-top:0.85rem;'>
-        <input type='hidden' name='customer_id' value='{cid}'>
-        <input type='hidden' name='tags' value='{tags_str}'>
-        <button type='submit' class='btn' style='width:100%;'>Apply Suggestions to Profile</button>
-    </form>
-    """
-    html += "</div>"
-    return html
+    # Gather RAG Context for tagging rules
+    rag_rules = "No tagging rules found."
+    try:
+        rag_resp = requests.post(f"{RAG_SERVER_URL}/rag/query", json={"query": "What are the allowed system categories and tagging rules for customer profiles?"}, timeout=5)
+        if rag_resp.ok:
+            rag_rules = rag_resp.json().get("answer", rag_rules)
+    except requests.RequestException:
+        pass
 
+    evidence = {
+        "profile": dict(customer),
+        "preferences": [dict(p) for p in preferences],
+        "system_rules": rag_rules
+    }
+
+    # 2. Start the Multi-Agent Workflow
+    task = "Analyze the customer profile and preferences. Output a JSON object with 'recommended_tags' (list of valid strings based on system rules) and 'reasoning' (string)."
+    
+    try:
+        resp = requests.post(f"{MULTI_AGENT_URL}/workflow/start", 
+                             json={"student": "student-2", "task": task, "evidence": evidence}, 
+                             timeout=10)
+        workflow = resp.json()
+        return render_workflow_status(workflow, cid)
+    except Exception as e:
+        return f"<div class='error'>Failed to start AI workflow: {str(e)}</div>"
+    
+@app.route("/api/agent/status/<workflow_id>", methods=["GET"])
+def check_workflow_status(workflow_id):
+    cid = request.args.get("customer_id")
+    try:
+        resp = requests.get(f"{MULTI_AGENT_URL}/workflow/{workflow_id}", timeout=5)
+        if resp.status_code == 404:
+            return "<div class='error'>Workflow not found.</div>", 404
+        return render_workflow_status(resp.json(), cid)
+    except requests.RequestException:
+        return "<div class='error'>Failed to reach AI Server.</div>", 503
 
 @app.route("/apply-tags", methods=["POST"])
 def apply_tags():
