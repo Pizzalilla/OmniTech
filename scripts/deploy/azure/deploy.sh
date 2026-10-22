@@ -35,11 +35,99 @@ ENV_MODE=$(az containerapp env show -n "$AZ_ENV" -g "$AZ_RG" --query properties.
 [[ "$ENV_MODE" != "Express" ]] || { echo "$AZ_ENV is an Express environment; delete it and re-run."; exit 1; }
 DOMAIN=$(az containerapp env show -n "$AZ_ENV" -g "$AZ_RG" --query properties.defaultDomain -o tsv)
 REGISTRY="$AZ_ACR.azurecr.io"
+ENV_ID=$(az containerapp env show -n "$AZ_ENV" -g "$AZ_RG" --query id -o tsv)
+PROFILE=$(az containerapp env show -n "$AZ_ENV" -g "$AZ_RG" \
+  --query "properties.workloadProfiles[?workloadProfileType=='Consumption'].name | [0]" -o tsv)
+
+# Cloud security: apps run as one user-assigned identity that may only pull images and
+# read the gateway password from Key Vault. Created once by setup_cloud_security.sh.
+AZ_KV="${AZ_KV:-omnitech-kv-${SUB_ID:0:8}}"
+APPS_ID=$(az identity show -n "$AZ_APPS_IDENTITY" -g "$AZ_RG" --query id -o tsv 2>/dev/null || true)
+KV_URI=$(az keyvault show -n "$AZ_KV" -g "$AZ_RG" --query properties.vaultUri -o tsv 2>/dev/null || true)
+[[ -n "$APPS_ID" && -n "$KV_URI" ]] \
+  || { echo "Cloud security is not set up. Run: bash scripts/deploy/azure/setup_cloud_security.sh"; exit 1; }
+
 az acr login -n "$AZ_ACR" --only-show-errors
 url() { echo "https://omnitech-$1.$DOMAIN"; }
 
 LINK_ENV=("HOME_URL=$(url home)")
 for n in 1 2 3 4 5; do LINK_ENV+=("STUDENT${n}_URL=$(url "student-$n")"); done
+
+# Build only from files git would commit: ignored files (.env, local *.db databases with
+# real chat data, virtualenvs) can never end up inside an image.
+BUILD_DIR=$(mktemp -d)
+trap 'rm -rf "$BUILD_DIR"' EXIT
+git ls-files -z --cached --others --exclude-standard | while IFS= read -r -d '' f; do
+  if [[ -f "$f" ]]; then printf '%s\0' "$f"; fi
+done | tar --null -T - -cf - | tar -xf - -C "$BUILD_DIR"
+
+build_push() {  # image dockerfile context
+  docker build --platform linux/amd64 -t "$1" -f "$BUILD_DIR/$2" "$BUILD_DIR/$3"
+  docker push "$1"
+}
+
+GATEWAY_IMAGE="$REGISTRY/omnitech-gateway:$IMAGE_TAG"
+echo "==> Security gateway: building and pushing $GATEWAY_IMAGE"
+build_push "$GATEWAY_IMAGE" scripts/deploy/azure/gateway/Dockerfile scripts/deploy/azure/gateway
+
+# Container App definition: the feature container plus the gateway sidecar. Only the
+# gateway port is exposed, over HTTPS only; the password comes from Key Vault by reference.
+app_yaml() {  # image port env...
+  local image=$1 port=$2; shift 2
+  cat <<YAML
+location: $AZ_LOCATION
+identity:
+  type: UserAssigned
+  userAssignedIdentities:
+    "$APPS_ID": {}
+properties:
+  environmentId: $ENV_ID
+  workloadProfileName: $PROFILE
+  configuration:
+    activeRevisionsMode: Single
+    ingress:
+      external: true
+      targetPort: $GATEWAY_PORT
+      allowInsecure: false
+      transport: auto
+    registries:
+      - server: $REGISTRY
+        identity: $APPS_ID
+    secrets:
+      - name: $GATEWAY_SECRET
+        keyVaultUrl: ${KV_URI}secrets/$GATEWAY_SECRET
+        identity: $APPS_ID
+  template:
+    containers:
+      - name: app
+        image: $image
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+        env:
+YAML
+  local kv
+  for kv in "$@"; do
+    printf '          - name: %s\n            value: "%s"\n' "${kv%%=*}" "${kv#*=}"
+  done
+  cat <<YAML
+      - name: gateway
+        image: $GATEWAY_IMAGE
+        resources:
+          cpu: 0.25
+          memory: 0.5Gi
+        env:
+          - name: APP_PORT
+            value: "$port"
+          - name: GATEWAY_USER
+            value: "$GATEWAY_USER"
+          - name: GATEWAY_PASSWORD
+            secretRef: $GATEWAY_SECRET
+    scale:
+      minReplicas: 0
+      maxReplicas: 1
+YAML
+}
 
 for spec in "${SERVICES[@]}"; do
   IFS="|" read -r name context dockerfile port <<< "$spec"
@@ -49,19 +137,15 @@ for spec in "${SERVICES[@]}"; do
 
   echo "==> $app: building and pushing $image"
   # Azure runs amd64; --platform also makes Apple-silicon Macs build the right architecture.
-  docker build --platform linux/amd64 -t "$image" -f "$dockerfile" "$context"
-  docker push "$image"
+  build_push "$image" "$dockerfile" "$context"
 
+  app_yaml "$image" "$port" "${env_vars[@]}" > "$BUILD_DIR/$app.yaml"
   if az containerapp show -n "$app" -g "$AZ_RG" -o none 2>/dev/null; then
-    echo "==> $app: rolling out new image"
-    az containerapp update -n "$app" -g "$AZ_RG" --image "$image" --set-env-vars "${env_vars[@]}" -o none
+    echo "==> $app: rolling out new revision"
+    az containerapp update -n "$app" -g "$AZ_RG" --yaml "$BUILD_DIR/$app.yaml" -o none
   else
-    echo "==> $app: creating (pulls from the registry with its managed identity, no passwords)"
-    az containerapp create -n "$app" -g "$AZ_RG" --environment "$AZ_ENV" --image "$image" \
-      --registry-server "$REGISTRY" --registry-identity system \
-      --ingress external --target-port "$port" \
-      --cpu 0.25 --memory 0.5Gi --min-replicas 0 --max-replicas 1 \
-      --env-vars "${env_vars[@]}" -o none
+    echo "==> $app: creating"
+    az containerapp create -n "$app" -g "$AZ_RG" --yaml "$BUILD_DIR/$app.yaml" -o none
   fi
 done
 

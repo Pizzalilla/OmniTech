@@ -1,12 +1,16 @@
 """Check the Azure deployment and write the cloud deployment report.
 
-Usage: python scripts/deploy/azure/smoke_test.py
+Usage: SMOKE_AUTH=user:password python scripts/deploy/azure/smoke_test.py
+Every app is behind the security gateway, so the checks log in with SMOKE_AUTH
+(in CI the workflow reads the password from Azure Key Vault; nothing is stored).
 Reads service URLs from docs/release-2/evidence/cloud/deployment.json (written by
 deploy.sh) and writes cloud-deployment-report.md + cloud-smoke-results.json next to it.
 Each student can add checks for their own feature to CHECKS below.
 """
 
+import base64
 import json
+import os
 import ssl
 import sys
 import time
@@ -17,6 +21,8 @@ from pathlib import Path
 
 EVIDENCE = Path(__file__).resolve().parents[3] / "docs" / "release-2" / "evidence" / "cloud"
 COLD_START_WAIT = 150  # apps scale to zero, so the first request can take a while
+AUTH = os.getenv("SMOKE_AUTH", "")
+AUTH_HEADER = {"Authorization": "Basic " + base64.b64encode(AUTH.encode()).decode()} if AUTH else {}
 
 # python.org builds on macOS ship without root certificates; use certifi's bundle when present.
 try:
@@ -43,11 +49,13 @@ CHECKS = {
 }
 
 
-def request(method, url, body, timeout):
+def request(method, url, body, timeout, auth=True):
     if not url.startswith(("https://", "http://")):
         raise ValueError(f"refusing non-HTTP URL: {url}")
     data = json.dumps(body).encode() if body is not None else None
     headers = {"Content-Type": "application/json"} if data else {}
+    if auth:
+        headers.update(AUTH_HEADER)
     req = urllib.request.Request(url, data=data, method=method, headers=headers)  # noqa: S310 - scheme checked above
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=SSL_CONTEXT) as resp:  # noqa: S310 - scheme checked above
@@ -61,7 +69,7 @@ def wake(url):
     deadline, error = time.time() + COLD_START_WAIT, "timed out"
     while time.time() < deadline:
         try:
-            request("GET", url, None, timeout=30)
+            request("GET", url, None, timeout=30, auth=False)
             return None
         except (urllib.error.URLError, TimeoutError) as err:
             error = str(getattr(err, "reason", err))
@@ -71,6 +79,10 @@ def wake(url):
 
 def main():
     deployment = json.loads((EVIDENCE / "deployment.json").read_text())
+    if not AUTH:
+        print("SMOKE_AUTH is not set; the security gateway will answer 401 to every check.\n"
+              "  export SMOKE_AUTH=omnitech:$(az keyvault secret show --vault-name <vault> "
+              "-n gateway-password --query value -o tsv)", file=sys.stderr)
     results = []
     for service, checks in CHECKS.items():
         base = deployment["services"].get(service)
@@ -103,7 +115,9 @@ def main():
         f"- Home page: {deployment['services'].get('home', 'n/a')}",
         f"- Smoke test: **{passed}/{len(results)} checks passed**", "",
         "AI-Mode, MCP, RAG and the Multi-Agent Server are **disabled by default** in this deployment "
-        "(Ollama is not deployed and every AI address points to a non-resolving `.invalid` host).", "",
+        "(Ollama is not deployed and every AI address points to a non-resolving `.invalid` host).",
+        "Every app is behind the security gateway; these checks log in. "
+        "See `cloud-security-report.md` for the security validation.", "",
         "| Service | Check | Request | Expected | Got | Result | Time |", "|---|---|---|---|---|---|---|",
     ]
     lines += [f"| {r['service']} | {r['check']} | `{r['method']} {r['url']}` | {r['expected']} | {r['status']} | "
