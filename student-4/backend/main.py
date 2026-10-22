@@ -845,4 +845,5 @@ def multi_agent_history():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5004, threaded=True, debug=False)
+    # 0.0.0.0 so Docker's port mapping can reach Flask inside the container
+    app.run(host="0.0.0.0", port=5004, threaded=True, debug=False)  # noqa: S104
