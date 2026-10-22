@@ -30,3 +30,14 @@ def ask(query):
     )
     resp.raise_for_status()
     return resp.json()
+
+
+def retrieve(query, limit=3):
+    """Matching knowledge sections only (no Ollama call) - used as store-policy
+    evidence for the Multi-Agent workflow. Returns a list of
+    {"source", "heading", "text"}; raises requests.RequestException like ask()."""
+    resp = requests.post(
+        f"{RAG_HOST}/rag/retrieve", json={"query": query, "limit": limit}, timeout=10
+    )
+    resp.raise_for_status()
+    return resp.json().get("chunks", [])

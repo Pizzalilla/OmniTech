@@ -23,6 +23,7 @@ SERVICES=(
 DISABLED_AI="http://ai-disabled.invalid"
 AI_DISABLED_ENV=(
   "AI_MODE_ENABLED=false"
+  "AI_ENABLED=false"
   "RAG_ENABLED=false"
   "MCP_ENABLED=false"
   "MULTI_AGENT_ENABLED=false"

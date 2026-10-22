@@ -1,50 +1,4 @@
 import json
-import os
-import sys
-import tempfile
-
-import pytest
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "database"))
-
-os.environ["DB_PATH"] = os.path.join(tempfile.mkdtemp(), "bootstrap.db")
-
-import agent  # noqa: E402
-import database  # noqa: E402
-import main  # noqa: E402
-from main import app  # noqa: E402
-
-
-@pytest.fixture(autouse=True)
-def integrations_enabled(monkeypatch):
-    # CI runs with RAG_ENABLED/MCP_ENABLED=false; these tests fake both servers,
-    # so switch the flags on per test (the *_disabled_via_env tests turn them off).
-    monkeypatch.setattr(main, "RAG_ENABLED", True)
-    monkeypatch.setattr(main, "MCP_ENABLED", True)
-
-
-@pytest.fixture
-def client(tmp_path):
-    # Fresh, isolated database per test so destructive cases cannot bleed.
-    database.DB_PATH = str(tmp_path / "test.db")
-    database.init_db()
-    database.seed_db()
-    app.config["TESTING"] = True
-    with app.test_client() as c:
-        yield c
-
-
-@pytest.fixture
-def fake_ollama(monkeypatch):
-    """Force agent.act to return a valid, catalog-consistent JSON answer."""
-    def _act(prompt):
-        return json.dumps({
-            "reply": "The Meridian Pro 16 (LAP-001) is the best fit for 4K editing.",
-            "recommended_product_ids": ["LAP-001"],
-            "summary": "Workstation laptop for heavy 4K timelines.",
-        })
-    monkeypatch.setattr(agent, "act", _act)
 
 
 # ── Pages ────────────────────────────────────────────────────────────────────
@@ -75,14 +29,6 @@ def test_list_sessions_filtered_by_user(client):
     assert rv.status_code == 200
     data = json.loads(rv.data)
     assert data and all(s["user_id"] == "u-1001" for s in data)
-
-
-def test_create_session_with_user(client):
-    rv = client.post("/api/sessions", json={"title": "Test", "user_id": "u-42"})
-    assert rv.status_code == 201
-    data = json.loads(rv.data)
-    assert data["title"] == "Test"
-    assert data["user_id"] == "u-42"
 
 
 def test_get_session_bundle(client):
@@ -196,56 +142,6 @@ def test_add_tag_not_found(client):
 
 def test_delete_recommendation(client):
     assert client.delete("/api/recommendations/1").status_code == 200
-
-
-# ── Agentic chat endpoint ──────────────────────────────────────────────────
-
-def test_chat_requires_fields(client):
-    assert client.post("/api/chat", json={}).status_code == 400
-
-
-def test_chat_session_not_found(client):
-    rv = client.post("/api/chat", json={"session_id": 9999, "message": "hi"})
-    assert rv.status_code == 404
-
-
-def test_chat_persists_both_turns(client, monkeypatch):
-    """Whether the model answers or the offline fallback does, /api/chat must
-    always return a non-empty reply and persist the user + ai turns."""
-    import agent
-
-    def _down(prompt):
-        raise __import__("requests").ConnectionError("refused")
-    monkeypatch.setattr(agent, "act", _down)  # force the offline path deterministically
-
-    before = len(json.loads(client.get("/api/sessions/2/messages").data))
-    rv = client.post("/api/chat",
-                     json={"session_id": 2, "message": "cheap phone for my mum"})
-    assert rv.status_code == 200
-    body = json.loads(rv.data)
-    assert body["reply"]
-    assert body["meta"]["used_fallback"] is True
-    after = len(json.loads(client.get("/api/sessions/2/messages").data))
-    assert after == before + 2
-
-
-def test_chat_valid_model_answer_saves_recommendation(client, fake_ollama):
-    rv = client.post("/api/chat",
-                     json={"session_id": 3, "message": "laptop for 4K editing"})
-    assert rv.status_code == 200
-    body = json.loads(rv.data)
-    assert body["recommended_product_ids"] == ["LAP-001"]
-    assert body["meta"]["used_fallback"] is False
-    assert body["saved_recommendation"]["product_ids"] == ["LAP-001"]
-
-
-def test_chat_htmx_returns_html_fragment(client, fake_ollama):
-    rv = client.post("/api/chat",
-                     data={"session_id": "3", "message": "laptop for editing"},
-                     headers={"HX-Request": "true"})
-    assert rv.status_code == 200
-    assert b"msg--ai" in rv.data
-    assert b"hx-swap-oob" in rv.data
 
 
 # ── HTMX partials ──────────────────────────────────────────────────────────

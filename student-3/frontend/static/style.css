@@ -708,3 +708,53 @@ a { color: inherit; text-decoration: none; }
 .mcp-result__title code { text-transform: none; letter-spacing: 0; }
 .mcp-result__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; color: var(--ink); }
 .mcp-result__empty { color: var(--ink-dim); font-style: italic; }
+
+/* ── Shared Multi-Agent server: review panel ─────────────────────────────── */
+.ma-result {
+    margin-top: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--surface-2);
+    font-size: 13px;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ma-result--error { color: var(--ink-dim); font-style: italic; }
+.ma-result__title { font-size: 11px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-dim); }
+.ma-result__title code { text-transform: none; letter-spacing: 0; }
+.ma-step { border-top: 1px dashed var(--line); padding-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+.ma-step p { margin: 0; }
+.ma-step__title { font-weight: 800; font-size: 12px; display: flex; align-items: center; gap: 8px; }
+.ma-sub { font-weight: 700; font-size: 11.5px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.ma-list { margin: 0; padding-left: 18px; }
+.ma-answer { white-space: pre-wrap; }
+.ma-dim { color: var(--ink-dim); }
+.ma-warn { padding: 6px 8px; border-radius: var(--r-sm); background: rgba(201, 138, 31, 0.14); color: var(--ink); }
+.ma-decision input, .ma-decision textarea {
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 13px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    background: var(--surface);
+    color: var(--ink);
+}
+.ma-buttons { display: flex; flex-wrap: wrap; gap: 6px; }
+.ma-history { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ma-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 999px;
+    color: #fff;
+    background: #8a90a2;
+}
+.ma-badge--pass, .ma-badge--approved { background: #2f9e5b; }
+.ma-badge--needs_changes, .ma-badge--corrected, .ma-badge--partially_accepted, .ma-badge--awaiting_human { background: #c98a1f; }
+.ma-badge--fail, .ma-badge--rejected, .ma-badge--failed { background: #e5484d; }
