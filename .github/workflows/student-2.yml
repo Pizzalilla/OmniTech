@@ -9,6 +9,8 @@ on:
     paths:
       - 'student-2/**'
       - '.github/workflows/student-2.yml'
+  # lets cloud-deployment.yml run this workflow as a gate before deploying
+  workflow_call:
 
 jobs:
   test:

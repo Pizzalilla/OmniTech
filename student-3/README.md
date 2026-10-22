@@ -21,6 +21,9 @@ student-3/
     main.py       Flask app: pages, REST API, HTMX partials
     agent.py      Plan -> Act -> Observe -> Adapt consultation loop
     catalog.py    Mock product catalog + keyword search / validation helpers
+    rag_client.py HTTP client for the shared RAG server (Release 1)
+    mcp_client.py MCP client for the shared MCP server (copied from ai-services/mcp-server)
+    multi_agent_client.py HTTP client for the shared Multi-Agent server (Release 2)
   database/
     database.py   Schema, connection helper, demo seed data
   frontend/
@@ -28,7 +31,8 @@ student-3/
     templates/           Jinja templates (chat UI, dashboard, HTMX partials)
     static/style.css     The single stylesheet (served at /static/style.css);
                          palette tokens are the shared OmniTech design-system values
-  tests/          pytest suite (routes, agent loop, catalog)
+  tests/          pytest suite (routes, agent loop, catalog, Multi-Agent);
+                  test_endpoints.py is the Release 2 CI endpoint suite
   Dockerfile
 ```
 
@@ -36,8 +40,11 @@ student-3/
 
 ### With the shared stack
 
+Ollama, the MCP server and the RAG server run on your machine, not in Docker
+(see the root `README.md`). Start them first, then:
+
 ```
-docker compose up student-3 ollama-service
+docker compose up --build student-3
 ```
 
 Chat UI: <http://localhost:5003/> — Dashboard: <http://localhost:5003/dashboard>
@@ -63,6 +70,16 @@ so the UI still works.
 | `OLLAMA_TIMEOUT`| `120`                    | Per-request timeout (seconds)   |
 | `DB_PATH`       | `database/consultant.db` | SQLite file location            |
 | `PORT`          | `5000`                   | HTTP port                       |
+| `RAG_HOST`      | `http://localhost:6002`  | Shared RAG server               |
+| `RAG_ENABLED`   | `true`                   | `false` in CI (no RAG server there) |
+| `MCP_HOST`      | `http://localhost:6003`  | Shared MCP server               |
+| `MCP_ENABLED`   | `true`                   | `false` in CI (no MCP server there) |
+| `MULTI_AGENT_HOST` | `http://localhost:6004` | Shared Multi-Agent server   |
+| `MULTI_AGENT_ENABLED` | `true`            | `false` in CI and the cloud     |
+| `MULTI_AGENT_TIMEOUT` | `300`             | Planner + Worker + Reviewer time limit (seconds) |
+| `FLASK_DEBUG`   | `0`                      | `1` turns on the Flask debugger (local only) |
+
+Compose sets `OLLAMA_HOST`, `RAG_HOST`, `MCP_HOST` and `MULTI_AGENT_HOST` to `http://host.docker.internal:...`.
 
 ## Data ownership
 
@@ -111,6 +128,58 @@ Other microservices must go through the REST API below.
 |--------|------|------|----------|
 | POST   | `/api/chat` | `{session_id, message}` | JSON, or an HTMX HTML fragment when sent with `HX-Request: true` |
 
+### Release 1: shared RAG and MCP
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| POST   | `/api/rag/query` | `{query}` or form `query` | Grounded answer with `citations` and `confidence`, or `insufficient_context` |
+| GET    | `/api/sessions/<id>/mcp-check` | — | The session's saved recommendations, fetched through the shared MCP tool `get_saved_recommendations` |
+
+Both return JSON, or an HTMX fragment with `HX-Request: true`, and degrade to a
+clear error message if the shared server is down or the flag is disabled.
+
+## Release 1: RAG and MCP integration
+
+* **RAG** - the chat view's "Ask about policies & FAQs" panel calls
+  `/api/rag/query`, which forwards the question to the shared RAG server and
+  shows the answer with a confidence badge and its source citations. Out-of-scope
+  questions show the insufficient-context message instead of a guessed answer.
+* **MCP** - the "Verify via MCP" button under Saved recommendations calls
+  `/api/sessions/<id>/mcp-check`, which runs the `get_saved_recommendations` tool
+  on the shared MCP server. That tool (`ai-services/mcp-server/tools/student3.py`)
+  is read-only: it only GETs this service's own `/api/sessions/<id>/recommendations`.
+
+## Release 2: Multi-Agent review
+
+Each saved recommendation has a **Review with agents** button. It calls
+`POST /api/recommendations/<id>/multi-agent-review`, which sends the shared
+Multi-Agent server (`ai-services/multi-agent-server`, port 6004) this evidence:
+
+* the recommendation, with full product details from the catalog
+* the customer's last five chat messages
+* up to three other catalog matches to compare against
+* store policy sections from the shared RAG server's `/rag/retrieve` (when RAG is on)
+
+The server runs **Planner -> Worker -> Reviewer** and the panel shows each step.
+Any product id in the Worker's answer that is not in the catalog is flagged.
+A person then picks **Approve**, **Correct** (with a corrected text),
+**Partial** or **Reject** (both need a note). `POST /api/multi-agent/decision`
+sends that to the server and stores the outcome in this service's database:
+approve, correct and partial replace the recommendation's summary with the final
+answer, and every decision adds an `agent-approved` / `agent-corrected` /
+`agent-partial` / `agent-rejected` tag. **Review history** lists the last five
+student-3 workflows from the server's shared history.
+
+| Method | Path | Body | Response |
+|--------|------|------|----------|
+| POST   | `/api/recommendations/<id>/multi-agent-review` | — | 201 workflow awaiting a human decision |
+| POST   | `/api/multi-agent/decision` | `{workflow_id, reco_id, decision, reviewer, note, corrected_answer}` | Decided workflow plus the updated recommendation |
+| GET    | `/api/multi-agent/history` | — | Last five student-3 workflows |
+
+All three return JSON, or an HTMX fragment with `HX-Request: true`. When
+`MULTI_AGENT_ENABLED=false` (CI and the cloud) they answer 503 with a
+"disabled" message; when the server or Ollama is down they show a clear error.
+
 ## Agentic loop
 
 `agent.run_consultation()` implements four stages:
@@ -133,6 +202,16 @@ Other microservices must go through the REST API below.
 ```
 cd student-3
 python -m pytest tests/ -v
+```
+
+Release 2 CI endpoint tests (run as their own step in `student-3.yml`, results
+uploaded as the `student-3-endpoint-tests` artifact):
+
+1. `create_session()` - `POST /api/sessions`
+2. `chat()` - `POST /api/chat`, including the offline fallback used in the cloud
+
+```
+python -m pytest tests/test_endpoints.py -v
 ```
 
 See `docs/reports/student-3-pre-testing.md` and

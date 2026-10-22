@@ -1,0 +1,142 @@
+{
+  "deployment": {
+    "deployed_at": "2026-10-19T12:27:57Z",
+    "commit": "ffa47c9",
+    "image_tag": "ffa47c9-dirty-20261019232548",
+    "resource_group": "omnitech-rg",
+    "region": "australiaeast",
+    "services": {
+      "home": "https://omnitech-home.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-1": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-2": "https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-3": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-4": "https://omnitech-student-4.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-5": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io"
+    }
+  },
+  "checked_at": "2026-10-19T12:27:58+00:00",
+  "passed": 12,
+  "total": 12,
+  "results": [
+    {
+      "service": "home",
+      "check": "Home page lists every feature",
+      "method": "GET",
+      "url": "https://omnitech-home.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 45
+    },
+    {
+      "service": "student-1",
+      "check": "Catalog page",
+      "method": "GET",
+      "url": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 58
+    },
+    {
+      "service": "student-1",
+      "check": "Read products",
+      "method": "GET",
+      "url": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/api/products",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 36
+    },
+    {
+      "service": "student-2",
+      "check": "Customers page",
+      "method": "GET",
+      "url": "https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 121
+    },
+    {
+      "service": "student-2",
+      "check": "Read customers",
+      "method": "GET",
+      "url": "https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/api/customers",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 43
+    },
+    {
+      "service": "student-3",
+      "check": "Consultant page",
+      "method": "GET",
+      "url": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 40
+    },
+    {
+      "service": "student-3",
+      "check": "Create session",
+      "method": "POST",
+      "url": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/api/sessions",
+      "expected": 201,
+      "status": 201,
+      "passed": true,
+      "ms": 59
+    },
+    {
+      "service": "student-3",
+      "check": "Read sessions",
+      "method": "GET",
+      "url": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/api/sessions",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 36
+    },
+    {
+      "service": "student-3",
+      "check": "AI services disabled by default",
+      "method": "POST",
+      "url": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/api/rag/query",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 37
+    },
+    {
+      "service": "student-4",
+      "check": "Cart page",
+      "method": "GET",
+      "url": "https://omnitech-student-4.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 177
+    },
+    {
+      "service": "student-5",
+      "check": "Warranty page",
+      "method": "GET",
+      "url": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 36
+    },
+    {
+      "service": "student-5",
+      "check": "Read tickets",
+      "method": "GET",
+      "url": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/tickets",
+      "expected": 200,
+      "status": 200,
+      "passed": true,
+      "ms": 49
+    }
+  ]
+}

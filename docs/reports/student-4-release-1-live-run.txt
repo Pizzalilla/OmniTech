@@ -1,0 +1,67 @@
+Student 4 - Release 1 full check on this PC  2026-10-01 23:17
+Python 3.14.7 | branch: syk-student4
+  [PASS] Ollama (local AI-Mode) running with llama3.2
+  [PASS] RAG server running locally (6002)
+  [PASS] MCP server running locally (6003)
+  [PASS] Student 4 backend/API + frontend (5004)
+
+1. Automated tests
+  [PASS] pytest unit: agent + MCP + RAG card  -> 43 passed in 0.79s
+  [PASS] pytest same, CI settings (RAG_ENABLED=false, MCP_ENABLED=false)  -> 43 passed in 0.73s
+  [PASS] pytest live API incl. real llama3.2, MCP and RAG  -> 21 passed in 23.73s
+  [PASS] pytest shared RAG server  -> 13 passed in 0.23s
+  [PASS] pytest shared MCP server  -> 23 passed in 0.26s
+
+2. Local terminal validation of the MCP and RAG servers
+  [PASS] MCP validate.py  -> Result: 16 passed, 0 warning(s), 0 failed
+  [PASS] RAG query.py grounded answer + citations + confidence  -> confidence=medium: Items can be returned within 30 days of delivery for a full refund, provided they are unused and in their original packa
+  [PASS] RAG query.py off-topic -> insufficient context
+
+3. Frontend UI -> backend/API -> shared servers (real llama3.2)
+  [PASS] page has AI helper, MCP card and RAG card
+  [PASS] MCP: order lookup 5 -> structured tool result
+  [PASS] MCP: order 999 -> tool error shown
+  [PASS] RAG card: grounded answer + citations + confidence (RAG server generated)  -> medium
+  [PASS] RAG card: my knowledge file cited
+  [PASS] RAG card: off-topic -> insufficient-context response
+  [PASS] AI helper audit: specs via MCP, RAG badge, safety checks
+  [PASS] AI helper: no raw ** markdown shown
+  [PASS] AI helper dimensions  -> verified, has '70': True | The Samsung Fridge 500L measures 700mm W x 1780mm H x 720mm D. The recommended ventilation clearance is rear 50mm, side 20mm, and top 50mm.
+  [PASS] AI helper weight  -> verified, has '82': True | The Samsung Fridge 500L weighs 82 kg. As it is a large and heavy appliance, delivery will be carried out by a two-person team.
+  [PASS] AI helper power  -> verified, has '2400': True | No, you cannot plug the 2000W induction cooktop and 1000W microwave into a standard Australian 10A socket, as the combined power draw exceed
+  [PASS] AI helper stars  -> verified, has '390': True | The Samsung Fridge 500L has a 4-star energy rating and consumes 390 kWh/year.
+  [PASS] AI helper off-topic -> insufficient context  -> I don't have that information. I'm a cart assistant, not a news source. I can help you with your shopping or answer prod
+
+4. When something breaks
+  [PASS] MCP off -> lookup says offline
+  [PASS] MCP off -> AI helper falls back to database
+  [PASS] RAG off -> RAG card says offline
+  [PASS] RAG off -> AI helper still answers
+
+5. Release 0 still works
+  [PASS] cart quantity +
+  [PASS] pickup -> FREE
+  [PASS] checkout creates an order  -> #36
+  [PASS] MCP finds the new order
+  [PASS] update order status
+  [PASS] delete order (clean-up)
+
+6. Shared agentic loop (branch shared/multi-agent-server) - both validation modes
+  [PASS] agentic loop RAG mode: return policy  -> PASS
+  [PASS] agentic loop MCP mode: get_order_status(5)  -> PASS
+  [PASS] agentic loop MCP mode: order 999 correctly FAILs  -> FAIL
+  (full loop outputs saved in _s4_shots/full/logs/agentic-*.txt)
+
+7. Docker Compose deployment (release 0 compose + local MCP/RAG/Ollama config)
+  [PASS] compose config valid, no AI/MCP/RAG service defined  -> student-2 student-3 student-4 student-5 home student-1
+  starting Docker Desktop (C:\Program Files\Docker\Docker\Docker Desktop.exe) ...
+  [PASS] docker compose up -d --build  -> 15s
+  containers: home: running | student-1: running | student-2: running | student-3: running | student-4: running | student-5: running
+  [PASS] student-4 container has OLLAMA_HOST / RAG_HOST / MCP_HOST
+  [PASS] container: MCP lookup works (container -> MCP on PC -> container API)
+  [PASS] container: RAG card works (container -> RAG on PC)
+  [PASS] container: AI helper works (container -> Ollama on PC)
+  docker compose down: ok
+
+TOTAL: 44 passed, 0 failed
+DONE

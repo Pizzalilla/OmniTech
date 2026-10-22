@@ -1,0 +1,73 @@
+{# Result of the shared Multi-Agent workflow for one saved recommendation. #}
+{% if not w %}
+<div class="ma-result ma-result--error">{{ error }}</div>
+{% elif w.status == "failed" %}
+<div class="ma-result ma-result--error">Workflow <code>{{ w.id }}</code> failed: {{ error or w.error }}</div>
+{% else %}
+<div class="ma-result">
+    <div class="ma-result__title">Multi-Agent server &middot; workflow <code>{{ w.id }}</code></div>
+
+    <div class="ma-step">
+        <div class="ma-step__title">1 &middot; Planner</div>
+        <p>{{ w.plan.goal }}</p>
+        <ol class="ma-list">{% for s in w.plan.steps %}<li>{{ s }}</li>{% endfor %}</ol>
+    </div>
+
+    <div class="ma-step">
+        <div class="ma-step__title">2 &middot; Worker</div>
+        <p class="ma-answer">{{ w.work.answer }}</p>
+        <small class="ma-dim">Evidence used: {{ w.work.evidence_used | join(', ') or 'not stated' }}</small>
+        {% if w.work.issues %}<ul class="ma-list">{% for i in w.work.issues %}<li>{{ i }}</li>{% endfor %}</ul>{% endif %}
+        {% if unknown_ids %}
+        <div class="ma-warn">Catalog check: {{ unknown_ids | join(', ') }} {{ 'is' if unknown_ids|length == 1 else 'are' }} not in the catalog.</div>
+        {% endif %}
+    </div>
+
+    <div class="ma-step">
+        <div class="ma-step__title">3 &middot; Reviewer
+            <span class="ma-badge ma-badge--{{ w.review.verdict }}">{{ w.review.verdict | replace('_', ' ') }}</span>
+        </div>
+        <p>{{ w.review.summary }}</p>
+        {% if w.review.risks %}<div class="ma-sub">Risks</div>
+        <ul class="ma-list">{% for r in w.review.risks %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+        {% if w.review.recommendations %}<div class="ma-sub">Suggested changes</div>
+        <ul class="ma-list">{% for r in w.review.recommendations %}<li>{{ r }}</li>{% endfor %}</ul>{% endif %}
+        {% for c in w.review.checks %}<div class="ma-warn">{{ c }}</div>{% endfor %}
+    </div>
+
+    {% if w.status == "awaiting_human" %}
+    <form class="ma-step ma-decision">
+        <div class="ma-step__title">4 &middot; Human review</div>
+        {% if error %}<div class="ma-warn">{{ error }}</div>{% endif %}
+        <input type="hidden" name="workflow_id" value="{{ w.id }}">
+        <input type="hidden" name="reco_id" value="{{ reco_id or '' }}">
+        <input type="text" name="reviewer" value="staff" maxlength="50" aria-label="Reviewer name">
+        <textarea name="note" rows="2" placeholder="Note (needed for Partial and Reject)"></textarea>
+        <textarea name="corrected_answer" rows="2" placeholder="Corrected recommendation (needed for Correct)"></textarea>
+        <div class="ma-buttons">
+            {% for value, label in [("approve", "Approve"), ("correct", "Correct"), ("partial", "Partial"), ("reject", "Reject")] %}
+            <button type="button" class="btn-mini{{ ' btn-mini--danger' if value == 'reject' else '' }}"
+                    hx-post="/api/multi-agent/decision" hx-include="closest form"
+                    hx-vals='{"decision": "{{ value }}"}'
+                    hx-target="#ma-result" hx-swap="innerHTML">{{ label }}</button>
+            {% endfor %}
+        </div>
+    </form>
+    {% else %}
+    <div class="ma-step ma-decision">
+        <div class="ma-step__title">4 &middot; Human review
+            <span class="ma-badge ma-badge--{{ w.status }}">{{ w.status | replace('_', ' ') }}</span>
+        </div>
+        <small class="ma-dim">By {{ w.human.reviewer }} &middot; {{ w.human.decided_at }}</small>
+        {% if w.human.note %}<p><strong>Note:</strong> {{ w.human.note }}</p>{% endif %}
+        {% if w.final_answer %}
+        <div class="ma-sub">Saved to the recommendation</div>
+        <p class="ma-answer">{{ w.final_answer }}</p>
+        {% else %}
+        <p class="ma-dim">Rejected - the recommendation keeps its old summary and is tagged agent-rejected.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% if reco %}{% with r = reco, oob = true %}{% include "partials/reco.html" %}{% endwith %}{% endif %}

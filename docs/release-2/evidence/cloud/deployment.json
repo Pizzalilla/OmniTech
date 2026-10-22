@@ -1,0 +1,15 @@
+{
+  "deployed_at": "2026-10-22T10:58:53Z",
+  "commit": "38ec341",
+  "image_tag": "4619928",
+  "resource_group": "omnitech-rg",
+  "region": "australiaeast",
+  "services": {
+    "home": "https://omnitech-home.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+    "student-1": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+    "student-2": "https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+    "student-3": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+    "student-4": "https://omnitech-student-4.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+    "student-5": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io"
+  }
+}

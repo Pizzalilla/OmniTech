@@ -1,0 +1,16 @@
+{% if result.error %}
+<div class="mcp-result mcp-result--error">{{ result.error }}</div>
+{% else %}
+<div class="mcp-result">
+    <div class="mcp-result__title">Verified via shared MCP tool <code>get_saved_recommendations</code></div>
+    {% if result.recommendations %}
+    <ul class="mcp-result__list">
+        {% for r in result.recommendations %}
+        <li>{{ r.summary }} ({{ r.product_ids | join(', ') }})</li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="mcp-result__empty">No saved recommendations for this session yet.</div>
+    {% endif %}
+</div>
+{% endif %}

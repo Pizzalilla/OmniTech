@@ -16,6 +16,9 @@
     {% elif meta.reprompts and meta.reprompts > 0 %}
     <span class="msg__note">Answer auto-corrected after catalog validation.</span>
     {% endif %}
+    {% if saved %}
+    <button type="button" class="msg__link" onclick="showTool('saved')">Saved to your picks &rarr;</button>
+    {% endif %}
 </div>
 
 <div id="reco-list" hx-swap-oob="innerHTML">
