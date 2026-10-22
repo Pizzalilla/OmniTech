@@ -452,6 +452,7 @@ def chat():
             ai_reply=ai_text,
             meta=result["meta"],
             recommendations=recommendations,
+            saved=saved_reco is not None,
         )
     return jsonify({
         "reply": ai_text,

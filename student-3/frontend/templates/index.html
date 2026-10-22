@@ -243,10 +243,33 @@
         }).then(() => { loadSession(sessionId); refreshSessionList(); });
     }
 
+    /* tools panel: Saved picks / Agent review / Policies. On narrow screens it slides in. */
+    function showTool(name) {
+        document.querySelectorAll(".tools__tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+        document.querySelectorAll(".tools__pane").forEach(p => p.classList.toggle("active", p.dataset.pane === name));
+        const ws = document.getElementById("workspace");
+        if (ws) ws.classList.add("tools-open");
+    }
+    function hideTools() {
+        const ws = document.getElementById("workspace");
+        if (ws) ws.classList.remove("tools-open");
+    }
+    function askPolicy(question) {
+        const form = document.getElementById("rag-form");
+        form.querySelector("input[name=query]").value = question;
+        htmx.trigger(form, "submit");
+    }
+    function updateRecoCount() {
+        const n = document.querySelectorAll("#reco-list .reco-card").length;
+        document.querySelectorAll("[data-reco-count]").forEach(el => el.textContent = n);
+    }
+
     document.body.addEventListener("htmx:afterSwap", function () {
         const box = document.getElementById("chat-messages");
         if (box) box.scrollTop = box.scrollHeight;
     });
+    /* recount after any swap, including a removed card (its own events fire on a detached node) */
+    document.body.addEventListener("htmx:beforeSwap", () => setTimeout(updateRecoCount, 50));
 
     /* open the sidebar on wide screens; deep-link ?session=<id> from the dashboard */
     (function () {
