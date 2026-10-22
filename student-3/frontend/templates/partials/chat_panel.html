@@ -17,6 +17,35 @@
         <div id="reco-list">
             {% include "partials/recommendations.html" %}
         </div>
+        <button class="btn-mini" style="margin-top:8px"
+                hx-get="/api/sessions/{{ session.id }}/mcp-check"
+                hx-target="#mcp-result" hx-swap="innerHTML">Verify via MCP</button>
+        <div id="mcp-result"></div>
+    </div>
+
+    <div class="dock">
+        <div class="dock__title">Multi-Agent review
+            <span class="spinner" id="ma-spinner" aria-hidden="true"></span>
+        </div>
+        <p class="dock__empty">Press <strong>Review with agents</strong> on a saved recommendation: the shared
+            Planner, Worker and Reviewer agents check it, then you approve, correct, partly accept or reject it.</p>
+        <button class="btn-mini" hx-get="/api/multi-agent/history"
+                hx-target="#ma-result" hx-swap="innerHTML">Review history</button>
+        <div id="ma-result"></div>
+    </div>
+
+    <div class="dock">
+        <div class="dock__title">Ask about policies &amp; FAQs</div>
+        <form class="rag-form"
+              hx-post="/api/rag/query"
+              hx-target="#rag-result"
+              hx-swap="innerHTML"
+              hx-disabled-elt="find button[type=submit]">
+            <input class="rag-form__input" name="query" type="text" autocomplete="off"
+                   placeholder="e.g. What is your return policy?" required>
+            <button type="submit" class="btn-mini">Ask</button>
+        </form>
+        <div id="rag-result"></div>
     </div>
 
     <form class="composer"

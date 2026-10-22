@@ -10,6 +10,7 @@ confidence category - or reports insufficient context instead of guessing.
 Endpoints:
     GET  /health        liveness check
     POST /rag/query      body {"query": str} -> grounded answer (see README.md)
+    POST /rag/retrieve   body {"query": str, "limit": int} -> matching chunks only
 
 Run directly (not via Docker):
     python server.py
@@ -46,8 +47,10 @@ SYSTEM_INSTRUCTIONS = (
     "question using ONLY the SOURCE EXCERPTS below - do not use outside "
     "knowledge and do not guess. If the excerpts do not answer the question, "
     "say so plainly instead of making something up.\n"
+    "Reply with one or two full sentences in plain English for a shopper. "
+    "Never answer with only a short label like 'Capacity / place settings 15'.\n"
     "Answer with ONE JSON object and nothing else: "
-    '{"answer": "<your answer, grounded in the excerpts>"}'
+    '{"answer": "<your full-sentence answer>"}'
 )
 
 
@@ -57,6 +60,36 @@ def _build_prompt(query, chunks):
         lines.append(f"[{i}] ({chunk['source']} - {chunk['heading']}) {chunk['text']}")
     lines += ["", f"Customer question: {query}"]
     return "\n".join(lines)
+
+
+def _looks_like_label_answer(answer):
+    text = (answer or "").strip()
+    if not text:
+        return True
+    if len(text) < 45:
+        return True
+    if "/" in text and len(text.split()) <= 8:
+        return True
+    return False
+
+
+def _full_sentence_answer(answer, chunks):
+    """Turn terse model labels into a shopper sentence using the top chunk."""
+    heading = chunks[0]["heading"]
+    text = (answer or "").strip()
+    match = re.match(
+        r"(?i)capacity\s*/\s*place settings\s+(\d+)\.?$", text
+    )
+    if match:
+        return (
+            f"The {heading} has a capacity of {match.group(1)} place settings."
+        )
+    match = re.match(r"(?i)capacity\s+(\d+\s*[a-zA-Z]*)\.?$", text)
+    if match:
+        return f"The {heading} has a capacity of {match.group(1)}."
+    if text and not text.endswith((".", "!", "?")):
+        text = text + "."
+    return f"For the {heading}, {text[0].lower() + text[1:] if text else chunks[0]['text']}"
 
 
 def _extract_answer(raw, chunks):
@@ -72,7 +105,10 @@ def _extract_answer(raw, chunks):
             except ValueError:
                 data = None
     if isinstance(data, dict) and str(data.get("answer", "")).strip():
-        return str(data["answer"]).strip()
+        answer = str(data["answer"]).strip()
+        if _looks_like_label_answer(answer):
+            return _full_sentence_answer(answer, chunks)
+        return answer
     return _excerpt_answer(chunks)
 
 
@@ -142,7 +178,30 @@ def query():
     return jsonify({"answer": answer, "citations": citations, "confidence": confidence})
 
 
+@app.route("/rag/retrieve", methods=["POST"])
+def retrieve():
+    """Retrieval only (no Ollama call) - for feature backends that run their
+    own grounded prompt and just need the matching knowledge sections."""
+    body = request.get_json(silent=True) or {}
+    q = str(body.get("query", "")).strip()
+    if not q:
+        return jsonify({"error": "query is required"}), 400
+    try:
+        limit = max(1, min(int(body.get("limit", TOP_K)), 10))
+    except (TypeError, ValueError):
+        limit = TOP_K
+
+    matches, confidence = retriever.search(q, _CHUNKS, limit=limit)
+    log.info("RETRIEVE-ONLY %d chunk(s) confidence=%s for %r", len(matches), confidence, q[:80])
+    return jsonify({
+        "chunks": [{"source": c["source"], "heading": c["heading"], "text": c["text"]} for c in matches],
+        "confidence": confidence,
+        "insufficient_context": not matches,
+    })
+
+
 if __name__ == "__main__":
     log.info("RAG server starting on port %d with %d knowledge chunk(s)",
               RAG_PORT, len(_CHUNKS))
-    app.run(host="0.0.0.0", port=RAG_PORT)
+    # 0.0.0.0 so the student containers can reach us through host.docker.internal
+    app.run(host="0.0.0.0", port=RAG_PORT)  # noqa: S104

@@ -1,0 +1,30 @@
+name: Shared Multi-Agent Server CI
+
+on:
+  push:
+    paths:
+      - 'ai-services/multi-agent-server/**'
+      - '.github/workflows/multi-agent-server.yml'
+  pull_request:
+    paths:
+      - 'ai-services/multi-agent-server/**'
+      - '.github/workflows/multi-agent-server.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r ai-services/multi-agent-server/requirements.txt
+      - name: Run multi-agent and agentic loop tests (Ollama faked)
+        run: cd ai-services/multi-agent-server && python -m pytest tests/ -v
+      - name: Start the server and check /health
+        run: |
+          cd ai-services/multi-agent-server
+          python server.py &
+          sleep 3
+          curl -fsS http://127.0.0.1:6004/health
