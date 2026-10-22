@@ -29,6 +29,7 @@ import requests
 
 MCP_HOST = os.getenv("MCP_HOST", "http://localhost:6003")
 RAG_HOST = os.getenv("RAG_HOST", "http://localhost:6002")
+MULTI_AGENT_HOST = os.getenv("MULTI_AGENT_HOST", "http://127.0.0.1:6004",)
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
@@ -39,6 +40,25 @@ OLLAMA_HOST = OLLAMA_HOST.replace("0.0.0.0", "localhost")
 MAX_RETRIES = int(os.getenv("MAX_RETRIES", "1"))
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 RAG_TIMEOUT = int(os.getenv("RAG_TIMEOUT", "125"))
+
+REVIEW_TASKS = {
+    "multi_agent_workflow_review": (
+        "Review the Planner, Worker and Reviewer workflow. "
+        "Evaluate their responsibilities, evidence flow, error "
+        "handling, human approval and audit trail."
+    ),
+    "testing_report_review": (
+        "Review the supplied security scan and CI/CD testing evidence. "
+        "Verify the two required endpoint tests, identify failed checks "
+        "and missing evidence, and assess whether findings are supported."
+    ),
+    "cloud_deployment_report_review": (
+        "Review the supplied cloud deployment evidence. Verify deployment "
+        "status, application health, core CRUD functionality and evidence "
+        "that AI-Mode, MCP, RAG and the Multi-Agent Server are disabled "
+        "by default. Identify missing evidence and unresolved risks."
+    ),
+}
 
 # MCP CLIENT LOADER
 def _load_mcp_client():
@@ -296,7 +316,8 @@ def run_agentic_evaluation(
     print("SHARED AGENTIC LOOP  (Plan -> Act -> Observe -> Adapt)")
     print("========================================")
     print(f"Validation mode: {validation_mode.upper()}")
-
+    if validation_mode in REVIEW_TASKS:
+        return run_multi_agent_review(ticket, validation_mode)
     # PLAN
     print("\n[PLAN]")
     if validation_mode == "mcp":
@@ -385,6 +406,77 @@ def run_agentic_evaluation(
         "evidence": evidence,
         "attempts": attempts,
     }
+
+def run_multi_agent_review(ticket, review_mode):
+    if review_mode not in REVIEW_TASKS:
+        raise ValueError("Unsupported review mode")
+
+    if not isinstance(ticket, dict):
+        raise ValueError("Review request must be a JSON object")
+
+    evidence = ticket.get("evidence")
+
+    if not isinstance(evidence, dict) or not evidence:
+        return {
+            "status": "FAIL",
+            "review_mode": review_mode,
+            "error": "Review evidence is missing or invalid",
+        }
+
+    task = REVIEW_TASKS[review_mode]
+
+    if ticket.get("task"):
+        task += "\n\nAdditional review context:\n" + str(ticket["task"])
+
+    payload = {
+        "student": ticket.get("student", "group"),
+        "task": task,
+        "evidence": evidence,
+        "review_mode": review_mode,
+    }
+
+    try:
+        response = requests.post(
+            f"{MULTI_AGENT_HOST.rstrip('/')}/workflow/start",
+            json=payload,
+            timeout=(5, 600),
+        )
+
+        try:
+            data = response.json()
+        except ValueError:
+            data = {}
+
+        if response.status_code not in (200, 201):
+            return {
+                "status": "FAIL",
+                "review_mode": review_mode,
+                "workflow_id": data.get("id"),
+                "error": data.get(
+                    "error",
+                    f"Multi-Agent Server returned HTTP "
+                    f"{response.status_code}",
+                ),
+                "server_response": data,
+            }
+
+        return {
+            "status": (
+                "AWAITING_HUMAN"
+                if data.get("status") == "awaiting_human"
+                else data.get("status", "unknown").upper()
+            ),
+            "review_mode": review_mode,
+            "workflow_id": data.get("id"),
+            "workflow": data,
+        }
+
+    except requests.RequestException as exc:
+        return {
+            "status": "FAIL",
+            "review_mode": review_mode,
+            "error": f"Could not contact Multi-Agent Server: {exc}",
+        }
 
 
 def print_report(result):

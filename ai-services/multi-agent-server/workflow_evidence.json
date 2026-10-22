@@ -1,0 +1,6 @@
+{
+  "workflow_design": "Describe the implemented Planner, Worker and Reviewer workflow.",
+  "human_review": "Describe how human approval and rejection are handled.",
+  "audit_logging": "Describe the existing workflow history and audit logs.",
+  "error_handling": "Record the implemented error-handling behaviour and relevant test results."
+}
