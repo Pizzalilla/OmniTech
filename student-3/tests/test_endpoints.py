@@ -125,3 +125,4 @@ def test_chat_htmx_returns_html_fragment(client, fake_ollama):
     assert rv.status_code == 200
     assert b"msg--ai" in rv.data
     assert b"hx-swap-oob" in rv.data
+    assert b"Saved to your picks" in rv.data

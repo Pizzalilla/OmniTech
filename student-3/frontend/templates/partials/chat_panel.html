@@ -1,73 +1,100 @@
-<div class="chatview">
-    <div class="chat-head">
-        <span class="chat-head__title" id="chat-title-slot">{{ session.title }}</span>
-        <span id="chat-head-actions">
-            <button class="btn-mini"
-                    onclick="startEditTitle({{ session.id }}, '{{ session.title | replace('\\', '\\\\') | replace("'", "\\'") }}')">Rename</button>
-            <button class="btn-mini" onclick="askClearHistory({{ session.id }})">Clear history</button>
-        </span>
-    </div>
-
-    <div class="messages" id="chat-messages">
-        {% include "partials/messages.html" %}
-    </div>
-
-    <div class="dock">
-        <div class="dock__title">Saved recommendations</div>
-        <div id="reco-list">
-            {% include "partials/recommendations.html" %}
+<div class="workspace" id="workspace">
+    <div class="chatview">
+        <div class="chat-head">
+            <span class="chat-head__title" id="chat-title-slot">{{ session.title }}</span>
+            <span class="chat-head__actions" id="chat-head-actions">
+                <button class="icon-btn" title="Rename" aria-label="Rename"
+                        onclick="startEditTitle({{ session.id }}, '{{ session.title | replace('\\', '\\\\') | replace("'", "\\'") }}')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/></svg>
+                </button>
+                <button class="icon-btn" title="Clear history" aria-label="Clear history" onclick="askClearHistory({{ session.id }})">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+                </button>
+            </span>
+            <button class="tools-toggle" onclick="showTool('saved')" title="Open saved picks and tools">
+                Saved picks <span class="count" data-reco-count>{{ recommendations | length }}</span>
+            </button>
         </div>
-        <button class="btn-mini" style="margin-top:8px"
-                hx-get="/api/sessions/{{ session.id }}/mcp-check"
-                hx-target="#mcp-result" hx-swap="innerHTML">Verify via MCP</button>
-        <div id="mcp-result"></div>
-    </div>
 
-    <div class="dock">
-        <div class="dock__title">Multi-Agent review
-            <span class="spinner" id="ma-spinner" aria-hidden="true"></span>
+        <div class="messages" id="chat-messages">
+            {% include "partials/messages.html" %}
         </div>
-        <p class="dock__empty">Press <strong>Review with agents</strong> on a saved recommendation: the shared
-            Planner, Worker and Reviewer agents check it, then you approve, correct, partly accept or reject it.</p>
-        <button class="btn-mini" hx-get="/api/multi-agent/history"
-                hx-target="#ma-result" hx-swap="innerHTML">Review history</button>
-        <div id="ma-result"></div>
-    </div>
 
-    <div class="dock">
-        <div class="dock__title">Ask about policies &amp; FAQs</div>
-        <form class="rag-form"
-              hx-post="/api/rag/query"
-              hx-target="#rag-result"
-              hx-swap="innerHTML"
-              hx-disabled-elt="find button[type=submit]">
-            <input class="rag-form__input" name="query" type="text" autocomplete="off"
-                   placeholder="e.g. What is your return policy?" required>
-            <button type="submit" class="btn-mini">Ask</button>
-        </form>
-        <div id="rag-result"></div>
-    </div>
-
-    <form class="composer"
-          hx-post="/api/chat"
-          hx-target="#chat-messages"
-          hx-swap="beforeend"
-          hx-disabled-elt="find button[type=submit]"
-          hx-on::after-request="if(event.detail.successful) this.querySelector('.composer__input').value=''">
-        <input type="hidden" name="session_id" value="{{ session.id }}">
-        <div class="composer__row">
-            <svg class="composer__spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg>
-            <input class="composer__input" name="message" type="text" autocomplete="off"
-                   placeholder="Ask a follow-up or refine your requirements&hellip;" required>
-        </div>
-        <div class="composer__tools">
-            <span style="font-size:12.5px;color:var(--ink-dim)">Answers are grounded in the OmniTech catalog</span>
-            <div class="composer__send-group">
+        <form class="composer"
+              hx-post="/api/chat"
+              hx-target="#chat-messages"
+              hx-swap="beforeend"
+              hx-disabled-elt="find button[type=submit]"
+              hx-on::after-request="if(event.detail.successful) this.querySelector('.composer__input').value=''">
+            <input type="hidden" name="session_id" value="{{ session.id }}">
+            <div class="composer__row">
+                <svg class="composer__spark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4z"/></svg>
+                <input class="composer__input" name="message" type="text" autocomplete="off"
+                       placeholder="Ask a follow-up or refine your requirements&hellip;" required>
                 <span class="spinner" aria-hidden="true"></span>
                 <button type="submit" class="icon-circle icon-circle--send" title="Send">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-7-7 16-2-7z"/></svg>
                 </button>
             </div>
+        </form>
+    </div>
+
+    <aside class="tools" id="tools" aria-label="Consultation tools">
+        <div class="tools__tabs" role="tablist">
+            <button class="tools__tab active" role="tab" data-tab="saved" onclick="showTool('saved')">
+                Saved picks <span class="count" data-reco-count>{{ recommendations | length }}</span>
+            </button>
+            <button class="tools__tab" role="tab" data-tab="agents" onclick="showTool('agents')">Agent review</button>
+            <button class="tools__tab" role="tab" data-tab="policies" onclick="showTool('policies')">Policies</button>
+            <button class="icon-btn tools__close" title="Close" aria-label="Close tools" onclick="hideTools()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
         </div>
-    </form>
+
+        <section class="tools__pane active" data-pane="saved" role="tabpanel">
+            <div class="pane-head">
+                <p>Products the consultant recommended in this chat. Tag them, remove them, or send one for agent review.</p>
+                <button class="link-btn" hx-get="/api/sessions/{{ session.id }}/mcp-check"
+                        hx-target="#mcp-result" hx-swap="innerHTML"
+                        title="Read these picks back through the shared MCP server">Check via MCP</button>
+            </div>
+            <div id="mcp-result"></div>
+            <div id="reco-list">
+                {% include "partials/recommendations.html" %}
+            </div>
+        </section>
+
+        <section class="tools__pane" data-pane="agents" role="tabpanel">
+            <div class="pane-head">
+                <p>The shared Planner, Worker and Reviewer agents check a saved pick, then you approve, correct, partly accept or reject it.</p>
+                <button class="link-btn" hx-get="/api/multi-agent/history"
+                        hx-target="#ma-result" hx-swap="innerHTML">History</button>
+            </div>
+            <div class="pane-loading" id="ma-spinner"><span class="spinner"></span> Agents are working&hellip; about 15 seconds</div>
+            <div id="ma-result">
+                <p class="pane-empty">Press <strong>Review with agents</strong> on a saved pick to start.</p>
+            </div>
+        </section>
+
+        <section class="tools__pane" data-pane="policies" role="tabpanel">
+            <div class="pane-head">
+                <p>Answers come only from OmniTech&rsquo;s policy documents, through the shared RAG server, with sources.</p>
+            </div>
+            <form class="rag-form" id="rag-form"
+                  hx-post="/api/rag/query"
+                  hx-target="#rag-result"
+                  hx-swap="innerHTML"
+                  hx-disabled-elt="find button[type=submit]">
+                <input class="rag-form__input" name="query" type="text" autocomplete="off"
+                       placeholder="e.g. What is your return policy?" required>
+                <button type="submit" class="btn-mini">Ask</button>
+            </form>
+            <div class="rag-suggest">
+                {% for q in ["What is your return policy?", "How much is delivery?", "How long is the warranty?"] %}
+                <button type="button" class="chip chip--sm" onclick="askPolicy(this.textContent)">{{ q }}</button>
+                {% endfor %}
+            </div>
+            <div id="rag-result"></div>
+        </section>
+    </aside>
 </div>
