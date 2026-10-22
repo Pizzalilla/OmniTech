@@ -72,14 +72,20 @@ build_push "$GATEWAY_IMAGE" scripts/deploy/azure/gateway/Dockerfile scripts/depl
 
 # Container App definition: the feature container plus the gateway sidecar. Only the
 # gateway port is exposed, over HTTPS only; the password comes from Key Vault by reference.
-app_yaml() {  # image port env...
-  local image=$1 port=$2; shift 2
-  cat <<YAML
-location: $AZ_LOCATION
+app_yaml() {  # new|existing image port env...
+  local mode=$1 image=$2 port=$3; shift 3
+  echo "location: $AZ_LOCATION"
+  # Only for new apps: the CLI mis-reads an identity section on updates, and existing apps
+  # already have the identity (assigned below).
+  if [[ "$mode" == "new" ]]; then
+    cat <<YAML
 identity:
   type: UserAssigned
   userAssignedIdentities:
     "$APPS_ID": {}
+YAML
+  fi
+  cat <<YAML
 properties:
   environmentId: $ENV_ID
   workloadProfileName: $PROFILE
@@ -139,12 +145,21 @@ for spec in "${SERVICES[@]}"; do
   # Azure runs amd64; --platform also makes Apple-silicon Macs build the right architecture.
   build_push "$image" "$dockerfile" "$context"
 
-  app_yaml "$image" "$port" "${env_vars[@]}" > "$BUILD_DIR/$app.yaml"
   if az containerapp show -n "$app" -g "$AZ_RG" -o none 2>/dev/null; then
+    # Apps created before the security setup used their own system identity. Azure can't swap
+    # identities inside a YAML update, so move them to the shared app identity step by step.
+    if [[ "$(az containerapp show -n "$app" -g "$AZ_RG" --query identity.type -o tsv)" != "UserAssigned" ]]; then
+      echo "==> $app: switching to the $AZ_APPS_IDENTITY identity"
+      az containerapp identity assign -n "$app" -g "$AZ_RG" --user-assigned "$APPS_ID" -o none
+      az containerapp registry set -n "$app" -g "$AZ_RG" --server "$REGISTRY" --identity "$APPS_ID" -o none
+      az containerapp identity remove -n "$app" -g "$AZ_RG" --system-assigned -o none
+    fi
     echo "==> $app: rolling out new revision"
+    app_yaml existing "$image" "$port" "${env_vars[@]}" > "$BUILD_DIR/$app.yaml"
     az containerapp update -n "$app" -g "$AZ_RG" --yaml "$BUILD_DIR/$app.yaml" -o none
   else
     echo "==> $app: creating"
+    app_yaml new "$image" "$port" "${env_vars[@]}" > "$BUILD_DIR/$app.yaml"
     az containerapp create -n "$app" -g "$AZ_RG" --yaml "$BUILD_DIR/$app.yaml" -o none
   fi
 done

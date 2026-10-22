@@ -12,6 +12,9 @@ CRUD working.
 | `scripts/deploy/azure/deploy.sh` | Creates or updates everything; builds the images with Docker and pushes them to the registry |
 | `scripts/deploy/azure/smoke_test.py` | Checks every service and writes the cloud deployment report |
 | `scripts/deploy/azure/setup_github_oidc.sh` | One-time: lets GitHub Actions deploy without stored passwords |
+| `scripts/deploy/azure/setup_cloud_security.sh` | One-time: Key Vault, app identity and least-privilege roles (bonus security) |
+| `scripts/deploy/azure/security_check.py` | Validates endpoint and data security and writes the cloud security report |
+| `scripts/deploy/azure/gateway/` | nginx security gateway that runs next to every app (login, HTTPS, rate limits) |
 | `scripts/deploy/azure/teardown.sh` | Deletes everything (stops all charges) |
 | `.github/workflows/cloud-deployment.yml` | Runs all five student workflows, then deploys and smoke-tests |
 
@@ -21,7 +24,8 @@ One resource group (`omnitech-rg`) containing an Azure Container Registry (Basic
 Container Apps environment and six container apps (`omnitech-home`,
 `omnitech-student-1` … `5`). Each app has HTTPS ingress, 0.25 vCPU / 0.5 GiB, and
 scales to zero when idle (the first request after idle takes ~20–60 s). Images are
-pulled with each app's managed identity, so there are no registry passwords.
+pulled with a managed identity, so there are no registry passwords. Every app sits behind
+a login gateway; see [cloud-security.md](cloud-security.md).
 Each feature's SQLite data lives inside its container and is re-seeded on restart.
 
 ## First deployment (one person, from a terminal)
@@ -30,16 +34,23 @@ Each feature's SQLite data lives inside its container and is re-seeded on restar
 2. Install the Azure CLI: `brew install azure-cli`, then `az login`. Start Docker Desktop:
    Azure for Students blocks cloud builds (ACR Tasks), so images are built locally for
    `linux/amd64` and pushed.
-3. Deploy and check it:
+3. Deploy. The first run creates the registry and environment, then stops and asks for
+   step 5; after that it deploys every app:
    ```bash
    bash scripts/deploy/azure/deploy.sh
-   python3 scripts/deploy/azure/smoke_test.py
    ```
    If your subscription only allows certain regions, set one first:
    `export AZ_LOCATION=southeastasia`.
 4. Let GitHub deploy: `bash scripts/deploy/azure/setup_github_oidc.sh`, then add the three
    printed values as repository **variables** (Settings → Secrets and variables → Actions
    → Variables): `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`.
+5. Cloud security: `bash scripts/deploy/azure/setup_cloud_security.sh`, then run `deploy.sh`
+   again and check it (the password stays in Key Vault; see [cloud-security.md](cloud-security.md)):
+   ```bash
+   export SMOKE_AUTH="omnitech:$(az keyvault secret show --vault-name omnitech-kv-<first 8 of subscription id> -n gateway-password --query value -o tsv)"
+   python3 scripts/deploy/azure/smoke_test.py
+   python3 scripts/deploy/azure/security_check.py
+   ```
 
 ## After that (anyone)
 

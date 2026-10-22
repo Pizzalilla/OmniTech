@@ -63,6 +63,21 @@ def fetch(url, method="GET", headers=None, body=None, timeout=60):
         conn.close()
 
 
+def announce_big_upload(url, size=2 * 1024 * 1024):
+    """Announce a 2 MB upload without sending it: the gateway must refuse it from the
+    Content-Length header alone (sending the body would just get the connection cut)."""
+    u = urlparse(url)
+    conn = http.client.HTTPSConnection(u.netloc, timeout=30, context=SSL_CONTEXT)
+    try:
+        conn.putrequest("POST", u.path or "/")
+        conn.putheader("Content-Type", "application/octet-stream")
+        conn.putheader("Content-Length", str(size))
+        conn.endheaders()
+        return conn.getresponse().status
+    finally:
+        conn.close()
+
+
 def basic(user_pass):
     return {"Authorization": "Basic " + base64.b64encode(user_pass.encode()).decode()}
 
@@ -107,8 +122,7 @@ def endpoint_checks(name, base):
 
     status, _, _ = fetch(base + "/.env")
     record("endpoint", "Hidden files never served (/.env)", name, status == 404, f"{status}")
-    status, _, _ = fetch(base + "/upload-limit-check", method="POST", body=b"x" * (2 * 1024 * 1024),
-                         headers={"Content-Type": "application/octet-stream"})
+    status = announce_big_upload(base + "/upload-limit-check")
     record("endpoint", "Uploads over 1 MB refused", name, status == 413, f"{status}")
 
 
@@ -244,7 +258,10 @@ def write_report(deployment):
 def main():
     deployment = json.loads((EVIDENCE / "deployment.json").read_text())
     for name, base in deployment["services"].items():
-        endpoint_checks(name, base)
+        try:
+            endpoint_checks(name, base)
+        except OSError as exc:  # one broken service must not hide the rest of the report
+            record("endpoint", "Checks completed", name, False, f"{type(exc).__name__}: {exc}")
     rate_limit_check(deployment["services"]["home"])
     try:
         config_checks(deployment)
