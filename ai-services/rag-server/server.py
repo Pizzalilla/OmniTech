@@ -203,4 +203,5 @@ def retrieve():
 if __name__ == "__main__":
     log.info("RAG server starting on port %d with %d knowledge chunk(s)",
               RAG_PORT, len(_CHUNKS))
-    app.run(host="0.0.0.0", port=RAG_PORT)
+    # 0.0.0.0 so the student containers can reach us through host.docker.internal
+    app.run(host="0.0.0.0", port=RAG_PORT)  # noqa: S104

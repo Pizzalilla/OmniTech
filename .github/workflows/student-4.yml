@@ -15,6 +15,8 @@ on:
       - 'ai-services/mcp-server/**'
       - 'ai-services/multi-agent-server/**'
       - '.github/workflows/student-4.yml'
+  # lets cloud-deployment.yml run this workflow as a gate before deploying
+  workflow_call:
 
 jobs:
   build-and-test:

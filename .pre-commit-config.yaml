@@ -1,53 +1,25 @@
-# Pre-commit security scans (Release 2) - run on every `git commit`.
-#
-# Set up once per PC (Windows: use `py` if `python` doesn't work):
-#   py -m pip install pre-commit
-#   py -m pre_commit install
-# Run on everything (for the report):
-#   py -m pre_commit run --all-files
-#
-# Findings that are not real problems are marked in the code with
-# `# noqa: S<rule>` plus a short reason, and listed in each student's
-# pre-commit report.
-
+# Release 2 pre-commit security scans: Ruff security rules, detect-secrets and pip-audit.
+# Setup (once): pip install -r scripts/test/requirements-security.txt && pre-commit install
 repos:
-  # RUFF: Python security rules (the "S" / flake8-bandit set)
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.16.8
+    rev: v0.17.1
     hooks:
-      - id: ruff-check
+      - id: ruff
         name: ruff security rules
-        args: [--select, S, --per-file-ignores, "**/tests/**:S101"]
+        args: [--no-fix]
 
-  # DETECT-SECRETS: API keys, passwords and tokens in any committed file
-  # (.secrets.baseline holds anything already reviewed - currently empty)
   - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
       - id: detect-secrets
         args: [--baseline, .secrets.baseline]
-        exclude: (\.db$|\.pdf$|\.png$|package-lock\.json$)
+        exclude: '\.(png|jpe?g|pdf|db|ttf|ico)$'
 
-  # PIP-AUDIT: known vulnerabilities (CVEs) in pinned Python packages.
-  # One hook per service, because each service is installed on its own and
-  # they don't share versions. Each one only runs when its folder changes.
-  # Add your own service by copying a block and changing the path.
-  - repo: https://github.com/pypa/pip-audit
-    rev: v2.9.0
+  - repo: local
     hooks:
       - id: pip-audit
-        name: pip-audit (student-4)
-        args: [-r, student-4/requirements.txt]
-        files: ^student-4/
-      - id: pip-audit
-        name: pip-audit (multi-agent server)
-        args: [-r, ai-services/multi-agent-server/requirements.txt]
-        files: ^ai-services/multi-agent-server/
-      - id: pip-audit
-        name: pip-audit (mcp server)
-        args: [-r, ai-services/mcp-server/requirements.txt]
-        files: ^ai-services/mcp-server/
-      - id: pip-audit
-        name: pip-audit (rag server)
-        args: [-r, ai-services/rag-server/requirements.txt]
-        files: ^ai-services/rag-server/
+        name: pip-audit (dependencies of the projects you changed)
+        entry: python scripts/test/precommit_pip_audit.py
+        language: python
+        additional_dependencies: [pip-audit==2.10.1]
+        files: '^(student-\d|ai-services/[^/]+)/'
