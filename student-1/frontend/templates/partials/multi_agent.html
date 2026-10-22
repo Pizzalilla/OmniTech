@@ -1,0 +1,74 @@
+{% if not w %}
+<div class="ma-result ma-result--error">{{ error }}</div>
+{% elif w.status == "failed" %}
+<div class="ma-result ma-result--error">Workflow <code>{{ w.id }}</code> failed: {{ error or w.error }}</div>
+{% else %}
+<div class="ma-result">
+    <div class="ma-result__title">Multi-Agent server &middot; workflow <code>{{ w.id }}</code></div>
+
+    <div class="ma-step">
+        <div class="ma-step__title">1 &middot; Planner</div>
+        <p>{{ w.plan.goal }}</p>
+        <ol class="ma-list">{% for step in w.plan.steps %}<li>{{ step }}</li>{% endfor %}</ol>
+    </div>
+
+    <div class="ma-step">
+        <div class="ma-step__title">2 &middot; Worker</div>
+        <p class="ma-answer">{{ w.work.answer }}</p>
+        <small class="ma-dim">Evidence used: {{ w.work.evidence_used | join(', ') or 'not stated' }}</small>
+        {% if w.work.issues %}
+        <ul class="ma-list">{% for issue in w.work.issues %}<li>{{ issue }}</li>{% endfor %}</ul>
+        {% endif %}
+    </div>
+
+    <div class="ma-step">
+        <div class="ma-step__title">3 &middot; Reviewer
+            <span class="ma-badge ma-badge--{{ w.review.verdict }}">{{ w.review.verdict | replace('_', ' ') }}</span>
+        </div>
+        <p>{{ w.review.summary }}</p>
+        {% if w.review.risks %}
+        <ul class="ma-list">{% for risk in w.review.risks %}<li>{{ risk }}</li>{% endfor %}</ul>
+        {% endif %}
+        {% if w.review.recommendations %}
+        <ul class="ma-list">{% for item in w.review.recommendations %}<li>{{ item }}</li>{% endfor %}</ul>
+        {% endif %}
+    </div>
+
+    {% if w.status == "awaiting_human" %}
+    <form class="ma-step ma-decision">
+        <div class="ma-step__title">4 &middot; Human review</div>
+        {% if error %}<div class="ma-warn">{{ error }}</div>{% endif %}
+        <input type="hidden" name="workflow_id" value="{{ w.id }}">
+        <input type="hidden" name="product_id" value="{{ product_id or '' }}">
+        <input type="text" name="reviewer" value="staff" maxlength="50" aria-label="Reviewer name">
+        <textarea name="note" rows="2" placeholder="Note (needed for Partial and Reject)"></textarea>
+        <textarea name="corrected_answer" rows="2" placeholder="Corrected description (needed for Correct)"></textarea>
+        <div class="ma-buttons">
+            {% for value, label in [("approve", "Approve"), ("correct", "Correct"), ("partial", "Partial"), ("reject", "Reject")] %}
+            <button type="button" class="btn{{ ' btn-secondary' if value == 'reject' else '' }}"
+                    hx-post="{{ url_for('multi_agent_decision') }}"
+                    hx-include="closest form"
+                    hx-vals='{"decision": "{{ value }}"}'
+                    hx-target="#ma-result" hx-swap="innerHTML">{{ label }}</button>
+            {% endfor %}
+        </div>
+    </form>
+    {% else %}
+    <div class="ma-step">
+        <div class="ma-step__title">4 &middot; Human review
+            <span class="ma-badge ma-badge--{{ w.status }}">{{ w.status | replace('_', ' ') }}</span>
+        </div>
+        <small class="ma-dim">By {{ w.human.reviewer }} &middot; {{ w.human.decided_at }}</small>
+        {% if w.human.note %}<p><strong>Note:</strong> {{ w.human.note }}</p>{% endif %}
+        {% if w.final_answer %}
+        <p class="ma-answer">{{ w.final_answer }}</p>
+        {% else %}
+        <p class="ma-dim">Rejected. The stored description is unchanged.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% if product %}
+<p id="product-description" hx-swap-oob="true">{{ product.description or 'No description available.' }}</p>
+{% endif %}

@@ -1,0 +1,16 @@
+{% if result.error %}
+<div class="ma-result ma-result--error">{{ result.error }}</div>
+{% else %}
+<div class="ma-result">
+    <div class="ma-result__title">Recent reviews</div>
+    {% for item in result.workflows %}
+    <div class="ma-history">
+        <code>{{ item.id }}</code>
+        <span class="ma-badge ma-badge--{{ item.status }}">{{ item.status | replace('_', ' ') }}</span>
+        <small class="ma-dim">{{ item.created_at }}</small>
+    </div>
+    {% else %}
+    <div class="ma-dim">No reviews yet.</div>
+    {% endfor %}
+</div>
+{% endif %}

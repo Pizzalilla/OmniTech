@@ -35,7 +35,9 @@ except ImportError:
 CHECKS = {
     "home": [("Home page lists every feature", "GET", "/", None, 200, "omnitech-student-3")],
     "student-1": [("Catalog page", "GET", "/", None, 200, None),
-                  ("Read products", "GET", "/api/products", None, 200, None)],
+                  ("Read products", "GET", "/api/products", None, 200, None),
+                  ("AI summary disabled by default", "POST", "/api/products/1/ai-summary", None, 503, "unavailable"),
+                  ("Multi-Agent disabled by default", "GET", "/api/multi-agent/history", None, 503, "disabled")],
     "student-2": [("Customers page", "GET", "/", None, 200, None),
                   ("Read customers", "GET", "/api/customers", None, 200, None)],
     "student-3": [("Consultant page", "GET", "/", None, 200, None),
