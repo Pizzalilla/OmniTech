@@ -98,8 +98,9 @@ def get_product_specs(product_ids):
     if not ids:
         return {}
     conn = get_db()
+    # only "?" placeholders go into the string, the ids themselves are passed as parameters
     marks = ",".join("?" for _ in ids)
-    rows = conn.execute(f"SELECT * FROM product_specs WHERE product_id IN ({marks})", ids).fetchall()
+    rows = conn.execute(f"SELECT * FROM product_specs WHERE product_id IN ({marks})", ids).fetchall()  # noqa: S608
     conn.close()
     return {r["product_id"]: dict(r) for r in rows}
 

@@ -1,9 +1,9 @@
 # WEB FRAMEWORK: serves the cart page and the orders REST API
-flask==3.0.3
-flask-cors==4.0.1
+flask==3.1.3
+flask-cors==6.0.0
 
 # HTTP: AI helper calls Ollama + the shared RAG server, and the pytest suite
-requests==2.31.0
+requests==2.33.0
 
 # TESTING: pytest suite in student-4/tests
-pytest==8.1.1
+pytest==9.0.3

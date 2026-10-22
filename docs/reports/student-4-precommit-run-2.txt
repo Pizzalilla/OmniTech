@@ -1,0 +1,6 @@
+ruff security rules......................................................Passed
+Detect secrets...........................................................Passed
+pip-audit (student-4)....................................................Passed
+pip-audit (multi-agent server)...........................................Passed
+pip-audit (mcp server)...................................................Passed
+pip-audit (rag server)...............................(no files to check)Skipped
