@@ -101,6 +101,7 @@ services:
       - OLLAMA_MODEL=llama3.2
       - MCP_HOST=http://host.docker.internal:6003
       - RAG_HOST=http://host.docker.internal:6002
+      - MULTI_AGENT_HOST=http://host.docker.internal:6004
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
