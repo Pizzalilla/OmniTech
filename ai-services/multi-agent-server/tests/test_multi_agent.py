@@ -82,6 +82,22 @@ def test_planner_fills_defaults_and_flags_missing_evidence(monkeypatch):
     assert plan["missing_evidence"] == ["warranty"]
 
 
+def test_planner_moves_evidence_and_criteria_out_of_steps(monkeypatch):
+    # what llama3.2 really sent back once
+    monkeypatch.setattr(agents, "ask_ollama", lambda s, u: {"goal": "Check cart", "steps": [
+        "Step 1: Inspect cart", "Step 2: Run safety checks", "evidence_needed", "cart", "safety_checks",
+        "store_policy", "success_criteria: Cart is ready for checkout"]})
+    plan = agents.planner("Check cart", {**EVIDENCE, "safety_checks": [], "store_policy": []})
+    assert plan["steps"] == ["Step 1: Inspect cart", "Step 2: Run safety checks"]
+    assert plan["evidence_needed"] == ["cart", "safety_checks", "store_policy"]
+    assert plan["success_criteria"] == ["Cart is ready for checkout"]
+
+
+def test_planner_guesses_evidence_from_steps_when_none_listed(monkeypatch):
+    monkeypatch.setattr(agents, "ask_ollama", lambda s, u: {"steps": ["Read the cart", "Check stock levels"]})
+    assert agents.planner("Check cart", EVIDENCE)["evidence_needed"] == ["cart", "stock"]
+
+
 def test_planner_with_no_steps_is_an_error(monkeypatch):
     monkeypatch.setattr(agents, "ask_ollama", lambda s, u: {"goal": "x"})
     with pytest.raises(agents.AgentError):
@@ -102,6 +118,12 @@ def test_reviewer_unknown_verdict_becomes_needs_changes(monkeypatch):
     plan = {"steps": ["a"], "missing_evidence": []}
     work = {"answer": "x", "steps_done": [], "evidence_used": [], "issues": []}
     assert agents.reviewer("t", plan, EVIDENCE, work)["verdict"] == "needs_changes"
+
+
+def test_ollama_url_handles_windows_listen_address():
+    assert agents.ollama_url("0.0.0.0:11434") == "http://127.0.0.1:11434"
+    assert agents.ollama_url("http://host.docker.internal:11434/") == "http://host.docker.internal:11434"
+    assert agents.ollama_url(None) == "http://127.0.0.1:11434"
 
 
 def test_ollama_down_raises_agent_error(monkeypatch):

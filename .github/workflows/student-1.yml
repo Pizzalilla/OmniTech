@@ -23,6 +23,8 @@ jobs:
     env:
       MCP_ENABLED: "false"
       RAG_ENABLED: "false"
+      MULTI_AGENT_ENABLED: "false"
+      OLLAMA_HOST: "http://ai-disabled.invalid:11434"
     defaults:
       run:
         working-directory: student-1
@@ -41,8 +43,22 @@ jobs:
       - name: compile backend and database sources
         run: python -m compileall -q backend database
 
+      - name: Endpoint tests (POST /api/products, POST /api/products/id/ai-summary)
+        run: |
+          set -o pipefail
+          python -m pytest tests/test_endpoints.py -v --junitxml=endpoint-results.xml | tee endpoint-results.txt
+
       - name: run pytest suite
         run: python -m pytest -v
+
+      - name: Upload endpoint test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-1-endpoint-tests
+          path: |
+            student-1/endpoint-results.xml
+            student-1/endpoint-results.txt
 
   container:
     name: build and smoke test container
@@ -59,6 +75,9 @@ jobs:
           docker run -d --name student-1-ci -p 5001:5000
           -e MCP_ENABLED=false
           -e RAG_ENABLED=false
+          -e MULTI_AGENT_ENABLED=false
+          -e OLLAMA_HOST=http://ai-disabled.invalid:11434
+          -e OLLAMA_TIMEOUT=2
           student-1:ci
 
       - name: wait for health endpoint
@@ -81,6 +100,18 @@ jobs:
             echo "$table rows: $count"
             test "$count" -ge 10
           done
+
+      - name: AI-off fallback stays up
+        run: |
+          code=$(curl -s -o /tmp/ma.txt -w "%{http_code}" http://localhost:5001/api/multi-agent/history)
+          echo "multi-agent history: $code"
+          test "$code" = "503"
+          grep -q disabled /tmp/ma.txt
+          code=$(curl -s -o /tmp/ai.txt -w "%{http_code}" -X POST http://localhost:5001/api/products/1/ai-summary)
+          echo "ai-summary: $code"
+          test "$code" = "503"
+          grep -q unavailable /tmp/ai.txt
+          curl -fsS http://localhost:5001/api/products >/dev/null
 
       - name: remove container
         if: always()

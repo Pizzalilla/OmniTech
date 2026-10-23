@@ -12,11 +12,17 @@ import os
 
 import requests
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-# if not OLLAMA_HOST.startswith("http"):
-#     OLLAMA_HOST = f"http://{OLLAMA_HOST}"
-# if "0.0.0.0" in OLLAMA_HOST:  # noqa: S104
-#     OLLAMA_HOST = OLLAMA_HOST.replace("0.0.0.0", "localhost")
+
+# OLLAMA ADDRESS: Windows often has OLLAMA_HOST=0.0.0.0:11434 (a listen address),
+# so add http:// and swap 0.0.0.0 for 127.0.0.1 to get an address we can call
+def ollama_url(raw):
+    url = (raw or "127.0.0.1:11434").strip().rstrip("/")
+    if "://" not in url:
+        url = "http://" + url
+    return url.replace("://0.0.0.0", "://127.0.0.1")
+
+
+OLLAMA_HOST = ollama_url(os.getenv("OLLAMA_HOST"))
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 
@@ -103,10 +109,41 @@ def evidence_text(evidence):
 PLANNER_PROMPT = (
     "You are the Planner agent for the OmniTech store. You do not answer the task. "
     "You write a short plan another agent will follow. Only plan with the evidence "
-    "names you are given. Reply with JSON only:\n"
+    "names you are given. Keep evidence names and success criteria out of the steps list. "
+    "Reply with JSON only:\n"
     '{"goal": "one sentence", "steps": ["step 1", "step 2"], '
     '"evidence_needed": ["evidence name"], "success_criteria": ["what a good answer must do"]}'
 )
+
+
+# STEP CLEAN-UP: small models sometimes put evidence_needed / success_criteria
+# inside the steps list, so move those lines back where they belong
+def split_steps(items):
+    steps, evidence, criteria = [], [], []
+    bucket = steps
+    for item in items:
+        key = item.lower().replace(" ", "_")
+        if key.rstrip(":") == "evidence_needed":
+            bucket = evidence
+        elif key.rstrip(":") == "success_criteria":
+            bucket = criteria
+        elif key.startswith("evidence_needed:"):
+            evidence += [e.strip() for e in item.split(":", 1)[1].split(",") if e.strip()]
+            bucket = evidence
+        elif key.startswith("success_criteria:"):
+            criteria.append(item.split(":", 1)[1].strip())
+            bucket = criteria
+        else:
+            bucket.append(item)
+    return steps, evidence, criteria
+
+
+def unique(items):
+    seen = []
+    for item in items:
+        if item and item not in seen:
+            seen.append(item)
+    return seen
 
 
 # PLANNER: task + evidence names -> plan
@@ -115,14 +152,20 @@ def planner(task, evidence):
     prompt = f"TASK:\n{task}\n\nEVIDENCE AVAILABLE: {names}\n\nWrite the plan (3 to 5 steps)."
     raw = ask_ollama(PLANNER_PROMPT, prompt)
 
+    steps, extra_evidence, extra_criteria = split_steps(as_list(raw.get("steps")))
     plan = {
         "goal": as_text(raw.get("goal"), task),
-        "steps": as_list(raw.get("steps")),
-        "evidence_needed": as_list(raw.get("evidence_needed")),
-        "success_criteria": as_list(raw.get("success_criteria")),
+        "steps": steps,
+        "evidence_needed": unique(as_list(raw.get("evidence_needed")) + extra_evidence),
+        "success_criteria": unique(as_list(raw.get("success_criteria")) + extra_criteria),
     }
     if not plan["steps"]:
         raise AgentError("planner returned no steps")
+
+    # still nothing listed - use the evidence names the steps actually mention
+    if not plan["evidence_needed"]:
+        text = " ".join(steps).lower()
+        plan["evidence_needed"] = [k for k in evidence if k.lower() in text or k.lower().replace("_", " ") in text]
 
     # anything the plan wants that the backend didn't send
     plan["missing_evidence"] = [e for e in plan["evidence_needed"] if e not in evidence]
