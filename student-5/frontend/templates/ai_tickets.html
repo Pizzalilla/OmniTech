@@ -832,9 +832,31 @@
             document.getElementById("multiAgentWorkflowId").textContent = workflowId;
             document.getElementById("multiAgentWorkflowStatus").textContent = status;
             document.getElementById("multiAgentWorkflowError").textContent = review?.workflow_error || "";
-            document.getElementById("multiAgentPlan").textContent = prettyJson(workflow.plan);
-            document.getElementById("multiAgentWork").textContent = prettyJson(workflow.work);
-            document.getElementById("multiAgentReviewer").textContent = prettyJson(workflow.review);
+            const plan = parseWorkflowData(workflow.plan);
+            const plannerSteps = plan?.steps ?? plan?.plan?.steps ?? [];
+            document.getElementById("multiAgentPlan").textContent = formatWorkflowList(plannerSteps, "No planner steps available.");
+
+            const work = parseWorkflowData(workflow.work);
+            const workerAnswer = work?.answer;
+            document.getElementById("multiAgentWork").textContent =
+                workerAnswer == null
+                    ? "No answer available."
+                    : formatWorkflowValue(workerAnswer);
+            const reviewData = parseWorkflowData(workflow.review);
+            const reviewerOutput = [
+                "Recommendations",
+                formatWorkflowList(
+                    reviewData?.recommendations,
+                    "No recommendations provided."
+                ),
+                "",
+                "Risks",
+                formatWorkflowList(
+                    reviewData?.risks,
+                    "No risks provided."
+                )
+            ].join("\n");
+            document.getElementById("multiAgentReviewer").textContent = reviewerOutput;
             const humanResult =
                 workflow.human ??
                 workflow.human_review ??
@@ -845,11 +867,52 @@
                 null;
             const humanResultElement = document.getElementById("multiAgentHumanResult");
             if (humanResult && typeof humanResult === "object") {
-                humanResultElement.textContent = JSON.stringify(
-                    humanResult,
-                    null,
-                    2
-                );
+                const formatLabel = (key) => {
+                    return key
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, char => char.toUpperCase());
+                };
+
+                const formatValue = (key, value) => {
+                    if (value === null || value === undefined || value === "") {
+                        return "Not provided";
+                    }
+
+                    if (typeof value === "boolean") {
+                        return value ? "Yes" : "No";
+                    }
+
+                    if (key === "decision") {
+                        return String(value)
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, char => char.toUpperCase());
+                    }
+
+                    if (key === "decided_at" && typeof value === "string") {
+                        const date = new Date(value);
+                        if (!Number.isNaN(date.getTime())) {
+                            return date.toLocaleString("en-AU", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                timeZone: "UTC",
+                                timeZoneName: "short"
+                            });
+                        }
+                    }
+
+                    return typeof value === "object"
+                        ? JSON.stringify(value)
+                        : String(value);
+                };
+                humanResultElement.textContent = Object.entries(humanResult)
+                    .map(([key, value]) =>
+                        `${formatLabel(key)}: ${formatValue(key, value)}`
+                    )
+                    .join("\n");
             } else if (humanResult != null && humanResult !== "") {
                 humanResultElement.textContent = String(humanResult);
             } else {
@@ -988,6 +1051,101 @@
             document.getElementById("multiAgentHistory").textContent = "Select a ticket to load its review history.";
             document.querySelector(".ticket-table-container").scrollIntoView({behavior: "smooth", block: "start"});
         }
+
+        function parseWorkflowData(value) {
+            if (typeof value !== "string") {
+                return value;
+            }
+
+            try {
+                return JSON.parse(value);
+            } catch {
+                return value;
+            }
+        }
+
+        function formatWorkflowValue(value) {
+            value = parseWorkflowData(value);
+            if (value == null) {
+                return "Not provided";
+            }
+
+            if (typeof value === "string") {
+                return value;
+            }
+
+            if (typeof value === "number" || typeof value === "boolean") {
+                return String(value);
+            }
+
+            if (Array.isArray(value)) {
+                return value
+                    .map(item => `• ${formatWorkflowValue(item)}`)
+                    .join("\n");
+            }
+
+            if (typeof value === "object") {
+                return Object.entries(value)
+                    .map(([key, item]) =>
+                        `${formatWorkflowLabel(key)}: ${formatWorkflowValue(item)}`
+                    )
+                    .join("\n");
+            }
+            return String(value);
+        }
+
+        function formatWorkflowList(value, emptyMessage) {
+            value = parseWorkflowData(value);
+            if (value == null || value === "") {
+                return emptyMessage;
+            }
+
+            const items = Array.isArray(value) ? value : [value];
+            if (items.length === 0) {
+                return emptyMessage;
+            }
+
+            return items.map((item, index) => {
+                const formatted = formatWorkflowValue(item)
+                    .replace(/\n/g, "\n   ");
+
+                return `${index + 1}. ${formatted}`;
+            }).join("\n\n");
+        }
+
+        function formatWorkflowLabel(key) {
+            return String(key)
+                .replace(/([a-z])([A-Z])/g, "$1 $2")
+                .replace(/[_-]+/g, " ")
+                .replace(/\b\w/g, character => character.toUpperCase());
+        }
+
+        function formatHumanReview(value) {
+            value = parseWorkflowData(value);
+            if (value == null || value === "") {
+                return "No human decision has been submitted.";
+            }
+
+            if (typeof value !== "object") {
+                return formatWorkflowValue(value);
+            }
+
+            if (Array.isArray(value)) {
+                return formatWorkflowList(
+                    value,
+                    "No human review details available."
+                );
+            }
+            return Object.entries(value)
+                .map(([key, item]) => {
+                    const label = formatWorkflowLabel(key);
+                    const formattedValue = formatWorkflowValue(item);
+
+                    return `${label}\n${formattedValue}`;
+                })
+                .join("\n\n");
+        }
+
     </script>
 </body>
 </html>

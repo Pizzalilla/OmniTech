@@ -631,11 +631,33 @@ input:focus, select:focus, textarea:focus {
 }
 
 #multiAgentPanel .workflow-json {
-    max-height: 140px;
+    /* max-height: 140px;
     padding: 8px;
     margin: 4px 0;
     font-size: 0.82rem;
-    line-height: 1.4;
+    line-height: 1.4; */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    font-family: inherit;
+    font-size: 0.95rem;
+    line-height: 1.7;
+    padding: 16px;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #334155;
+    border: 1px solid #e2e8f0;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+#multiAgentPanel .workflow-stage summary {
+    font-weight: 600;
+}
+
+#multiAgentPanel .workflow-stage summary span {
+    font-weight: 400;
+    color: #64748b;
 }
 
 #multiAgentPanel .workflow-form-field {
