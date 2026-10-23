@@ -16,3 +16,14 @@ def ask(query):
     )
     resp.raise_for_status()
     return resp.json()
+
+
+def retrieve(query, limit=2):
+    # chunks only, no Ollama call
+    resp = requests.post(
+        f"{RAG_HOST}/rag/retrieve",
+        json={"query": query, "limit": limit},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    return resp.json().get("chunks", [])

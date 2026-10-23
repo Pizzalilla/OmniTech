@@ -10,9 +10,11 @@ if str(ROOT) not in sys.path:
 
 import requests
 from backend import agent
+from backend import multi_agent_client
 from backend import rag_client
 from backend.ai import AIUnavailable, summarise_product
 from backend.mcp_client import McpClient, McpError
+from backend.multi_agent_client import MultiAgentError
 from database.db import (
     create_category,
     create_product,
@@ -56,6 +58,14 @@ MCP_ENABLED = os.getenv("MCP_ENABLED", "true").lower() == "true"
 MCP_HOST = os.getenv("MCP_HOST", "http://localhost:6003")
 MCP_TIMEOUT = int(os.getenv("MCP_TIMEOUT", "30"))
 RAG_ENABLED = os.getenv("RAG_ENABLED", "true").lower() == "true"
+MULTI_AGENT_ENABLED = os.getenv("MULTI_AGENT_ENABLED", "true").lower() == "true"
+
+MA_TASK = (
+    "Review this product listing for a shopper. Use only the supplied product, "
+    "specifications, and store policy. Do not invent specifications or prices."
+)
+MA_OFFLINE = "The shared Multi-Agent server is not reachable right now."
+MA_DISABLED = "Multi-Agent review is disabled in this environment."
 
 
 @app.context_processor
@@ -732,5 +742,151 @@ def api_product_ai_review(product_id):
     return jsonify(result)
 
 
+def _is_htmx():
+    return request.headers.get("HX-Request", "").lower() == "true"
+
+
+def _ma_evidence(product, specifications):
+    evidence = {
+        "product": {
+            "id": product["id"],
+            "name": product["name"],
+            "brand": product["brand"],
+            "category": product["category_name"],
+            "price": product["price"],
+            "stock": product["stock"],
+            "description": product["description"],
+        },
+        "specifications": [
+            {"name": spec["spec_name"], "value": spec["spec_value"]}
+            for spec in specifications
+        ],
+    }
+    if not RAG_ENABLED:
+        return evidence
+    try:
+        policy = rag_client.retrieve(
+            f"{product['name']} {product['brand']} warranty return policy", limit=2
+        )
+    except requests.RequestException:
+        return evidence
+    if policy:
+        evidence["store_policy"] = policy
+    return evidence
+
+
+def _save_description(product, description):
+    return update_product(
+        product["id"],
+        product["name"],
+        product["brand"],
+        product["category_id"],
+        float(product["price"]),
+        int(product["stock"]),
+        description,
+        product["image_url"],
+    )
+
+
+def _ma_reply(workflow=None, error=None, product=None, product_id=None, status=200):
+    # htmx drops the body of an error status, so the fragment is always 200
+    if _is_htmx():
+        return render_template(
+            "partials/multi_agent.html",
+            w=workflow,
+            error=error,
+            product=product,
+            product_id=product_id,
+        )
+    if error and not workflow:
+        return jsonify({"error": error}), status
+    body = dict(workflow or {})
+    if error:
+        body["message"] = error
+    if product:
+        body["product"] = product
+    return jsonify(body), status
+
+
+@app.route("/api/products/<int:product_id>/multi-agent-review", methods=["POST"])
+def multi_agent_review(product_id):
+    product = get_product(product_id)
+    if product is None:
+        return jsonify({"error": "product not found"}), 404
+    if not MULTI_AGENT_ENABLED:
+        return _ma_reply(error=MA_DISABLED, product_id=product_id, status=503)
+
+    try:
+        workflow = multi_agent_client.start(
+            MA_TASK, _ma_evidence(product, list_specifications(product_id))
+        )
+    except (requests.RequestException, ValueError):
+        return _ma_reply(error=MA_OFFLINE, product_id=product_id, status=503)
+    except MultiAgentError as exc:
+        return _ma_reply(error=str(exc), product_id=product_id, status=400)
+    if workflow.get("status") == "failed":
+        return _ma_reply(
+            workflow,
+            error=workflow.get("error") or "The agents could not finish.",
+            product_id=product_id,
+            status=503,
+        )
+    return _ma_reply(workflow, product_id=product_id, status=201)
+
+
+@app.route("/api/multi-agent/decision", methods=["POST"])
+def multi_agent_decision():
+    data = request.get_json(silent=True) if request.is_json else request.form
+    data = data or {}
+    workflow_id = str(data.get("workflow_id", "")).strip()
+    raw_product_id = data.get("product_id")
+    try:
+        product_id = int(raw_product_id) if raw_product_id not in (None, "") else None
+    except (TypeError, ValueError):
+        abort(400, description="product_id must be a number")
+    if not multi_agent_client.WORKFLOW_ID.match(workflow_id):
+        abort(400, description="A valid workflow_id is required")
+    if not MULTI_AGENT_ENABLED:
+        return _ma_reply(error=MA_DISABLED, product_id=product_id, status=503)
+
+    try:
+        workflow = multi_agent_client.decide(
+            workflow_id,
+            str(data.get("decision", "")),
+            reviewer=str(data.get("reviewer", "staff")),
+            note=str(data.get("note", "")),
+            corrected_answer=str(data.get("corrected_answer", "")),
+        )
+    except (requests.RequestException, ValueError):
+        return _ma_reply(error=MA_OFFLINE, product_id=product_id, status=503)
+    except MultiAgentError as exc:
+        try:
+            current = multi_agent_client.get(workflow_id)
+        except (requests.RequestException, ValueError, MultiAgentError):
+            current = None
+        return _ma_reply(current, error=str(exc), product_id=product_id, status=400)
+
+    product = get_product(product_id) if product_id is not None else None
+    final_answer = workflow.get("final_answer")
+    if product is not None and final_answer:
+        product = _save_description(product, final_answer)
+    return _ma_reply(workflow, product=product, product_id=product_id)
+
+
+@app.route("/api/multi-agent/history", methods=["GET"])
+def multi_agent_history():
+    if not MULTI_AGENT_ENABLED:
+        result = {"error": MA_DISABLED}
+    else:
+        try:
+            result = {"workflows": multi_agent_client.history(limit=5)}
+        except (requests.RequestException, ValueError, MultiAgentError):
+            result = {"error": MA_OFFLINE}
+    if _is_htmx():
+        return render_template("partials/multi_agent_history.html", result=result)
+    return jsonify(result), 503 if "error" in result else 200
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=os.getenv("FLASK_DEBUG") == "1")
+    # Docker publishes this port. The container is the boundary.
+    app.run(host="0.0.0.0", port=5000, debug=os.getenv("FLASK_DEBUG") == "1")  # noqa: S104
