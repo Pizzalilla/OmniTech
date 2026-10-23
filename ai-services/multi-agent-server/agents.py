@@ -13,6 +13,10 @@ import os
 import requests
 
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+# if not OLLAMA_HOST.startswith("http"):
+#     OLLAMA_HOST = f"http://{OLLAMA_HOST}"
+# if "0.0.0.0" in OLLAMA_HOST:  # noqa: S104
+#     OLLAMA_HOST = OLLAMA_HOST.replace("0.0.0.0", "localhost")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 

@@ -63,23 +63,41 @@
                     <h2>View Customer Accounts</h2>
                     <div id="students-result" hx-get="/customers" hx-trigger="load, refreshCustomers from:body"></div>
                 </section>
-
-
             </div>
-
 
             <div>
                 <section class="card">
                     <h2>AI Preference Tag Suggestions</h2>
-
                     <form hx-post="/generate-ai-suggestions" hx-target="#context-result">
                         <label for="context-customer-id">Select Customer ID for AI Suggestion</label>
                         <input id="context-customer-id" name="customer_id" type="number" value="1" min="1" required>
                         <button type="submit" class="btn" style="width: 100%;">Run AI Agent Loop</button>
                     </form>
-
-
                     <div id="context-result"></div>
+                </section>
+
+                <section class="card">
+                    <h2>Staff AI Review Dashboard</h2>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <h3 style="margin: 0; font-size: 1rem;">Pending Reviews</h3>
+                            <button hx-get="/api/staff/workflows/pending" hx-target="#pending-list" class="btn" style="font-size:0.75rem; padding: 4px 8px;">Refresh</button>
+                        </div>
+                        
+                        <div id="pending-list" hx-get="/api/staff/workflows/pending" hx-trigger="load, refreshPendingList from:body" style="margin-top: 10px; max-height: 200px; overflow-y: auto;">
+                            <p>Loading pending reviews...</p>
+                        </div>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 15px 0;">
+                    
+                    <div>
+                        <h3 style="margin-top: 0; font-size: 1rem;">Review Panel</h3>
+                        <div id="review-panel" class="panel" style="background: #f9fafb;">
+                            <em style="color:#6b7280; font-size: 0.9rem;">Select a workflow from the list above to review the AI's work.</em>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="card">
@@ -88,7 +106,6 @@
                         <input type="text" name="query" placeholder="Ask about policies, profiles, or account rules..." required />
                         <button type="submit">Search Knowledge Base</button>
                     </form>
-                    
                     <div id="rag-spinner" class="htmx-indicator">Querying RAG server...</div>
                     <div id="rag-results"></div>
                 </section>
@@ -106,12 +123,10 @@
                 <section class="card">
                     <h2>MCP System Diagnostics</h2>
                     <p>Run a cross-service MCP tool check on a Customer Profile.</p>
-                    
                     <form hx-post="/mcp-check-profile" hx-target="#mcp-results" hx-indicator="#mcp-spinner">
                         <input type="number" name="customer_id" placeholder="Enter Customer ID (e.g., 1)" required min="1" />
                         <button type="submit">Run MCP Tool</button>
                     </form>
-                    
                     <div id="mcp-spinner" class="htmx-indicator">Executing MCP tool on port 6003...</div>
                     <div id="mcp-results"></div>
                 </section>

@@ -1,6 +1,7 @@
 import os
 import sys
 import requests
+import json
 from flask import Flask, abort, jsonify, render_template, request, render_template_string
 from mcp_client import McpClient, McpError
 
@@ -193,22 +194,13 @@ def get_customer_by_id():
     return render_customer_profile(customer, preferences, tags)
 
 
-@app.route("/customers/<int:customer_id>", methods=["DELETE"])
-def delete_customer_account(customer_id):
-    conn = get_db()
-    conn.execute("DELETE FROM Customers WHERE id = ?", (customer_id,))
-    conn.commit()
-    conn.close()
-    return get_all_customers()
-
-
 @app.route("/generate-ai-suggestions", methods=["POST"])
 def generate_ai_suggestions():
     cid = request.form.get("customer_id", "").strip()
     if not cid:
         return "<div class='error'>Please enter a customer ID.</div>"
 
-    # 1. Gather Evidence Locally (Microservice boundary)
+    # 1. Gather Evidence Locally
     conn = get_db()
     customer = conn.execute("SELECT * FROM Customers WHERE id = ?", (cid,)).fetchone()
     if not customer:
@@ -217,10 +209,12 @@ def generate_ai_suggestions():
     preferences = conn.execute("SELECT * FROM Preferences WHERE customer_id = ?", (cid,)).fetchall()
     conn.close()
 
-    # Gather RAG Context for tagging rules
+    # Gather RAG Context for tagging rules (Bumped timeout to 15s)
     rag_rules = "No tagging rules found."
     try:
-        rag_resp = requests.post(f"{RAG_SERVER_URL}/rag/query", json={"query": "What are the allowed system categories and tagging rules for customer profiles?"}, timeout=5)
+        rag_resp = requests.post(f"{RAG_SERVER_URL}/rag/query", 
+                                 json={"query": "What are the allowed system categories and tagging rules for customer profiles?"}, 
+                                 timeout=15)
         if rag_resp.ok:
             rag_rules = rag_resp.json().get("answer", rag_rules)
     except requests.RequestException:
@@ -238,9 +232,19 @@ def generate_ai_suggestions():
     try:
         resp = requests.post(f"{MULTI_AGENT_URL}/workflow/start", 
                              json={"student": "student-2", "task": task, "evidence": evidence}, 
-                             timeout=10)
+                             timeout=120)
+        
         workflow = resp.json()
-        return render_workflow_status(workflow, cid)
+        
+        # Wrap the HTML in a Flask response object so we can add headers
+        response = app.make_response(render_workflow_status(workflow, cid))
+        
+        # This tells HTMX to automatically click the "Refresh" button on the dashboard for you
+        response.headers["HX-Trigger"] = "refreshPendingList"
+        return response
+        
+    except requests.exceptions.ReadTimeout:
+        return "<div class='error'>The AI is taking too long to respond.</div>"
     except Exception as e:
         return f"<div class='error'>Failed to start AI workflow: {str(e)}</div>"
     
@@ -269,8 +273,8 @@ def apply_tags():
     for tag_name in tags:
         try:
             conn.execute("INSERT OR IGNORE INTO PreferenceTags (customer_id, tag_name, source) VALUES (?, ?, 'ai_agent')", (cid, tag_name))
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"Warning: Failed to save preference tag: {e}")
 
     conn.commit()
     updated_tags = conn.execute("SELECT * FROM PreferenceTags WHERE customer_id = ?", (cid,)).fetchall()
@@ -294,13 +298,13 @@ def api_list_customers():
     return jsonify([dict(r) for r in rows])
 
 
-@app.route("/api/customers/<int:customer_id>", methods=["DELETE"])
-def api_delete_customer(customer_id):
+@app.route("/customers/<int:customer_id>", methods=["DELETE"])
+def delete_customer_account(customer_id):
     conn = get_db()
     conn.execute("DELETE FROM Customers WHERE id = ?", (customer_id,))
     conn.commit()
     conn.close()
-    return jsonify({"message": "Account deleted"})
+    return get_all_customers()
 
 
 @app.route("/customers/<int:customer_id>/tags/<int:tag_id>", methods=["DELETE"])
@@ -420,6 +424,156 @@ def mcp_check_profile():
     
     return render_template_string(template, data=data)
 
+@app.route("/staff/dashboard", methods=["GET"])
+def staff_dashboard():
+    html = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Staff AI Review Dashboard</title>
+        <link rel="stylesheet" href="/css/style.css">
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+    </head>
+    <body>
+        <div class="app-container">
+            <header class="service-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <h1>Staff AI Review Dashboard</h1>
+                <a href="/" class="btn" style="background:#6b7280;">Back to App</a>
+            </header>
+            
+            <div class="grid-2">
+                <section class="card">
+                    <h2>Pending Human Reviews</h2>
+                    <button hx-get="/api/staff/workflows/pending" hx-target="#pending-list" class="btn" style="margin-bottom:15px; font-size:0.8rem;">Refresh List</button>
+                    <div id="pending-list" hx-get="/api/staff/workflows/pending" hx-trigger="load, refreshPendingList from:body">
+                        <p>Loading pending reviews...</p>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>Review Panel</h2>
+                    <div id="review-panel" class="panel">
+                        <em style="color:#6b7280;">Select a workflow from the left to review the AI's work.</em>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html
+
+@app.route("/api/staff/workflows/pending", methods=["GET"])
+def get_pending_workflows():
+    try:
+        resp = requests.get(f"{MULTI_AGENT_URL}/workflows?student=student-2", timeout=5)
+        workflows = resp.json().get("workflows", [])
+        pending = [w for w in workflows if w.get("status") == "awaiting_human"]
+        
+        if not pending:
+            return "<p style='color:#10b981; font-weight:bold;'>Inbox Zero! No pending AI workflows.</p>"
+            
+        html = "<ul style='list-style:none; padding:0;'>"
+        for w in pending:
+            # Safely handle None values from the Multi-Agent Server
+            task_str = str(w.get("task") or "No task description")[:60]
+            verdict = str(w.get("reviewer_verdict") or "pending").upper()
+            verdict_color = "red" if "FAIL" in verdict else "orange"
+            
+            html += f"""
+            <li style='border:1px solid #ccc; margin-bottom:10px; padding:10px; border-radius:4px; cursor:pointer;'
+                hx-get='/api/staff/workflow/{w['id']}' hx-target='#review-panel'>
+                <strong>{w['id']}</strong>
+                <p style='font-size:0.85rem; margin:5px 0;'><strong>Task:</strong> {task_str}...</p>
+                <p style='font-size:0.8rem; color:#666;'>
+                    Reviewer Verdict: <span style='color:{verdict_color}; font-weight:bold;'>{verdict}</span>
+                </p>
+            </li>
+            """
+        html += "</ul>"
+        return html
+    except Exception as e:
+        return f"<div class='error'>Failed to connect: {str(e)}</div>"
+
+@app.route("/api/staff/workflow/<workflow_id>", methods=["GET"])
+def get_workflow_details(workflow_id):
+    try:
+        resp = requests.get(f"{MULTI_AGENT_URL}/workflow/{workflow_id}", timeout=5)
+        if resp.status_code == 404:
+            return "<div class='error'>Workflow not found.</div>", 404
+        
+        wf = resp.json()
+        work_ans = wf.get("work", {}).get("answer", "")
+        review = wf.get("review", {})
+        risks_html = "".join([f"<li>{r}</li>" for r in review.get("risks", [])])
+        
+        html = f"""
+        <div style='margin-bottom:15px;'>
+            <h4>Workflow: {wf['id']}</h4>
+            <p><strong>Task:</strong> {wf['task']}</p>
+        </div>
+        
+        <div style='margin-bottom:15px;'>
+            <h5>1. AI Worker's Proposed Answer:</h5>
+            <pre style='background:#f9fafb; padding:10px; border:1px solid #ddd; white-space:pre-wrap; font-size:0.85rem;'>{work_ans}</pre>
+        </div>
+
+        <div style='margin-bottom:20px; background:#fff3cd; padding:10px; border:1px solid #ffeeba; border-radius:4px;'>
+            <h5>2. AI Reviewer's Analysis:</h5>
+            <p><strong>Verdict:</strong> {str(review.get('verdict')).upper()}</p>
+            <p><strong>Summary:</strong> {review.get('summary', '')}</p>
+            {"<p><strong>Risks:</strong></p><ul style='margin-top:5px; font-size:0.85rem;'>" + risks_html + "</ul>" if risks_html else ""}
+        </div>
+
+        <h5>3. Human Decision</h5>
+        <form hx-post='/api/staff/workflow/{wf['id']}/decision' hx-target='#review-panel'>
+            <div style='margin-bottom:10px;'>
+                <label><strong>Action:</strong></label><br>
+                <select name='decision' required style='width:100%; padding:5px;' onchange="document.getElementById('note-req').innerText = (this.value === 'reject' || this.value === 'partial' || this.value === 'correct') ? '*' : '';">
+                    <option value=''>-- Select Decision --</option>
+                    <option value='approve'>Approve (Use AI's exact answer)</option>
+                    <option value='correct'>Correct (Provide manual fix below)</option>
+                    <option value='partial'>Partial (Accept with a note)</option>
+                    <option value='reject'>Reject (Discard AI answer)</option>
+                </select>
+            </div>
+            <div style='margin-bottom:10px;'>
+                <label><strong>Note / Reasoning <span id='note-req' style='color:red;'></span>:</strong></label><br>
+                <input type='text' name='note' style='width:100%; padding:5px;' placeholder='Required for partial/reject'>
+            </div>
+            <div style='margin-bottom:15px;'>
+                <label><strong>Corrected Answer:</strong></label><br>
+                <textarea name='corrected_answer' style='width:100%; padding:5px;' rows='3' placeholder='Required if decision is Correct'></textarea>
+            </div>
+            <button type='submit' class='btn' style='width:100%; background:#2563eb;'>Submit Decision</button>
+        </form>
+        """
+        return html
+    except Exception as e:
+        return f"<div class='error'>Failed to fetch workflow: {str(e)}</div>"
+
+@app.route("/api/staff/workflow/<workflow_id>/decision", methods=["POST"])
+def submit_workflow_decision(workflow_id):
+    decision = request.form.get("decision")
+    
+    payload = {
+        "decision": decision,
+        "reviewer": "Staff Dashboard User",
+        "note": request.form.get("note", "").strip(),
+        "corrected_answer": request.form.get("corrected_answer", "").strip()
+    }
+    
+    try:
+        resp = requests.post(f"{MULTI_AGENT_URL}/workflow/{workflow_id}/decision", json=payload, timeout=10)
+        if resp.status_code == 200:
+            response = app.make_response(f"<div class='panel' style='border-left:4px solid #10b981;'><strong>Success:</strong> Recorded '{decision}' for {workflow_id}</div>")
+            response.headers["HX-Trigger"] = "refreshPendingList, refreshCustomers"
+            return response
+        return f"<div class='error'>Error: {resp.json().get('error')}</div>"
+    except Exception as e:
+        return f"<div class='error'>Server error: {str(e)}</div>"
+
 def render_customer_profile(customer, preferences, tags):
     html = f"<h3>#{customer['id']} - {customer['first_name']} {customer['last_name']}</h3>"
     html += f"<p style='font-size:0.9rem;'><strong>Email:</strong> {customer['email']} | <strong>Phone:</strong> {customer['phone']}</p>"
@@ -447,6 +601,65 @@ def render_customer_profile(customer, preferences, tags):
     html += "</p>"
     return html
 
+def render_workflow_status(workflow, cid):
+    status = workflow.get("status")
+    wid = workflow.get("id")
+
+    html = f"<div class='ai-response panel' id='wf-container-{wid}'>"
+    html += f"<h4>Workflow: {wid}</h4>"
+    html += f"<p><strong>Status:</strong> <span class='badge'>{status}</span></p>"
+
+    if status == "awaiting_human":
+        review = workflow.get("review", {})
+        html += "<div class='alert alert-warning' style='margin-top: 10px;'>"
+        html += "<p>The AI Worker has drafted an answer. Waiting for human approval in the Staff Terminal.</p>"
+        html += f"<p><em>Reviewer Verdict: {review.get('verdict')}</em></p>"
+        html += f"<button hx-get='/api/agent/status/{wid}?customer_id={cid}' hx-target='#wf-container-{wid}' hx-swap='outerHTML' class='btn' style='margin-top: 10px;'>Refresh Status</button>"
+        html += "</div>"
+
+    elif status in ["approved", "corrected", "partially_accepted"]:
+        ans = workflow.get("final_answer", "")
+        tags_str = ""
+        try:
+            data = json.loads(ans)
+            if isinstance(data, dict) and "recommended_tags" in data:
+                tags_str = ",".join(data["recommended_tags"])
+                reasoning = data.get("reasoning", "")
+                
+                html += "<div class='alert alert-success'>"
+                html += "<p><strong>Suggested Preference Tags:</strong></p><p>"
+                for tag in data["recommended_tags"]:
+                    html += f"<span class='badge' style='margin-right:4px;'>{tag}</span>"
+                html += f"</p><p><em><strong>Reasoning:</strong> {reasoning}</em></p>"
+                html += "</div>"
+        except json.JSONDecodeError:
+            html += f"<div class='alert alert-success'><pre>{ans}</pre></div>"
+
+        if tags_str:
+            html += f"""
+            <form hx-post='/apply-tags' hx-target='#context-result' style='margin-top:0.85rem;'>
+                <input type='hidden' name='customer_id' value='{cid}'>
+                <input type='hidden' name='tags' value='{tags_str}'>
+                <button type='submit' class='btn' style='width:100%;'>Apply Suggestions to Profile</button>
+            </form>
+            """
+
+    elif status == "rejected":
+        html += "<div class='alert alert-danger'>"
+        html += "<strong>Workflow Rejected by Human Reviewer</strong>"
+        html += f"<p>Note: {workflow.get('human', {}).get('note')}</p>"
+        html += "</div>"
+
+    elif status == "failed":
+        err = workflow.get("error", "An unknown error occurred in the AI server.")
+        html += f"<div class='alert alert-danger'><strong>AI Workflow Failed:</strong> {err}</div>"
+    
+    else:
+        html += "<p>Processing workflow...</p>"
+
+    html += "</div>"
+    return html
+
 
 with app.app_context():
     init_db()
@@ -454,4 +667,5 @@ with app.app_context():
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    is_debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    app.run(host="127.0.0.1", port=port, debug=is_debug)
