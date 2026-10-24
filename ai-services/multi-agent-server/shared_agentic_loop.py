@@ -316,8 +316,14 @@ def run_agentic_evaluation(
     print("SHARED AGENTIC LOOP  (Plan -> Act -> Observe -> Adapt)")
     print("========================================")
     print(f"Validation mode: {validation_mode.upper()}")
+    # if validation_mode in REVIEW_TASKS:
+    #     return run_multi_agent_review(ticket, validation_mode)
     if validation_mode in REVIEW_TASKS:
-        return run_multi_agent_review(ticket, validation_mode)
+        return run_multi_agent_review(
+            ticket,
+            validation_mode,
+            max_retries=max_retries,
+        )
     # PLAN
     print("\n[PLAN]")
     if validation_mode == "mcp":
@@ -343,7 +349,6 @@ def run_agentic_evaluation(
     grounded = validation_mode != "ai"
     correction = ""
     attempts = []
-
     for attempt in range(1, max_retries + 2):
         # ACT
         print(f"\n[ACT] attempt {attempt}")
@@ -378,9 +383,7 @@ def run_agentic_evaluation(
                 }
         print("Status   :", observation.get("status"))
         print("Feedback :", observation.get("feedback"))
-
         attempts.append({"attempt": attempt, "evaluation": evaluation, "observation": observation})
-
         if str(observation.get("status", "")).upper() in _ACCEPTED:
             return {
                 "status": "PASS",
@@ -407,13 +410,83 @@ def run_agentic_evaluation(
         "attempts": attempts,
     }
 
-def run_multi_agent_review(ticket, review_mode):
+
+def _get_workflow_id(data):
+    """Support both API workflow ID field names."""
+    return data.get("id") or data.get("workflow_id")
+
+
+def _observe_multi_agent_response(http_status, data):
+    """Check whether the Multi-Agent workflow started successfully."""
+    if not isinstance(data, dict):
+        return {
+            "status": "REJECTED",
+            "feedback": "Server response was not a JSON object.",
+        }
+
+    if http_status not in (200, 201):
+        message = data.get("error") or (
+            f"Multi-Agent Server returned HTTP {http_status}"
+        )
+        return {"status": "REJECTED", "feedback": message}
+
+    if not _get_workflow_id(data):
+        return {
+            "status": "REJECTED",
+            "feedback": (
+                "Successful HTTP response did not include a workflow ID."
+            ),
+        }
+
+    workflow_status = str(data.get("status") or "").strip().lower()
+    if not workflow_status:
+        return {
+            "status": "REJECTED",
+            "feedback": "Workflow response did not include a status.",
+        }
+
+    failed_statuses = {
+        "fail",
+        "failed",
+        "error",
+        "rejected",
+        "cancelled",
+        "canceled",
+        "exception",
+    }
+    if workflow_status in failed_statuses:
+        return {
+            "status": "REJECTED",
+            "feedback": data.get("error")
+            or f"Workflow status was {workflow_status!r}.",
+        }
+
+    return {
+        "status": "APPROVED",
+        "feedback": f"Workflow created; status is {workflow_status}.",
+    }
+
+
+def run_multi_agent_review(
+    ticket,
+    review_mode,
+    max_retries=MAX_RETRIES,
+):
+    """Run review modes through PLAN -> ACT -> OBSERVE -> ADAPT.
+
+    At least one retry is permitted when workflow startup or validation
+    fails, even when max_retries is configured as zero.
+
+    A workflow with status 'awaiting_human' is considered successfully
+    started; the human decision is a subsequent step.
+    """
     if review_mode not in REVIEW_TASKS:
         raise ValueError("Unsupported review mode")
 
     if not isinstance(ticket, dict):
         raise ValueError("Review request must be a JSON object")
 
+    # PLAN: validate and collect the evidence supplied by the caller.
     evidence = ticket.get("evidence")
 
     if not isinstance(evidence, dict) or not evidence:
@@ -421,62 +494,139 @@ def run_multi_agent_review(ticket, review_mode):
             "status": "FAIL",
             "review_mode": review_mode,
             "error": "Review evidence is missing or invalid",
+            "attempts": [],
         }
 
     task = REVIEW_TASKS[review_mode]
-
     if ticket.get("task"):
-        task += "\n\nAdditional review context:\n" + str(ticket["task"])
+        task += (
+            "\n\nAdditional review context:\n"
+            + str(ticket["task"])
+        )
 
-    payload = {
+    base_payload = {
         "student": ticket.get("student", "group"),
         "task": task,
         "evidence": evidence,
         "review_mode": review_mode,
     }
-
-    try:
-        response = requests.post(
-            f"{MULTI_AGENT_HOST.rstrip('/')}/workflow/start",
-            json=payload,
-            timeout=(5, 600),
-        )
-
-        try:
-            data = response.json()
-        except ValueError:
-            data = {}
-
-        if response.status_code not in (200, 201):
-            return {
-                "status": "FAIL",
+    print("\n[PLAN]")
+    print(
+        json.dumps(
+            {
                 "review_mode": review_mode,
-                "workflow_id": data.get("id"),
-                "error": data.get(
-                    "error",
-                    f"Multi-Agent Server returned HTTP "
-                    f"{response.status_code}",
+                "evidence_keys": sorted(
+                    str(key) for key in evidence
                 ),
-                "server_response": data,
+                "max_attempts": max(2, max_retries + 1),
+            },
+            indent=2,
+        )
+    )
+
+    # Ensure at least one ADAPT retry is available.
+    retries_allowed = max(1, max_retries)
+    attempts = []
+    correction = ""
+    for attempt in range(1, retries_allowed + 2):
+        payload = dict(base_payload)
+        if correction:
+            payload["task"] = (
+                base_payload["task"]
+                + "\n\nCorrection from the previous OBSERVE step: "
+                + correction
+                + "\nAddress this failure when starting the workflow again."
+            )
+
+        # ACT: ask the Multi-Agent Server to execute the review workflow.
+        print(f"\n[ACT] Multi-Agent workflow attempt {attempt}")
+        http_status = None
+        data = {}
+        request_error = None
+        try:
+            response = requests.post(
+                f"{MULTI_AGENT_HOST.rstrip('/')}/workflow/start",
+                json=payload,
+                timeout=(5, 600),
+            )
+            http_status = response.status_code
+            try:
+                data = response.json()
+            except (ValueError, TypeError):
+                data = {}
+                request_error = (
+                    "Multi-Agent Server returned invalid JSON."
+                )
+
+        except requests.RequestException as exc:
+            request_error = (
+                f"Could not contact Multi-Agent Server: {exc}"
+            )
+
+        # OBSERVE: check the actual HTTP response and workflow status.
+        print(f"\n[OBSERVE] workflow attempt {attempt}")
+        if request_error:
+            observation = {
+                "status": "REJECTED",
+                "feedback": request_error,
+            }
+        else:
+            observation = _observe_multi_agent_response(
+                http_status,
+                data,
+            )
+
+        attempts.append(
+            {
+                "attempt": attempt,
+                "http_status": http_status,
+                "response": data,
+                "observation": observation,
+            }
+        )
+        print("Status   :", observation.get("status"))
+        print("Feedback :", observation.get("feedback"))
+        if observation["status"] == "APPROVED":
+            workflow_id = _get_workflow_id(data)
+            workflow_status = str(data.get("status", "unknown"))
+            return {
+                "status": (
+                    "AWAITING_HUMAN"
+                    if workflow_status.lower() == "awaiting_human"
+                    else workflow_status.upper()
+                ),
+                "review_mode": review_mode,
+                "workflow_id": workflow_id,
+                "workflow": data,
+                "attempts": attempts,
             }
 
-        return {
-            "status": (
-                "AWAITING_HUMAN"
-                if data.get("status") == "awaiting_human"
-                else data.get("status", "unknown").upper()
-            ),
-            "review_mode": review_mode,
-            "workflow_id": data.get("id"),
-            "workflow": data,
-        }
+        # ADAPT: use the failure reason to inform the next attempt.
+        if attempt <= retries_allowed:
+            print(f"\n[ADAPT] workflow attempt {attempt}")
 
-    except requests.RequestException as exc:
-        return {
-            "status": "FAIL",
-            "review_mode": review_mode,
-            "error": f"Could not contact Multi-Agent Server: {exc}",
-        }
+            correction = (
+                observation.get("feedback")
+                or "Retry workflow startup."
+            )
+
+            print(correction)
+
+    # The workflow failed even after using the retry budget.
+    last_observation = attempts[-1]["observation"]
+    last_data = attempts[-1]["response"]
+    return {
+        "status": "FAIL",
+        "review_mode": review_mode,
+        "workflow_id": _get_workflow_id(last_data),
+        "error": last_observation.get(
+            "feedback",
+            "Multi-Agent workflow failed.",
+        ),
+        "server_response": last_data,
+        "attempts": attempts,
+    }
+
 
 
 def print_report(result):

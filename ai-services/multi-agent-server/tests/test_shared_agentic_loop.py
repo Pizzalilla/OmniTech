@@ -368,3 +368,135 @@ def test_adapt_turns_observe_feedback_into_correction():
     correction = loop.adapt({"status": "REJECTED", "feedback": "Say 30 days, not 60."})
     assert "Say 30 days, not 60." in correction
     assert "OBSERVE" in correction
+
+
+# ============================================================
+# REVIEW MODE TESTS
+# ============================================================
+
+REVIEW_MODES = [
+    "multi_agent_workflow_review",
+    "testing_report_review",
+    "cloud_deployment_report_review",
+]
+
+
+class FakeResponse:
+    def __init__(self, status_code, payload):
+        self.status_code = status_code
+        self._payload = payload
+
+    def json(self):
+        return self._payload
+
+
+@pytest.mark.parametrize("mode", REVIEW_MODES)
+def test_review_mode_starts_workflow(mode, monkeypatch):
+    """Each review mode should start a workflow and await human review."""
+    calls = []
+
+    def fake_post(url, **kwargs):
+        calls.append({"url": url, **kwargs})
+        return FakeResponse(
+            201,
+            {
+                "id": "wf-1234abcd",
+                "status": "awaiting_human",
+            },
+        )
+
+    monkeypatch.setattr(loop.requests, "post", fake_post)
+
+    ticket = {
+        "student": "test-student",
+        "evidence": {
+            "test-report.json": {"passed": True},
+        },
+    }
+
+    result = loop.run_agentic_evaluation(
+        ticket,
+        validation_mode=mode,
+    )
+
+    assert result["status"] == "AWAITING_HUMAN"
+    assert result["review_mode"] == mode
+    assert result["workflow_id"] == "wf-1234abcd"
+    assert len(calls) == 1
+
+    assert calls[0]["json"]["review_mode"] == mode
+    assert calls[0]["json"]["evidence"] == ticket["evidence"]
+
+
+@pytest.mark.parametrize("mode", REVIEW_MODES)
+def test_review_mode_retries_after_failure(mode, monkeypatch):
+    """A failed workflow startup should trigger a retry."""
+    responses = [
+        FakeResponse(
+            503,
+            {"error": "temporary startup failure"},
+        ),
+        FakeResponse(
+            201,
+            {
+                "id": "wf-abcd1234",
+                "status": "awaiting_human",
+            },
+        ),
+    ]
+    calls = []
+
+    def fake_post(url, **kwargs):
+        calls.append({"url": url, **kwargs})
+        return responses.pop(0)
+
+    monkeypatch.setattr(loop.requests, "post", fake_post)
+
+    result = loop.run_agentic_evaluation(
+        {
+            "evidence": {"security-report.json": {"passed": True}},
+        },
+        validation_mode=mode,
+        max_retries=0,
+    )
+
+    # Review modes should allow at least one retry.
+    assert len(calls) == 2
+    assert result["status"] == "AWAITING_HUMAN"
+    assert len(result["attempts"]) == 2
+
+    assert (
+        result["attempts"][0]["observation"]["status"]
+        == "REJECTED"
+    )
+    assert (
+        result["attempts"][1]["observation"]["status"]
+        == "APPROVED"
+    )
+
+    # The retry should include the OBSERVE failure as corrective context.
+    retry_task = calls[1]["json"]["task"]
+    assert "Correction from the previous OBSERVE step" in retry_task
+    assert "temporary startup failure" in retry_task
+
+
+@pytest.mark.parametrize("mode", REVIEW_MODES)
+def test_review_mode_fails_without_evidence(mode, monkeypatch):
+    """Missing evidence should fail during PLAN without contacting the server."""
+
+    def unexpected_post(*args, **kwargs):
+        raise AssertionError(
+            "Server should not be called when evidence is missing."
+        )
+
+    monkeypatch.setattr(loop.requests, "post", unexpected_post)
+
+    result = loop.run_agentic_evaluation(
+        {"evidence": {}},
+        validation_mode=mode,
+    )
+
+    assert result["status"] == "FAIL"
+    assert result["review_mode"] == mode
+    assert result["error"] == "Review evidence is missing or invalid"
+    assert result["attempts"] == []
