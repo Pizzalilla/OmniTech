@@ -35,7 +35,7 @@ OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2")
 
 if not OLLAMA_HOST.startswith("http"):
     OLLAMA_HOST = f"http://{OLLAMA_HOST}"
-OLLAMA_HOST = OLLAMA_HOST.replace("0.0.0.0", "localhost")
+OLLAMA_HOST = OLLAMA_HOST.replace("0.0.0.0", "localhost") # noqa: S104
 
 MAX_RETRIES = int(os.getenv("MAX_RETRIES", "1"))
 OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
