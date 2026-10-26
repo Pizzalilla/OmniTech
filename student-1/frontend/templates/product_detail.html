@@ -31,7 +31,7 @@
              style="width: 100%; border-radius: var(--radius-sm); margin-bottom: 1rem;">
         {% endif %}
 
-        <p>{{ product.description or 'No description available.' }}</p>
+        <p id="product-description">{{ product.description or 'No description available.' }}</p>
 
         <div class="stat-box">
             <p><strong>Price:</strong> ${{ '%.2f' | format(product.price) }}</p>
@@ -128,5 +128,24 @@
         <button type="submit" class="btn">Ask RAG</button>
     </form>
     <div id="rag-result"></div>
+</section>
+
+<section class="card">
+    <h2>Multi-Agent listing review</h2>
+    <p>
+        Sends this product and its specifications to the shared Multi-Agent server.
+        Approve, correct, or partial saves the description. Reject leaves it as it is.
+    </p>
+    <div class="mcp-actions">
+        <button type="button" class="btn"
+                hx-post="{{ url_for('multi_agent_review', product_id=product.id) }}"
+                hx-target="#ma-result" hx-swap="innerHTML"
+                hx-disabled-elt="this">Review this listing</button>
+        <button type="button" class="btn btn-secondary"
+                hx-get="{{ url_for('multi_agent_history') }}"
+                hx-target="#ma-result" hx-swap="innerHTML"
+                hx-disabled-elt="this">Review history</button>
+    </div>
+    <div id="ma-result"></div>
 </section>
 {% endblock %}

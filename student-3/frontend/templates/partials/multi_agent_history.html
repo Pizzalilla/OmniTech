@@ -1,0 +1,17 @@
+{% if result.error %}
+<div class="ma-result ma-result--error">{{ result.error }}</div>
+{% else %}
+<div class="ma-result">
+    <div class="ma-result__title">Recent Multi-Agent reviews (student-3)</div>
+    {% for w in result.workflows %}
+    <div class="ma-history">
+        <code>{{ w.id }}</code>
+        <span class="ma-badge ma-badge--{{ w.reviewer_verdict or 'none' }}">{{ (w.reviewer_verdict or 'no verdict') | replace('_', ' ') }}</span>
+        <span class="ma-badge ma-badge--{{ w.status }}">{{ w.status | replace('_', ' ') }}</span>
+        <small class="ma-dim">{{ w.created_at }}</small>
+    </div>
+    {% else %}
+    <div class="ma-dim">No reviews yet.</div>
+    {% endfor %}
+</div>
+{% endif %}

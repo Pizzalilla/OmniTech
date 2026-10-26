@@ -1,37 +1,43 @@
-<article class="reco-card" data-id="{{ r.id }}">
+<article class="reco-card" id="reco-{{ r.id }}" data-id="{{ r.id }}"{% if oob %} hx-swap-oob="true"{% endif %}>
     <div class="reco-card__main">
-        <div class="reco-card__head">
-            <div style="flex:1">
-                {% for p in r.products %}
-                <div class="reco-prod">
-                    <span class="reco-prod__name">{{ p.name }}</span>
-                    <span class="reco-prod__cat">{{ p.category }}</span>
-                    <span class="reco-prod__price">${{ '{:,}'.format(p.price) }}</span>
-                </div>
-                {% else %}
-                <div class="reco-prod"><span class="reco-prod__name">{{ r.product_ids | join(', ') }}</span></div>
-                {% endfor %}
-            </div>
-            <button class="btn-mini" onclick="this.closest('.reco-card').classList.add('confirming')">Remove</button>
+        {% for p in r.products %}
+        <div class="reco-prod">
+            <span class="reco-prod__name">{{ p.name }}</span>
+            <span class="reco-prod__price">${{ '{:,}'.format(p.price) }}</span>
         </div>
+        {% else %}
+        <div class="reco-prod"><span class="reco-prod__name">{{ r.product_ids | join(', ') }}</span></div>
+        {% endfor %}
 
         {% if r.summary %}<p class="reco-card__summary">{{ r.summary }}</p>{% endif %}
 
         <div class="reco-card__tags">
-            {% for t in r.tags %}<span class="tag">{{ t }}</span>{% endfor %}
+            {% for t in r.tags %}<span class="tag{{ ' tag--agent' if t.startswith('agent-') else '' }}">{{ t }}</span>{% endfor %}
             <form class="tag-form"
                   hx-post="/api/recommendations/{{ r.id }}/tags"
                   hx-target="closest .reco-card"
                   hx-swap="outerHTML"
                   hx-on::after-request="this.reset()">
-                <input type="text" name="tag" placeholder="add tag" aria-label="Add preference tag" required>
-                <button type="submit">+</button>
+                <input type="text" name="tag" placeholder="+ tag" aria-label="Add preference tag" required>
             </form>
+        </div>
+
+        <div class="reco-card__actions">
+            <button class="btn-mini btn-mini--accent"
+                    hx-post="/api/recommendations/{{ r.id }}/multi-agent-review"
+                    hx-target="#ma-result" hx-swap="innerHTML"
+                    hx-indicator="#ma-spinner" hx-disabled-elt="this"
+                    hx-on::before-request="showTool('agents')"
+                    title="Planner, Worker and Reviewer agents check this, then you decide">Review with agents</button>
+            <button class="icon-btn" title="Remove" aria-label="Remove"
+                    onclick="this.closest('.reco-card').classList.add('confirming')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
         </div>
     </div>
 
     <div class="reco-card__confirm">
-        Remove this saved recommendation?
+        Remove this pick?
         <button class="btn-mini btn-mini--danger"
                 hx-delete="/api/recommendations/{{ r.id }}"
                 hx-target="closest .reco-card"

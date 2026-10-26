@@ -3,6 +3,56 @@ import os
 
 DB_FILE = os.path.join(os.path.dirname(__file__), "orders.db")
 
+# PRODUCT SPECS: real facts the AI helper must use (Release 1 grounding)
+# (product_id, name, power_w, plug, width_mm, height_mm, depth_mm, weight_kg, capacity_l,
+#  rear_clear_mm, side_clear_mm, top_clear_mm, energy_stars, kwh_per_year, accessory)
+PRODUCT_SPECS = [
+    (511, "Samsung Fridge 500L", 180, "10A plug", 700, 1780, 720, 82, 500, 50, 20, 50, 4, 390,
+     "Refrigerator Water Filter Replacement (#601)"),
+    (512, "Induction Cooktop 2000W", 2000, "10A plug", 590, 65, 350, 6.5, None, 50, 50, None, None, None,
+     "Induction-ready cookware set"),
+    (513, "Microwave Oven 1000W", 1500, "10A plug", 510, 305, 420, 15, 30, 100, 50, 200, None, None,
+     None),
+    (514, "Air Fryer 20L", 1700, "10A plug", 380, 360, 380, 7, 20, 100, 100, 100, None, None,
+     "Air fryer parchment liners"),
+    (501, "French Door Smart Refrigerator 600L", 250, "10A plug", 910, 1790, 730, 120, 600, 50, 20, 50, 4, 460,
+     "Refrigerator Water Filter Replacement (#601)"),
+    (504, "Smart Convection Air Fryer Oven 12L", 1800, "10A plug", 360, 330, 390, 8, 12, 100, 100, 100, None, None,
+     "Air fryer parchment liners"),
+    (505, "Built-in Induction Cooktop 4-Zone", 7200, "Hardwired (32A circuit)", 600, 55, 520, 12, None, 50, 50, None, None, None,
+     "Induction-ready cookware set"),
+    (601, "Refrigerator Water Filter Replacement", 0, "No power needed", 60, 250, 60, 0.4, None, None, None, None, None, None,
+     None),
+]
+
+
+# PRODUCT SPECS TABLE: create + (re)seed, safe to run on an existing orders.db
+def create_product_specs(cursor):
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS product_specs (
+        product_id INTEGER PRIMARY KEY,
+        product_name TEXT NOT NULL,
+        power_w REAL,
+        plug TEXT,
+        width_mm INTEGER,
+        height_mm INTEGER,
+        depth_mm INTEGER,
+        weight_kg REAL,
+        capacity_l REAL,
+        rear_clear_mm INTEGER,
+        side_clear_mm INTEGER,
+        top_clear_mm INTEGER,
+        energy_stars REAL,
+        kwh_per_year REAL,
+        accessory TEXT
+    )
+    """)
+    cursor.executemany(
+        "INSERT OR REPLACE INTO product_specs VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        PRODUCT_SPECS
+    )
+
+
 def init_database():
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
@@ -93,9 +143,11 @@ def init_database():
     VALUES (?, ?, ?, ?, ?, ?, ?)
     """, cart_items)
 
+    create_product_specs(cursor)
+
     conn.commit()
     conn.close()
-    print("SUCCESS: Database orders.db initialized with 10 orders and active carts.")
+    print("SUCCESS: Database orders.db initialized with 10 orders, active carts and product specs.")
 
 if __name__ == "__main__":
     init_database()

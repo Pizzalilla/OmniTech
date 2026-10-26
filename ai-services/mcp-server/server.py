@@ -179,4 +179,5 @@ def health():
 if __name__ == "__main__":
     log.info("MCP server starting on port %d with %d tool(s): %s",
              MCP_PORT, len(registry.TOOLS), ", ".join(sorted(registry.TOOLS)))
-    app.run(host="0.0.0.0", port=MCP_PORT, threaded=True)
+    # 0.0.0.0 so the student containers can reach it through host.docker.internal
+    app.run(host="0.0.0.0", port=MCP_PORT, threaded=True)  # noqa: S104

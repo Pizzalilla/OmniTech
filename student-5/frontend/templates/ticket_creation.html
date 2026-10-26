@@ -60,7 +60,8 @@
         </div>
 
         <!-- Form To Create Ticket -->
-        <div id="ticket-form-container" class="ticket-form-container hidden">
+        <!-- <div id="ticket-form-container" class="ticket-form-container hidden"> -->
+            <div id="ticket-form-container" class="ticket-form-container result-card hidden">
             <h2>Create Warranty Ticket</h2>
             <p>
                 Creating ticket for Order
@@ -94,27 +95,27 @@
                         placeholder="Describe the problem with the product..."
                         required
                     ></textarea>
-
+                    
                     <button
                         type="button"
-                        class="make-ticket-button"
+                        class="evaluate-button"
                         onclick="getRagWarrantyGuidance()"
                     >
-                        Get Claim Guidance
+                        RAG Get Claim Guidance
                     </button>
 
-                    <div id="rag-guidance" class="hidden">
-                        <strong>Warranty Claim Guidance</strong>
+                    <div id="rag-guidance" class="result-card hidden">
+                        <h3>Warranty Claim Guidance</h3>
                         <p id="rag-guidance-text"></p>
                     </div>
 
-                    <div id="rag-citations-container" class="hidden">
-                        <strong>Sources:</strong>
+                    <div id="rag-citations-container" class="result-card hidden">
+                        <h3>Sources</h3>
                         <ul id="rag-citations"></ul>
                     </div>
 
-                    <div id="rag-confidence-score-container" class="hidden">
-                        <strong>Confidence Score:</strong>
+                    <div id="rag-confidence-score-container" class="result-card hidden">
+                        <h3>Confidence Score</h3>
                         <ul id="rag-confidence-score"></ul>
                     </div>
                 </div>
@@ -122,13 +123,14 @@
                 <div class="form-actions">
                     <button
                         type="submit"
-                        class="make-ticket-button"
+                        class="evaluate-button"
                     >
                         Create Ticket
                     </button>
+
                     <button
                         type="button"
-                        class="cancel-button"
+                        class="evaluate-button"
                         onclick="closeTicketForm()"
                     >
                         Cancel

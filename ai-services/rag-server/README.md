@@ -29,6 +29,16 @@ Env vars (all optional):
 | `OLLAMA_MODEL` | `llama3.2` | Model used for generation |
 | `OLLAMA_TIMEOUT` | `120` | Request timeout in seconds |
 
+### How Docker containers reach it
+
+The RAG server is **not** a Docker Compose service - it runs on the PC like
+Ollama. `docker-compose.yml` gives every student container
+`RAG_HOST=http://host.docker.internal:6002`, so in your backend use:
+
+```python
+RAG_HOST = os.getenv("RAG_HOST", "http://localhost:6002")
+```
+
 ## Calling it from your feature's backend
 
 Add `RAG_HOST` (e.g. `http://localhost:6002`, or `http://host.docker.internal:6002`
@@ -68,6 +78,28 @@ Response (nothing relevant found - display this instead of an unsupported answer
 retrieved context matched the query. If Ollama is unreachable, the answer
 falls back to a deterministic excerpt from the top-matching chunk and
 `confidence` is forced to `"low"` rather than failing the request.
+
+### `POST /rag/retrieve`
+
+Retrieval only - returns the matching knowledge sections **without** calling
+Ollama. Use this when your backend builds its own grounded prompt (e.g. it
+also adds facts from its own database) so you don't pay for two LLM calls.
+
+Request:
+```json
+{ "query": "can I run a microwave and air fryer on one power point", "limit": 3 }
+```
+
+Response:
+```json
+{
+  "chunks": [
+    { "source": "appliance-installation-and-cart.md", "heading": "Running Kitchen Appliances Together", "text": "..." }
+  ],
+  "confidence": "high",
+  "insufficient_context": false
+}
+```
 
 ### `GET /health`
 

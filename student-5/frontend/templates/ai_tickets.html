@@ -66,77 +66,267 @@
             </table>
         </div>
 
-            <!-- Ticket Card -->
-            <div id="ticketReportCard" class="result-card hidden">
-                <div class="result-header">
-                    <h2>Ticket Report</h2>
-                    <span id="reportTicketNumber"></span>
+            <!-- Selected Ticket Report -->
+            <div id="ticketReportCard" class="ticket-report hidden">
+                <div class="report-topbar">
+                    <div>
+                        <p class="eyebrow">WARRANTY MANAGEMENT</p>
+                        <h2>Ticket Report</h2>
+                    </div>
+                    <span id="reportTicketNumber" class="ticket-number"></span>
                 </div>
 
-                <div class="result-box">
+                <!-- Warranty Claim -->
+                <section class="detail-section">
                     <button
                         type="button"
-                        class="section-toggle"
+                        class="clean-section-toggle"
                         onclick="toggleSection('ticketInfoContent', this)"
-                    >
-                        Warranty Claim
-                        <span>▼</span>
+                        aria-controls="ticketInfoContent"
+                        aria-expanded="true">
+                        <span>
+                            <strong>Warranty Claim</strong>
+                            <small>Claim details for the selected ticket</small>
+                        </span>
+                        <span class="toggle-icon">▼</span>
                     </button>
 
-                    <div id="ticketInfoContent" class="section-content">
-                        <h4>Product Category:</h4>
-                        <div id="reportCategory"></div>
+                    <div id="ticketInfoContent" class="section-content clean-section-content">
+                        <div class="claim-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Product category</span>
+                                <div id="reportCategory" class="detail-value"></div>
+                            </div>
 
-                        <h4>Claim:</h4>
-                        <div id="reportClaim"></div>
+                            <div class="detail-item claim-description">
+                                <span class="detail-label">Customer claim</span>
+                                <div id="reportClaim" class="detail-value"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Multi-Agent Review -->
+                <section id="multiAgentPanel" class="detail-section multi-agent-card">
+                    <div class="clean-section-heading">
+                        <div>
+                            <p class="eyebrow">AI WORKFLOW</p>
+                            <h3>Multi-Agent Review</h3>
+                            <p class="section-description">
+                                Planner, Worker and Reviewer assess the claim. A human decision finalises this workflow without changing the warranty ticket status.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            class="collapse-button"
+                            onclick="toggleSection('multiAgentContent', this)"
+                            aria-controls="multiAgentContent"
+                            aria-expanded="true">
+                            <span class="toggle-label">Hide</span>
+                            <span class="toggle-icon">▼</span>
+                        </button>
                     </div>
 
-                </div>
+                    <div id="multiAgentContent" class="section-content clean-section-content">
+                        <div class="action-row">
+                            <button
+                                id="multiAgentReviewButton"
+                                class="evaluate-button"
+                                onclick="startMultiAgentReview()">
+                                Run Review
+                            </button>
+                            <button
+                                id="multiAgentRefreshButton"
+                                class="subtle-button"
+                                onclick="loadMultiAgentReviews(currentTicketId)">
+                                Refresh History
+                            </button>
+                        </div>
 
-                <!-- MCP Product Information Card -->
-                <div id="mcpProductBox" class="result-box hidden">
+                        <div id="multiAgentLoading" class="status-card hidden" role="status">
+                            <p>Planner, Worker and Reviewer are processing the evidence…</p>
+                        </div>
+
+                        <div id="multiAgentError" class="error-card hidden" role="alert">
+                            <strong>Review error</strong>
+                            <p id="multiAgentErrorMessage"></p>
+                        </div>
+
+                        <div id="multiAgentResult" class="workflow-result hidden">
+                            <div class="result-header">
+                                <h3>Workflow Details</h3>
+                                <div class="workflow-view-actions">
+                                    <span id="multiAgentWorkflowStatus" class="workflow-status"></span>
+                                    <button type="button"
+                                            class="evaluate-button"
+                                            onclick="closeMultiAgentWorkflow()">
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="workflow-title-row">
+                                <h4>Workflow details</h4>
+                            </div>
+
+                            <p class="workflow-id-line">
+                                Workflow ID: <code id="multiAgentWorkflowId"></code>
+                            </p>
+                            <p id="multiAgentWorkflowError" class="section-description"></p>
+
+                            <div class="workflow-stage-grid">
+                                <details class="workflow-stage" open>
+                                    <summary>Planner <span>Plan</span></summary>
+                                    <pre id="multiAgentPlan" class="workflow-json"></pre>
+                                </details>
+
+                                <details class="workflow-stage" open>
+                                    <summary>Worker <span>Work output</span></summary>
+                                    <pre id="multiAgentWork" class="workflow-json"></pre>
+                                </details>
+
+                                <details class="workflow-stage" open>
+                                    <summary>Reviewer <span>Review</span></summary>
+                                    <pre id="multiAgentReviewer" class="workflow-json"></pre>
+                                </details>
+
+                                <details class="workflow-stage" open>
+                                    <summary>Human review <span>Final decision</span></summary>
+                                    <pre id="multiAgentHumanResult" class="workflow-json"></pre>
+                                </details>
+                            </div>
+
+                            <div id="multiAgentHumanFormBox" class="human-review-form hidden">
+                                <h4>Submit human decision</h4>
+                                <p class="section-description">
+                                    This decision applies to the Multi-Agent workflow only.
+                                </p>
+
+                                <form
+                                    id="multiAgentHumanForm"
+                                    onsubmit="submitMultiAgentHumanDecision(event)">
+
+                                    <div class="human-form-grid">
+                                        <div class="workflow-form-field">
+                                            <label for="multiAgentReviewerName">Reviewer name</label>
+                                            <input
+                                                id="multiAgentReviewerName"
+                                                name="reviewer"
+                                                maxlength="50"
+                                                value="staff">
+                                        </div>
+
+                                        <div class="workflow-form-field">
+                                            <label for="multiAgentDecision">Decision</label>
+                                            <select
+                                                id="multiAgentDecision"
+                                                name="decision"
+                                                onchange="updateMultiAgentDecisionFields()"
+                                                required>
+                                                <option value="approve">Approve workflow output</option>
+                                                <option value="correct">Correct answer</option>
+                                                <option value="partial">Partially accept</option>
+                                                <option value="reject">Reject workflow output</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="workflow-form-field">
+                                        <label for="multiAgentNote">Note (required for partial/reject)</label>
+                                        <textarea id="multiAgentNote" name="note" rows="2"></textarea>
+                                    </div>
+
+                                    <div id="multiAgentCorrectedField" class="workflow-form-field hidden">
+                                        <label for="multiAgentCorrectedAnswer">Corrected answer</label>
+                                        <textarea
+                                            id="multiAgentCorrectedAnswer"
+                                            name="corrected_answer"
+                                            rows="3"></textarea>
+                                    </div>
+
+                                    <button
+                                        id="multiAgentSubmitDecisionButton"
+                                        class="evaluate-button"
+                                        type="submit">
+                                        Submit Decision
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="history-section">
+                            <h4>Previous reviews</h4>
+                            <div id="multiAgentHistory" class="workflow-history-list">
+                                Select a ticket to load its review history.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Product Information -->
+                <section id="mcpProductBox" class="detail-section product-section hidden">
                     <button
                         type="button"
-                        class="section-toggle"
+                        class="clean-section-toggle"
                         onclick="toggleSection('mcpProductContent', this)"
-                    >
-                        Product Information
-                        <span>▼</span>
+                        aria-controls="mcpProductContent"
+                        aria-expanded="true">
+                        <span>
+                            <strong>MCP Product Information</strong>
+                            <small>Product details retrieved from the product service</small>
+                        </span>
+                        <span class="toggle-icon">▼</span>
                     </button>
 
-                    <div id="mcpProductContent" class="section-content">
-                        <h4>Product Name:</h4>
-                        <div id="productName"></div>
+                    <div id="mcpProductContent" class="section-content clean-section-content">
+                        <div class="product-grid">
+                            <div class="detail-item">
+                                <span class="detail-label">Product name</span>
+                                <div id="productName" class="detail-value"></div>
+                            </div>
 
-                        <h4>Product Category:</h4>
-                        <div id="productCategory"></div>
+                            <div class="detail-item">
+                                <span class="detail-label">Category</span>
+                                <div id="productCategory" class="detail-value"></div>
+                            </div>
 
-                        <h4>Product Price:</h4>
-                        <div id="productPrice"></div>
+                            <div class="detail-item">
+                                <span class="detail-label">Price</span>
+                                <div id="productPrice" class="detail-value"></div>
+                            </div>
 
-                        <h4>Warranty:</h4>
-                        <div id="productWarranty"></div>
+                            <div class="detail-item">
+                                <span class="detail-label">Warranty period</span>
+                                <div id="productWarranty" class="detail-value"></div>
+                            </div>
 
-                        <h4>Description:</h4>
-                        <div id="productDescription"></div>
+                            <div class="detail-item product-description">
+                                <span class="detail-label">Description</span>
+                                <div id="productDescription" class="detail-value"></div>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
 
-                <div class="result-actions">
+                <!-- Main Actions -->
+                <div class="report-actions">
+                    <button
+                        id="cancelSelectionButton"
+                        class="subtle-button"
+                        onclick="cancelTicketSelection()">
+                        Cancel
+                    </button>
                     <button
                         id="mcpButton"
-                        class="evaluate-button"
-                        onclick="getProductInformation()"
-                    >
-                        Get Product Information
+                        class="subtle-button"
+                        onclick="getProductInformation()">
+                        MCP Get Product Information
                     </button>
-
                     <button
                         id="evaluateSelectedButton"
                         class="evaluate-button"
-                        onclick="evaluateSelectedTicket()"
-                    >
-                        Evaluate Ticket
+                        onclick="evaluateSelectedTicket()">
+                        Evaluate Warranty Claim
                     </button>
                 </div>
             </div>
@@ -159,91 +349,84 @@
                 </button>
             </div>
 
-            <div id="resultCard" class="result-card hidden">
-                <div class="result-header">
-                    <h2 id="resultTitle">AI Evaluation Result</h2>
+            <div id="resultCard" class="ticket-report hidden">
+                <div class="report-topbar">
+                    <h2 id="resultTitle">AI Evaluation</h2>
                     <span id="ticketNumber"></span>
                 </div>
 
-                <div class="result-box">
-                    <h3>AI Decision</h3>
-                    <div id="decision"></div>
-                </div>
+                <section class="detail-section">
+                    <button type="button"
+                            class="clean-section-toggle"
+                            onclick="toggleSection('aiDecisionContent', this)"
+                            aria-expanded="true">
+                        <span>AI Decision</span>
+                        <span class="toggle-icon">▼</span>
+                    </button>
 
-                <div class="result-box">
-                    <h3>Reasoning</h3>
-                    <div id="reasoning"></div>
-                </div>
+                    <div id="aiDecisionContent" class="section-content">
+                        <div class="detail-item">
+                            <h4>Decision</h4>
+                            <div id="decision"></div>
+                        </div>
+                    </div>
+                </section>
 
-                <div id="reviewBox" class="result-box hidden">
-                    <h3>Review Feedback</h3>
-                    <div id="reviewFeedback"></div>
-                </div>
+                <section class="detail-section">
+                    <button type="button"
+                            class="clean-section-toggle"
+                            onclick="toggleSection('aiReasoningContent', this)"
+                            aria-expanded="true">
+                        <span>Reasoning</span>
+                        <span class="toggle-icon">▼</span>
+                    </button>
+
+                    <div id="aiReasoningContent" class="section-content">
+                        <div class="detail-item">
+                            <h4>Explanation</h4>
+                            <div id="reasoning"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="reviewBox" class="detail-section hidden">
+                    <button type="button"
+                            class="clean-section-toggle"
+                            onclick="toggleSection('aiReviewContent', this)"
+                            aria-expanded="true">
+                        <span>Review Feedback</span>
+                        <span class="toggle-icon">▼</span>
+                    </button>
+
+                    <div id="aiReviewContent" class="section-content">
+                        <div class="detail-item">
+                            <h4>Reviewer Feedback</h4>
+                            <div id="reviewFeedback"></div>
+                        </div>
+                    </div>
+                </section>
 
                 <div class="result-actions">
-                    <button
-                        id="updateButton"
-                        class="evaluate-button"
-                        onclick="updateTicket()"
-                    >
+                    <button id="updateButton"
+                            class="evaluate-button"
+                            onclick="updateTicket()">
                         Update Ticket
                     </button>
 
-                    <button
-                        id="reevaluateResultButton"
-                        class="evaluate-button hidden"
-                        onclick="reevaluateTicket()"
-                    >
+                    <button id="reevaluateResultButton"
+                            class="evaluate-button hidden"
+                            onclick="reevaluateTicket()">
                         Re-evaluate
                     </button>
                 </div>
             </div>
+
         </main>
     </div>
     <script>
         let currentTicketId = null;
         let currentDecision = "";
         let currentReasoning = "";
-
-        function selectTicket(ticketId) {
-            currentDecision = "";
-            currentReasoning = "";
-            document.getElementById("resultCard").classList.add("hidden");
-            document.getElementById("errorCard").classList.add("hidden");
-            document.getElementById("loading").classList.add("hidden");
-            document.getElementById("decision").textContent = "";
-            document.getElementById("reasoning").textContent = "";
-            document.getElementById("reviewFeedback").textContent = "";
-            document.getElementById("reviewBox").classList.add("hidden");
-            document.getElementById("updateButton").classList.remove("hidden");
-            document.getElementById("reevaluateResultButton").classList.add("hidden");
-            currentTicketId = ticketId;
-            const reportCard = document.getElementById("ticketReportCard");
-            const mcpProductBox = document.getElementById("mcpProductBox");
-            const mcpContent = document.getElementById("mcpProductContent");
-            const row = document.getElementById(`ticket-row-${ticketId}`);
-            if (!row) {
-                return;
-            }
-            
-            const cells = row.querySelectorAll("td");
-            const category = cells[1].textContent.trim();
-            const claim = cells[2].textContent.trim();
-            document.getElementById("reportTicketNumber").textContent = `Ticket #${ticketId}`;
-            document.getElementById("reportCategory").textContent = category;
-
-            document.getElementById("reportClaim").textContent = claim;
-            mcpProductBox.classList.add("hidden");
-            mcpContent.classList.remove("collapsed");
-            const mcpToggle = mcpProductBox.querySelector(".section-toggle");
-            mcpToggle.querySelector("span").textContent = "▼";
-            reportCard.classList.remove("hidden");
-            reportCard.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-        }
-
         async function getProductInformation() {
             if (!currentTicketId) {
                 return;
@@ -283,6 +466,66 @@
                 mcpButton.textContent = "Get Product Information";
             }
         }
+
+        function selectTicket(ticketId) {
+            currentDecision = "";
+            currentReasoning = "";
+            document.getElementById("resultCard").classList.add("hidden");
+            document.getElementById("errorCard").classList.add("hidden");
+            document.getElementById("loading").classList.add("hidden");
+            document.getElementById("decision").textContent = "";
+            document.getElementById("reasoning").textContent = "";
+            document.getElementById("reviewFeedback").textContent = "";
+            document.getElementById("reviewBox").classList.add("hidden");
+            document.getElementById("updateButton").classList.remove("hidden");
+            document.getElementById("reevaluateResultButton").classList.add("hidden");
+            const row = document.getElementById(`ticket-row-${ticketId}`);
+            if (!row) {
+                console.error("Ticket row not found:", ticketId);
+                return;
+            }
+
+            currentTicketId = ticketId;
+            const cells = row.querySelectorAll("td");
+            const category = cells[1].textContent.trim();
+            const claim = cells[2].textContent.trim();
+            document.getElementById("reportTicketNumber").textContent = `Ticket #${ticketId}`;
+            document.getElementById("reportCategory").textContent = category;
+            document.getElementById("reportClaim").textContent = claim;
+            const mcpProductBox = document.getElementById("mcpProductBox");
+            const mcpContent = document.getElementById("mcpProductContent");
+            const mcpToggle = mcpProductBox.querySelector(".clean-section-toggle");
+            mcpProductBox.classList.add("hidden");
+            mcpContent.classList.remove("collapsed");
+            if (mcpToggle) {
+                const icon = mcpToggle.querySelector(".toggle-icon");
+                if (icon) icon.textContent = "▼";
+                mcpToggle.setAttribute("aria-expanded", "true");
+            }
+
+            const reportCard = document.getElementById("ticketReportCard");
+            reportCard.classList.remove("hidden");
+            currentMultiAgentWorkflowId = null;
+            document.getElementById("multiAgentResult").classList.add("hidden");
+            document.getElementById("multiAgentError").classList.add("hidden");
+            document.getElementById("multiAgentLoading").classList.add("hidden");
+            document.getElementById("multiAgentHumanFormBox").classList.add("hidden");
+            const multiAgentContent = document.getElementById("multiAgentContent");
+            multiAgentContent.classList.remove("collapsed");
+            const multiAgentToggle = document.querySelector("#multiAgentPanel .collapse-button");
+
+            if (multiAgentToggle) {
+                const label = multiAgentToggle.querySelector(".toggle-label");
+                const icon = multiAgentToggle.querySelector(".toggle-icon");
+                if (label) label.textContent = "Hide";
+                if (icon) icon.textContent = "▼";
+                multiAgentToggle.setAttribute("aria-expanded", "true");
+            }
+
+            reportCard.scrollIntoView({ behavior: "smooth", block: "start"});
+            loadMultiAgentReviews(ticketId);
+        }
+
 
         async function evaluateSelectedTicket() {
             if (!currentTicketId) {
@@ -338,7 +581,6 @@
                         showVerificationFailure(data);
                         return;
                     }
-
                     throw new Error(
                         data.error ||
                         "AI Evaluation failed."
@@ -369,6 +611,7 @@
             if (!currentTicketId) {
                 return;
             }
+
             await evaluateTicket(currentTicketId);
         }
 
@@ -384,18 +627,9 @@
             const reevaluateButton = document.getElementById("reevaluateResultButton");
             resultTitle.textContent = "AI Evaluation - Review Failed";
             ticketNumber.textContent = `Ticket #${data.ticket_id || currentTicketId}`;
-            decision.textContent =
-                data.decision ||
-                "No decision returned.";
-
-            reasoning.textContent =
-                data.reasoning ||
-                "No reasoning returned.";
-
-            reviewFeedback.textContent =
-                data.review?.feedback ||
-                "The review agent did not approve the AI evaluation.";
-
+            decision.textContent = data.decision || "No decision returned.";
+            reasoning.textContent = data.reasoning || "No reasoning returned.";
+            reviewFeedback.textContent = data.review?.feedback || "The review agent did not approve the AI evaluation.";
             reviewBox.classList.remove("hidden");
             updateButton.classList.add("hidden");
             reevaluateButton.classList.remove("hidden");
@@ -405,14 +639,15 @@
 
         function toggleSection(contentId, button) {
             const content = document.getElementById(contentId);
-            const arrow = button.querySelector("span");
-            if (content.classList.contains("collapsed")) {
-                content.classList.remove("collapsed");
-                arrow.textContent = "▼";
-            } else {
-                content.classList.add("collapsed");
-                arrow.textContent = "▶";
+            if (!content) return;
+            const willCollapse = !content.classList.contains("collapsed");
+            content.classList.toggle("collapsed", willCollapse);
+            const icon = button.querySelector(".toggle-icon");
+            if (icon) {
+                icon.textContent = willCollapse ? "▶" : "▼";
             }
+
+            button.setAttribute("aria-expanded", String(!willCollapse));
         }
 
         async function updateTicket() {
@@ -433,7 +668,6 @@
                         })
                     }
                 );
-
                 const data = await response.json();
                 if (
                     !response.ok ||
@@ -480,9 +714,7 @@
                     row.remove();
                 }
 
-                if (
-                    currentTicketId === ticketId
-                ) {
+                if (currentTicketId === ticketId) {
                     currentTicketId = null;
                     document.getElementById("ticketReportCard").classList.add("hidden");
                 }
@@ -495,6 +727,425 @@
                 alert("An error occurred while removing the ticket.");
             }
         }
+        async function startMultiAgentReview() {
+            if (!currentTicketId) {
+                alert("Please select a ticket first.");
+                return;
+            }
+
+            const button = document.getElementById("multiAgentReviewButton");
+            document.getElementById("multiAgentError").classList.add("hidden");
+            document.getElementById("multiAgentLoading").classList.remove("hidden");
+            button.disabled = true;
+            button.textContent = "Running Multi-Agent Review...";
+            try {
+                const response = await fetch(
+                    `/api/tickets/${currentTicketId}/multi-agent-reviews`,
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({})
+                    }
+                );
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.error || data.detail ||
+                        "Could not start Multi-Agent review."
+                    );
+                }
+
+                renderMultiAgentWorkflow({
+                    workflow_id: data.workflow_id,
+                    status: data.status,
+                    workflow: data.workflow
+                });
+                await loadMultiAgentReviews(currentTicketId);
+            } catch (error) {
+                showMultiAgentError(error.message);
+            } finally {
+                document.getElementById("multiAgentLoading").classList.add("hidden");
+                button.disabled = false;
+                button.textContent = "Run Multi-Agent Review";
+            }
+        }
+
+        async function loadMultiAgentReviews(ticketId) {
+            if (!ticketId) return;
+            const history = document.getElementById("multiAgentHistory");
+            history.textContent = "Loading review history...";
+            try {
+                const response = await fetch(
+                    `/api/tickets/${ticketId}/multi-agent-reviews`
+                );
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.error || "Could not load Multi-Agent review history."
+                    );
+                }
+
+                history.replaceChildren();
+                if (!data.reviews?.length) {
+                    history.textContent =
+                        "No Multi-Agent reviews have been run for this ticket yet.";
+                    return;
+                }
+
+                data.reviews.forEach(review => {
+                    const item = document.createElement("div");
+                    item.className = "workflow-history-item";
+                    const summary = document.createElement("span");
+                    summary.textContent =
+                        `${review.workflow_id} — ${review.status} — ` +
+                        `${review.created_at || "Date unavailable"}`;
+                    const viewButton = document.createElement("button");
+                    viewButton.type = "button";
+                    viewButton.className = "evaluate-button";
+                    viewButton.textContent = "View";
+                    viewButton.addEventListener("click", () => {
+                        if (review.workflow) {
+                            renderMultiAgentWorkflow(review);
+                            return;
+                        }
+                        showMultiAgentError(review.workflow_error || "The full workflow details could not be retrieved from the Multi-Agent server.");
+                    });
+                    item.append(summary, viewButton);
+                    history.appendChild(item);
+                });
+            } catch (error) {
+                console.error("Review history error:", error);
+                history.textContent = error.message;
+            }
+        }
+
+        function renderMultiAgentWorkflow(review) {
+            const workflow = review?.workflow || review || {};
+            const workflowId = review?.workflow_id || workflow.id || "Unavailable";
+            const status = workflow.status || review?.status || "unknown";
+            currentMultiAgentWorkflowId =
+                status === "awaiting_human" && workflowId !== "Unavailable"
+                    ? workflowId
+                    : null;
+            document.getElementById("multiAgentWorkflowId").textContent = workflowId;
+            document.getElementById("multiAgentWorkflowStatus").textContent = status;
+            document.getElementById("multiAgentWorkflowError").textContent = review?.workflow_error || "";
+            const plan = parseWorkflowData(workflow.plan);
+            const plannerSteps = plan?.steps ?? plan?.plan?.steps ?? [];
+            document.getElementById("multiAgentPlan").textContent = formatWorkflowList(plannerSteps, "No planner steps available.");
+
+            const work = parseWorkflowData(workflow.work);
+            const workerAnswer = work?.answer;
+            document.getElementById("multiAgentWork").textContent =
+                workerAnswer == null
+                    ? "No answer available."
+                    : formatWorkflowValue(workerAnswer);
+            const reviewData = parseWorkflowData(workflow.review);
+            const reviewerOutput = [
+                "Recommendations",
+                formatWorkflowList(
+                    reviewData?.recommendations,
+                    "No recommendations provided."
+                ),
+                "",
+                "Risks",
+                formatWorkflowList(
+                    reviewData?.risks,
+                    "No risks provided."
+                )
+            ].join("\n");
+            document.getElementById("multiAgentReviewer").textContent = reviewerOutput;
+            const humanResult =
+                workflow.human ??
+                workflow.human_review ??
+                workflow.human_decision ??
+                workflow.humanReview ??
+                workflow.final_answer ??
+                workflow.final_result ??
+                null;
+            const humanResultElement = document.getElementById("multiAgentHumanResult");
+            if (humanResult && typeof humanResult === "object") {
+                const formatLabel = (key) => {
+                    return key
+                        .replace(/_/g, " ")
+                        .replace(/\b\w/g, char => char.toUpperCase());
+                };
+
+                const formatValue = (key, value) => {
+                    if (value === null || value === undefined || value === "") {
+                        return "Not provided";
+                    }
+
+                    if (typeof value === "boolean") {
+                        return value ? "Yes" : "No";
+                    }
+
+                    if (key === "decision") {
+                        return String(value)
+                            .replace(/_/g, " ")
+                            .replace(/\b\w/g, char => char.toUpperCase());
+                    }
+
+                    if (key === "decided_at" && typeof value === "string") {
+                        const date = new Date(value);
+                        if (!Number.isNaN(date.getTime())) {
+                            return date.toLocaleString("en-AU", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                timeZone: "UTC",
+                                timeZoneName: "short"
+                            });
+                        }
+                    }
+
+                    return typeof value === "object"
+                        ? JSON.stringify(value)
+                        : String(value);
+                };
+                humanResultElement.textContent = Object.entries(humanResult)
+                    .map(([key, value]) =>
+                        `${formatLabel(key)}: ${formatValue(key, value)}`
+                    )
+                    .join("\n");
+            } else if (humanResult != null && humanResult !== "") {
+                humanResultElement.textContent = String(humanResult);
+            } else {
+                humanResultElement.textContent =
+                    "No human decision found in the workflow response.";
+            }
+
+            console.log("Workflow returned for history:", workflow);
+            console.log("Human review data:", humanResult);
+            const humanFormBox = document.getElementById("multiAgentHumanFormBox");
+            if (
+                status === "awaiting_human" &&
+                currentMultiAgentWorkflowId &&
+                Object.keys(workflow).length > 0
+            ) {
+                humanFormBox.classList.remove("hidden");
+            } else {
+                humanFormBox.classList.add("hidden");
+            }
+
+            if (
+                !workflow.plan &&
+                !workflow.work &&
+                !workflow.review &&
+                review?.workflow_error
+            ) {
+                document.getElementById("multiAgentPlan").textContent = "Workflow data could not be loaded from the shared server.";
+            }
+            document.getElementById("multiAgentResult").classList.remove("hidden");
+            updateMultiAgentDecisionFields();
+        }
+
+        function prettyJson(value) {
+            if (value === undefined || value === null) {
+                return "No data available.";
+            }
+
+            if (typeof value === "string") {
+                return value;
+            }
+
+            try {
+                return JSON.stringify(value, null, 2);
+            } catch {
+                return String(value);
+            }
+        }
+
+        function showMultiAgentError(message) {
+            document.getElementById("multiAgentErrorMessage").textContent = message;
+            document.getElementById("multiAgentError").classList.remove("hidden");
+        }
+
+        function updateMultiAgentDecisionFields() {
+            const decision = document.getElementById("multiAgentDecision").value;
+            const note = document.getElementById("multiAgentNote");
+            const corrected = document.getElementById("multiAgentCorrectedAnswer");
+            const correctedField = document.getElementById("multiAgentCorrectedField");
+            correctedField.classList.toggle("hidden", decision !== "correct");
+            corrected.required = decision === "correct";
+            note.required = decision === "partial" || decision === "reject";
+        }
+
+        async function submitMultiAgentHumanDecision(event) {
+            event.preventDefault();
+            if (!currentTicketId || !currentMultiAgentWorkflowId) {
+                showMultiAgentError("Select a workflow waiting for human review.");
+                return;
+            }
+
+            const ticketId = currentTicketId;
+            const workflowId = currentMultiAgentWorkflowId;
+            const button = document.getElementById("multiAgentSubmitDecisionButton");
+            const payload = {
+                reviewer:
+                    document.getElementById("multiAgentReviewerName").value.trim()
+                    || "staff",
+                decision: document.getElementById("multiAgentDecision").value,
+                note: document.getElementById("multiAgentNote").value.trim(),
+                corrected_answer:
+                    document.getElementById("multiAgentCorrectedAnswer").value.trim()
+            };
+            button.disabled = true;
+            button.textContent = "Submitting...";
+            try {
+                const response = await fetch(
+                    `/api/tickets/${ticketId}/multi-agent-reviews/` +
+                    `${encodeURIComponent(workflowId)}/decision`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(payload)
+                    }
+                );
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw new Error(
+                        data.error || data.detail || "Failed to submit human decision."
+                    );
+                }
+                document.getElementById("multiAgentError").classList.add("hidden");
+                closeMultiAgentWorkflow();
+                await loadMultiAgentReviews(ticketId);
+            } catch (error) {
+                console.error("Human review submission error:", error);
+                showMultiAgentError(error.message);
+            } finally {
+                button.disabled = false;
+                button.textContent = "Submit Human Decision";
+            }
+        }
+        
+        function closeMultiAgentWorkflow() {
+            document.getElementById("multiAgentResult").classList.add("hidden");
+            document.getElementById("multiAgentHumanFormBox").classList.add("hidden");
+            currentMultiAgentWorkflowId = null;
+        }
+
+        function cancelTicketSelection() {
+            currentTicketId = null;
+            currentDecision = "";
+            currentReasoning = "";
+            currentMultiAgentWorkflowId = null;
+            document.getElementById("ticketReportCard").classList.add("hidden");
+            document.getElementById("resultCard").classList.add("hidden");
+            document.getElementById("errorCard").classList.add("hidden");
+            document.getElementById("loading").classList.add("hidden");
+            document.getElementById("multiAgentResult").classList.add("hidden");
+            document.getElementById("multiAgentError").classList.add("hidden");
+            document.getElementById("multiAgentLoading").classList.add("hidden");
+            document.getElementById("multiAgentHumanFormBox").classList.add("hidden");
+            document.getElementById("mcpProductBox").classList.add("hidden");
+            document.getElementById("decision").textContent = "";
+            document.getElementById("reasoning").textContent = "";
+            document.getElementById("reviewFeedback").textContent = "";
+            document.getElementById("multiAgentHistory").textContent = "Select a ticket to load its review history.";
+            document.querySelector(".ticket-table-container").scrollIntoView({behavior: "smooth", block: "start"});
+        }
+
+        function parseWorkflowData(value) {
+            if (typeof value !== "string") {
+                return value;
+            }
+
+            try {
+                return JSON.parse(value);
+            } catch {
+                return value;
+            }
+        }
+
+        function formatWorkflowValue(value) {
+            value = parseWorkflowData(value);
+            if (value == null) {
+                return "Not provided";
+            }
+
+            if (typeof value === "string") {
+                return value;
+            }
+
+            if (typeof value === "number" || typeof value === "boolean") {
+                return String(value);
+            }
+
+            if (Array.isArray(value)) {
+                return value
+                    .map(item => `• ${formatWorkflowValue(item)}`)
+                    .join("\n");
+            }
+
+            if (typeof value === "object") {
+                return Object.entries(value)
+                    .map(([key, item]) =>
+                        `${formatWorkflowLabel(key)}: ${formatWorkflowValue(item)}`
+                    )
+                    .join("\n");
+            }
+            return String(value);
+        }
+
+        function formatWorkflowList(value, emptyMessage) {
+            value = parseWorkflowData(value);
+            if (value == null || value === "") {
+                return emptyMessage;
+            }
+
+            const items = Array.isArray(value) ? value : [value];
+            if (items.length === 0) {
+                return emptyMessage;
+            }
+
+            return items.map((item, index) => {
+                const formatted = formatWorkflowValue(item)
+                    .replace(/\n/g, "\n   ");
+
+                return `${index + 1}. ${formatted}`;
+            }).join("\n\n");
+        }
+
+        function formatWorkflowLabel(key) {
+            return String(key)
+                .replace(/([a-z])([A-Z])/g, "$1 $2")
+                .replace(/[_-]+/g, " ")
+                .replace(/\b\w/g, character => character.toUpperCase());
+        }
+
+        function formatHumanReview(value) {
+            value = parseWorkflowData(value);
+            if (value == null || value === "") {
+                return "No human decision has been submitted.";
+            }
+
+            if (typeof value !== "object") {
+                return formatWorkflowValue(value);
+            }
+
+            if (Array.isArray(value)) {
+                return formatWorkflowList(
+                    value,
+                    "No human review details available."
+                );
+            }
+            return Object.entries(value)
+                .map(([key, item]) => {
+                    const label = formatWorkflowLabel(key);
+                    const formattedValue = formatWorkflowValue(item);
+
+                    return `${label}\n${formattedValue}`;
+                })
+                .join("\n\n");
+        }
+
     </script>
 </body>
 </html>
