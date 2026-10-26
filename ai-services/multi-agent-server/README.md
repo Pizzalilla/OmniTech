@@ -172,6 +172,43 @@ python3 validate.py --mode mcp --tool get_saved_recommendations --args '{"sessio
 > exist on the `syk-student4` branch but not yet on `main`, so until it is
 > merged they return "not found" or "not reachable" for any input.
 
+### Release 2 review modes
+
+`multi_agent_workflow_review`, `testing_report_review` and `cloud_deployment_report_review`
+send real project evidence through the Multi-Agent Server (Planner → Worker → Reviewer) and
+stop at the human decision. Start the server first (`python3 server.py`, port 6004).
+
+**1. Build the evidence** from the reports already in the repo. Nothing is typed in by hand,
+and anything missing is listed under `missing_evidence`:
+```bash
+python3 build_review_evidence.py
+```
+| File | Built from |
+|---|---|
+| `review_evidence/multi_agent_workflow.json` | completed workflows in `docs/release-2/evidence/multi-agent/` |
+| `review_evidence/testing_report.json` | each student's security report, endpoint test file and latest CI run on `main` |
+| `review_evidence/cloud_deployment.json` | `docs/release-2/evidence/cloud/` plus the AI-off settings in `scripts/deploy/azure/config.sh` |
+
+For the cloud review, first copy the files from the latest **cloud-deployment-evidence**
+artifact (GitHub → Actions → Cloud Deployment) into `docs/release-2/evidence/cloud/`.
+
+**2. Run each review and save the output:**
+```bash
+mkdir -p ../../docs/release-2/evidence/agentic-loop
+python3 validate.py --mode multi_agent_workflow_review --evidence review_evidence/multi_agent_workflow.json --output ../../docs/release-2/evidence/agentic-loop/multi-agent-workflow-review.json
+python3 validate.py --mode testing_report_review --evidence review_evidence/testing_report.json --output ../../docs/release-2/evidence/agentic-loop/testing-review.json
+python3 validate.py --mode cloud_deployment_report_review --evidence review_evidence/cloud_deployment.json --output ../../docs/release-2/evidence/agentic-loop/cloud-deployment-review.json
+```
+
+**3. Record the human decision** on the `workflow_id` each run prints. Don't use
+`cli.py run` here: it would start a second, separate workflow. Read the Reviewer's verdict and
+risks first and base the note on them (`correct` needs `--corrected`; `partial` and `reject`
+need `--note`):
+```bash
+python3 cli.py decide <workflow_id> --decision approve --reviewer "<your name>" --note "<why>" --server http://localhost:6004
+python3 cli.py show <workflow_id>    # full workflow and audit trail, for the report
+```
+
 ## Tests
 ```bash
 cd ai-services/multi-agent-server
