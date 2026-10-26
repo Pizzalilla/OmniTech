@@ -316,8 +316,6 @@ def run_agentic_evaluation(
     print("SHARED AGENTIC LOOP  (Plan -> Act -> Observe -> Adapt)")
     print("========================================")
     print(f"Validation mode: {validation_mode.upper()}")
-    # if validation_mode in REVIEW_TASKS:
-    #     return run_multi_agent_review(ticket, validation_mode)
     if validation_mode in REVIEW_TASKS:
         return run_multi_agent_review(
             ticket,

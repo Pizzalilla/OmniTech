@@ -46,3 +46,5 @@ htmlcov/
 # Multi-Agent Server run logs (copy what you need into your evidence folder)
 ai-services/multi-agent-server/logs/
 student-3/endpoint-results.*
+# Review-mode evidence is rebuilt by build_review_evidence.py before each run
+ai-services/multi-agent-server/review_evidence/
