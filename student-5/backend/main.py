@@ -698,4 +698,7 @@ with app.app_context():
     ensure_multi_agent_review_table()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.getenv("PORT", "5000"))
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    # 0.0.0.0 so Docker's port mapping can reach Flask inside the container.
+    app.run(host="0.0.0.0", port=port, debug=debug) # noqa: S104
