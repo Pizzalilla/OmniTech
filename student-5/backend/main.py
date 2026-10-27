@@ -190,29 +190,39 @@ def ai_evaluate_ticket(ticket_id):
         }), 503
 
 @app.post("/tickets/<int:ticket_id>/update")
-def update_ticket(ticket_id):    
-    data = request.get_json()
-    decision = data.get("decision")
-    reasoning = data.get("reasoning")
+def update_ticket(ticket_id):
+    data = request.get_json(silent=True) or {}
+    decision = (data.get("decision") or "").strip()
+    reasoning = (data.get("reasoning") or "").strip()
     if not decision or not reasoning:
         return jsonify({
             "success": False,
             "error": "AI decision and reasoning are required."
         }), 400
-
-    ticket_status = decision
+    
     conn = get_db_connection()
-    conn.execute("""
-        UPDATE tickets
-        SET ticket_status = ?,
-            ai_decision = ?,
-            ai_reasoning = ?,
-            ai_reviewed_date = CURRENT_TIMESTAMP
-        WHERE ticket_id = ?
-    """, (ticket_status, decision, reasoning, ticket_id)
-    )
-    conn.commit()
-    conn.close()
+    try:
+        ticket = conn.execute(
+            "SELECT ticket_id FROM tickets WHERE ticket_id = ?",
+            (ticket_id,)
+        ).fetchone()
+        if ticket is None:
+            return jsonify({
+                "success": False,
+                "error": "Warranty ticket not found."
+            }), 404
+
+        conn.execute("""
+            UPDATE tickets
+            SET ticket_status = ?,
+                ai_decision = ?,
+                ai_reasoning = ?,
+                ai_reviewed_date = CURRENT_TIMESTAMP
+            WHERE ticket_id = ?
+        """, (decision, decision, reasoning, ticket_id))
+        conn.commit()
+    finally:
+        conn.close()
     return jsonify({
         "success": True,
         "message": f"Ticket {ticket_id} updated successfully."
