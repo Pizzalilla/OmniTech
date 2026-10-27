@@ -1,173 +1,256 @@
 """
-Release 2 post-commit endpoint tests for the Warranty Returns feature.
+Release 2 post-commit endpoint tests for Student 5.
 
-The two assumed endpoint functions under test:
-    1. create_ticket -> POST /api/tickets
-    2. update_ticket -> PUT /api/tickets/<ticket_id>
+Endpoint 1: POST /tickets/create
+Endpoint 2: POST /tickets/<ticket_id>/update
 
-Tickets use ticket_id, generated automatically by SQLite.
+Uses the actual backend HTTP endpoints.
+No MCP, RAG, Ollama, or Multi-Agent Server is required.
 """
 
 import os
+import sys
+import uuid
+from pathlib import Path
 
 import pytest
 import requests
 
+# Running from student-5/tests/
+STUDENT5_DIR = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(STUDENT5_DIR))
+
+from database.app import get_db_connection
+
 
 BASE_URL = os.getenv(
     "WARRANTY_RETURNS_BASE_URL",
-    "http://127.0.0.1:5005",
+    "http://127.0.0.1:5000",
 )
 
-NEW_TICKET = {
-    "customer_id": 101,
-    "product_id": 511,
-    "product_category": "Kitchen",
-    "ticket_claim": (
-        "The product stopped working during normal use."
-    ),
-}
+
+def get_first_valid_order():
+    """Retrieve a real order from the initialised test database."""
+    conn = get_db_connection()
+    try:
+        row = conn.execute("""
+            SELECT
+                orders.order_id,
+                orders.customer_id,
+                orders.product_id,
+                products.product_category
+            FROM orders
+            JOIN products
+                ON orders.product_id = products.product_id
+            ORDER BY orders.order_id
+            LIMIT 1
+        """).fetchone()
+    finally:
+        conn.close()
+
+    if row is None:
+        pytest.fail(
+            "No valid order found. Check that database/init_db.py "
+            "initialises the orders and products tables with data."
+        )
+
+    return dict(row)
 
 
-# ---------------------------------------------------------------------------
-# FIXTURE: create a ticket and clean it up after the test
-# ---------------------------------------------------------------------------
+def get_ticket(ticket_id):
+    """Read a ticket directly from the application's database."""
+    conn = get_db_connection()
+    try:
+        row = conn.execute("""
+            SELECT
+                ticket_id,
+                customer_id,
+                product_id,
+                product_category,
+                ticket_claim,
+                ticket_status,
+                ai_decision,
+                ai_reasoning
+            FROM tickets
+            WHERE ticket_id = ?
+        """, (ticket_id,)).fetchone()
+
+        return dict(row) if row is not None else None
+    finally:
+        conn.close()
+
 
 @pytest.fixture
 def ticket():
+    """Create a ticket using the actual endpoint and clean it up afterwards."""
+    order = get_first_valid_order()
+    claim = f"CI endpoint test {uuid.uuid4().hex}"
+
     response = requests.post(
-        f"{BASE_URL}/api/tickets",
-        json=NEW_TICKET,
-        timeout=5,
+        f"{BASE_URL}/tickets/create",
+        json={
+            "order_id": order["order_id"],
+            "ticket_claim": claim,
+        },
+        timeout=10,
     )
+
     assert response.status_code == 201, (
         f"Ticket creation failed: "
         f"{response.status_code} {response.text}"
     )
-    created = response.json()
-    assert "ticket_id" in created
-    yield created
-    # Assumes the API exposes DELETE for test cleanup.
-    requests.delete(
-        f"{BASE_URL}/api/tickets/{created['ticket_id']}",
-        timeout=5,
-    )
+
+    body = response.json()
+    assert body["success"] is True
+
+    # The current endpoint does not return ticket_id, so look it up.
+    conn = get_db_connection()
+    try:
+        row = conn.execute("""
+            SELECT ticket_id
+            FROM tickets
+            WHERE ticket_claim = ?
+            ORDER BY ticket_id DESC
+            LIMIT 1
+        """, (claim,)).fetchone()
+    finally:
+        conn.close()
+
+    assert row is not None, "Created ticket was not persisted."
+
+    created_ticket_id = row["ticket_id"]
+
+    try:
+        yield {
+            "ticket_id": created_ticket_id,
+            "claim": claim,
+            "order": order,
+        }
+    finally:
+        requests.delete(
+            f"{BASE_URL}/tickets/{created_ticket_id}/delete",
+            timeout=10,
+        )
 
 
-# ---------------------------------------------------------------------------
-# ENDPOINT 1: POST /api/tickets (create_ticket)
-# ---------------------------------------------------------------------------
+# ------------------------------------------------------------------
+# Endpoint 1: POST /tickets/create
+# ------------------------------------------------------------------
 
 def test_create_ticket_returns_201_with_ticket_id(ticket):
-    assert ticket["ticket_id"] > 0
-    assert ticket["customer_id"] == NEW_TICKET["customer_id"]
-    assert ticket["product_id"] == NEW_TICKET["product_id"]
-    assert ticket["ticket_claim"] == NEW_TICKET["ticket_claim"]
+    saved = get_ticket(ticket["ticket_id"])
+
+    assert saved is not None
+    assert saved["ticket_id"] > 0
+    assert saved["customer_id"] == ticket["order"]["customer_id"]
+    assert saved["product_id"] == ticket["order"]["product_id"]
+    assert saved["product_category"] == ticket["order"]["product_category"]
 
 
 def test_create_ticket_stores_claim(ticket):
-    response = requests.get(
-        f"{BASE_URL}/api/tickets/{ticket['ticket_id']}",
-        timeout=5,
-    )
-    assert response.status_code == 200
-    saved = response.json()
-    assert saved["ticket_id"] == ticket["ticket_id"]
-    assert saved["customer_id"] == NEW_TICKET["customer_id"]
-    assert saved["product_id"] == NEW_TICKET["product_id"]
-    assert saved["ticket_claim"] == NEW_TICKET["ticket_claim"]
+    saved = get_ticket(ticket["ticket_id"])
+
+    assert saved is not None
+    assert saved["ticket_claim"] == ticket["claim"]
+    assert saved["ticket_status"] == "Pending"
 
 
 @pytest.mark.parametrize(
-    "bad_body, reason",
+    "body",
     [
-        (
-            {
-                "product_id": 511,
-                "product_category": "Kitchen",
-                "ticket_claim": "Product is defective.",
-            },
-            "missing customer_id",
-        ),
-        (
-            {
-                "customer_id": 101,
-                "product_category": "Kitchen",
-                "ticket_claim": "Product is defective.",
-            },
-            "missing product_id",
-        ),
-        (
-            {
-                "customer_id": 101,
-                "product_id": 511,
-                "product_category": "Kitchen",
-                "ticket_claim": "",
-            },
-            "missing claim description",
-        ),
+        {"ticket_claim": "Missing order ID"},
+        {"order_id": 1},
+        {"order_id": 1, "ticket_claim": ""},
     ],
 )
-def test_create_ticket_rejects_invalid_input(bad_body, reason):
+def test_create_ticket_rejects_missing_fields(body):
     response = requests.post(
-        f"{BASE_URL}/api/tickets",
-        json=bad_body,
-        timeout=5,
+        f"{BASE_URL}/tickets/create",
+        json=body,
+        timeout=10,
     )
-    assert response.status_code == 400, reason
+
+    assert response.status_code == 400
     assert "error" in response.json()
 
 
-# ---------------------------------------------------------------------------
-# ENDPOINT 2: PUT /api/tickets/<ticket_id> (update_ticket)
-# ---------------------------------------------------------------------------
+def test_create_ticket_rejects_unknown_order():
+    response = requests.post(
+        f"{BASE_URL}/tickets/create",
+        json={
+            "order_id": 999999999,
+            "ticket_claim": "Test with nonexistent order",
+        },
+        timeout=10,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["success"] is False
+
+
+# ------------------------------------------------------------------
+# Endpoint 2: POST /tickets/<ticket_id>/update
+# ------------------------------------------------------------------
 
 def test_update_ticket_changes_status(ticket):
-    response = requests.put(
-        f"{BASE_URL}/api/tickets/{ticket['ticket_id']}",
-        json={"ticket_status": "Approved"},
-        timeout=5,
+    response = requests.post(
+        f"{BASE_URL}/tickets/{ticket['ticket_id']}/update",
+        json={
+            "decision": "Approved",
+            "reasoning": "Approved by the CI endpoint test.",
+        },
+        timeout=10,
     )
+
     assert response.status_code == 200
-    assert response.json()["ticket_status"] == "Approved"
+    body = response.json()
+    assert body["success"] is True
 
 
 def test_update_ticket_status_is_persisted(ticket):
     ticket_id = ticket["ticket_id"]
-    response = requests.put(
-        f"{BASE_URL}/api/tickets/{ticket_id}",
-        json={"ticket_status": "Rejected"},
-        timeout=5,
+
+    response = requests.post(
+        f"{BASE_URL}/tickets/{ticket_id}/update",
+        json={
+            "decision": "Rejected",
+            "reasoning": "Rejected by the CI endpoint test.",
+        },
+        timeout=10,
     )
+
     assert response.status_code == 200
-    saved = requests.get(
-        f"{BASE_URL}/api/tickets/{ticket_id}",
-        timeout=5,
+
+    saved = get_ticket(ticket_id)
+
+    assert saved is not None
+    assert saved["ticket_status"] == "Rejected"
+    assert saved["ai_decision"] == "Rejected"
+    assert saved["ai_reasoning"] == (
+        "Rejected by the CI endpoint test."
     )
-    assert saved.status_code == 200
-    assert saved.json()["ticket_status"] == "Rejected"
 
 
-def test_update_ticket_rejects_unknown_status(ticket):
-    ticket_id = ticket["ticket_id"]
-    response = requests.put(
-        f"{BASE_URL}/api/tickets/{ticket_id}",
-        json={"ticket_status": "Unknown Status"},
-        timeout=5,
+def test_update_ticket_rejects_missing_fields(ticket):
+    response = requests.post(
+        f"{BASE_URL}/tickets/{ticket['ticket_id']}/update",
+        json={"decision": "Approved"},
+        timeout=10,
     )
+
     assert response.status_code == 400
-    saved = requests.get(
-        f"{BASE_URL}/api/tickets/{ticket_id}",
-        timeout=5,
-    )
-    assert saved.status_code == 200
-    assert saved.json()["ticket_status"] != "Unknown Status"
+    assert response.json()["success"] is False
 
 
 def test_update_missing_ticket_returns_404():
-    response = requests.put(
-        f"{BASE_URL}/api/tickets/999999",
-        json={"ticket_status": "Approved"},
-        timeout=5,
+    response = requests.post(
+        f"{BASE_URL}/tickets/999999999/update",
+        json={
+            "decision": "Approved",
+            "reasoning": "Testing a nonexistent ticket.",
+        },
+        timeout=10,
     )
+
     assert response.status_code == 404
+    assert response.json()["success"] is False
