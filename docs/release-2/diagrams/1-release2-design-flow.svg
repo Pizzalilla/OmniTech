@@ -1,0 +1,125 @@
+<!-- content 1600x1010 --><svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 1600 1600"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4a5568"/></marker><marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4a5568"/></marker></defs><rect width="1600" height="1600" fill="#ffffff"/><text x="40" y="46" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" font-weight="bold" fill="#1f2330" text-anchor="start">OmniTech Release 2: application design flow</text>
+<text x="40" y="72" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="normal" fill="#5b6475" text-anchor="start">Each student owns one frontend, one backend/API and one database. The AI services are shared and run on the PC, outside Docker.</text>
+<rect x="30" y="95" width="720" height="560" rx="14" fill="none" stroke="#9fb3c8" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="46" y="121" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#5b6475" text-anchor="start">Docker Compose: integrated application (one set per student)</text>
+<rect x="60" y="140" width="270" height="300" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="74" y="164" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">Frontend UI (HTMX)</text>
+<text x="74" y="186" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Unified home page</text>
+<text x="74" y="205" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start"></text>
+<text x="74" y="224" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">S1  Product Catalog &amp; Specs</text>
+<text x="74" y="243" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">S2  Customer Profiles</text>
+<text x="74" y="262" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">S3  AI Product Consultant</text>
+<text x="74" y="281" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">S4  Cart &amp; Order Processing</text>
+<text x="74" y="300" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">S5  Warranty, Returns &amp; RMA</text>
+<text x="74" y="319" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start"></text>
+<text x="74" y="338" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Multi-Agent review panel</text>
+<text x="74" y="357" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">with human decision buttons</text>
+<rect x="420" y="140" width="300" height="300" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="434" y="164" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">Backend/API (Flask)</text>
+<text x="434" y="186" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">REST CRUD endpoints</text>
+<text x="434" y="205" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start"></text>
+<text x="434" y="224" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Agentic loop per feature:</text>
+<text x="434" y="243" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Plan → Act → Observe → Adapt</text>
+<text x="434" y="262" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start"></text>
+<text x="434" y="281" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Clients for MCP, RAG and</text>
+<text x="434" y="300" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">the Multi-Agent Server</text>
+<text x="434" y="319" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start"></text>
+<text x="434" y="338" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">*_ENABLED flags + fallbacks</text>
+<text x="434" y="357" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">(feature keeps working if a</text>
+<text x="434" y="376" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">service is off or down)</text>
+<rect x="420" y="480" width="300" height="150" rx="10" fill="#f3f6fa" stroke="#6a91b2" stroke-width="2"/>
+<text x="434" y="504" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="start">Database (SQLite, per student)</text>
+<text x="434" y="526" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="start">S1 Products, Categories, Specs</text>
+<text x="434" y="545" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="start">S2 Customers, Preferences</text>
+<text x="434" y="564" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="start">S3 Sessions, ChatLogs, SavedRecs</text>
+<text x="434" y="583" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="start">S4 Carts, Orders · S5 Tickets</text>
+<path d="M 330 290 L 420 290" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)" marker-start="url(#ahs)"/>
+<circle cx="375" cy="266" r="12" fill="#6a91b2"/>
+<text x="375" y="271" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">1</text>
+<path d="M 570 440 L 570 480" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)" marker-start="url(#ahs)"/>
+<circle cx="596" cy="461" r="12" fill="#6a91b2"/>
+<text x="596" y="466" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">2</text>
+<rect x="790" y="95" width="780" height="560" rx="14" fill="none" stroke="#c99a5b" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="806" y="121" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#c99a5b" text-anchor="start">Shared local AI services (non-containerised, reached via host.docker.internal)</text>
+<rect x="830" y="140" width="700" height="78" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="844" y="164" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">AI-Mode: Ollama (llama3.2) :11434</text>
+<text x="844" y="186" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Local LLM used by every feature&#x27;s agentic loop and by the agents below</text>
+<rect x="830" y="232" width="700" height="78" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="844" y="256" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">MCP Server :6003 (JSON-RPC 2.0)</text>
+<text x="844" y="278" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">tools/list, tools/call · one read-only tool set per student, calling that student&#x27;s API</text>
+<rect x="830" y="324" width="700" height="78" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="844" y="348" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">RAG Server :6002</text>
+<text x="844" y="370" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Retrieves matching sections from 7 policy documents → grounded answer, citations, confidence</text>
+<rect x="830" y="416" width="700" height="140" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="844" y="440" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">Multi-Agent Server :6004</text>
+<rect x="848" y="452" width="150" height="44" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="923.0" y="479.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Planner</text>
+<path d="M 998 474 L 1012 474" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="1012" y="452" width="150" height="44" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="1087.0" y="479.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Worker</text>
+<path d="M 1162 474 L 1176 474" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="1176" y="452" width="150" height="44" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="1251.0" y="479.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Reviewer</text>
+<path d="M 1326 474 L 1340 474" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="1340" y="452" width="150" height="44" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="1415.0" y="479.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Human review</text>
+<text x="848" y="528" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Workflow history + audit log (logs/history, logs/audit.jsonl) · also runnable from the terminal (cli.py)</text>
+<rect x="830" y="570" width="700" height="64" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="844" y="594" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="start">Shared agentic loop (validate.py)</text>
+<text x="844" y="616" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="start">Release 1 modes: AI, MCP, RAG · Release 2 review modes: Multi-Agent, Testing, Cloud Deployment</text>
+<path d="M 720 170 L 830 179" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<circle cx="775" cy="172.5" r="12" fill="#c99a5b"/>
+<text x="775" y="177.5" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">3</text>
+<path d="M 720 230 L 830 271" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<circle cx="775" cy="248.5" r="12" fill="#c99a5b"/>
+<text x="775" y="253.5" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">4</text>
+<path d="M 720 300 L 830 363" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<circle cx="775" cy="329.5" r="12" fill="#c99a5b"/>
+<text x="775" y="334.5" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">5</text>
+<path d="M 720 380 L 830 474" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<circle cx="775" cy="425.0" r="12" fill="#c99a5b"/>
+<text x="775" y="430.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">6</text>
+<path d="M 1180 570 L 1180 556" fill="none" stroke="#4a5568" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ah)"/>
+<rect x="30" y="690" width="1540" height="300" rx="14" fill="none" stroke="#6a91b2" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="46" y="716" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#6a91b2" text-anchor="start">Release 2 Multi-Agent flow (example: Student 3 &quot;Review with agents&quot;)</text>
+<rect x="52" y="740" width="168" height="110" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="136.0" y="782.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Frontend UI</text>
+<text x="136.0" y="803.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">User presses</text>
+<text x="136.0" y="821.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">Review with agents</text>
+<path d="M 220 795 L 242 795" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="242" y="740" width="168" height="110" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="326.0" y="782.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Backend/API</text>
+<text x="326.0" y="803.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">Builds evidence: pick,</text>
+<text x="326.0" y="821.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">chat, catalog, policy</text>
+<path d="M 410 795 L 432 795" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="432" y="740" width="168" height="110" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="516.0" y="791.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Multi-Agent Server</text>
+<text x="516.0" y="812.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">POST /workflow/start</text>
+<path d="M 600 795 L 622 795" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="622" y="740" width="168" height="110" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="706.0" y="782.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Planner</text>
+<text x="706.0" y="803.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">Steps + evidence</text>
+<text x="706.0" y="821.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">needed</text>
+<path d="M 790 795 L 812 795" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="812" y="740" width="168" height="110" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="896.0" y="782.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Worker</text>
+<text x="896.0" y="803.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">Answer from the</text>
+<text x="896.0" y="821.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">evidence only</text>
+<path d="M 980 795 L 1002 795" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="1002" y="740" width="168" height="110" rx="10" fill="#fdf6ec" stroke="#c99a5b" stroke-width="2"/>
+<text x="1086.0" y="782.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Reviewer</text>
+<text x="1086.0" y="803.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">Verdict, risks,</text>
+<text x="1086.0" y="821.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">recommendations</text>
+<path d="M 1170 795 L 1192 795" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="1192" y="740" width="168" height="110" rx="10" fill="#eef7f0" stroke="#5a9e6f" stroke-width="2"/>
+<text x="1276.0" y="782.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Human Review</text>
+<text x="1276.0" y="803.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">Approve / correct /</text>
+<text x="1276.0" y="821.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">partial / reject</text>
+<path d="M 1360 795 L 1382 795" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="1382" y="740" width="168" height="110" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="1466.0" y="782.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#1f2330" text-anchor="middle">Response to UI</text>
+<text x="1466.0" y="803.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">Decision saved to DB</text>
+<text x="1466.0" y="821.0" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="12" font-weight="normal" fill="#5b6475" text-anchor="middle">+ agent-* tag</text>
+<text x="52" y="890" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="normal" fill="#5b6475" text-anchor="start">Backend also checks the Worker&#x27;s answer against the catalog and flags made-up product IDs before the human decides.</text>
+<text x="52" y="914" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="normal" fill="#5b6475" text-anchor="start">If the Multi-Agent Server or Ollama is down, the panel shows a clear message and the rest of the feature keeps working.</text>
+<text x="52" y="950" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#5b6475" text-anchor="start">① HTTP/HTMX  ② SQL CRUD  ③ AI-Mode prompt  ④ MCP tools/call  ⑤ RAG query  ⑥ Multi-Agent workflow</text></svg>

@@ -1,0 +1,494 @@
+{
+  "status": "AWAITING_HUMAN",
+  "review_mode": "cloud_deployment_report_review",
+  "workflow_id": "wf-efa27b7b",
+  "workflow": {
+    "created_at": "2026-10-28T02:42:52+00:00",
+    "error": null,
+    "evidence": {
+      "ai_services_disabled_by_default": {
+        "not_deployed": [
+          "Ollama (AI-Mode)",
+          "MCP Server",
+          "RAG Server",
+          "Multi-Agent Server"
+        ],
+        "settings_applied_to_every_app": [
+          "AI_MODE_ENABLED=false",
+          "AI_ENABLED=false",
+          "RAG_ENABLED=false",
+          "MCP_ENABLED=false",
+          "MULTI_AGENT_ENABLED=false",
+          "OLLAMA_HOST=${DISABLED_AI}:11434",
+          "OLLAMA_BASE_URL=${DISABLED_AI}:11434/v1",
+          "RAG_HOST=${DISABLED_AI}:6002",
+          "RAG_SERVER_URL=${DISABLED_AI}:6002",
+          "MCP_HOST=${DISABLED_AI}:6003",
+          "MCP_SERVER_URL=${DISABLED_AI}:6003",
+          "MULTI_AGENT_HOST=${DISABLED_AI}:6004",
+          "FLASK_DEBUG=0"
+        ]
+      },
+      "deployment": {
+        "commit": "c4f96ec",
+        "deployed_at": "2026-10-28T02:17:54Z",
+        "platform": "Azure Container Apps",
+        "region": "australiaeast",
+        "resource_group": "omnitech-rg",
+        "services": {
+          "home": "https://omnitech-home.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+          "student-1": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+          "student-2": "https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+          "student-3": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+          "student-4": "https://omnitech-student-4.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+          "student-5": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io"
+        }
+      },
+      "missing_evidence": [],
+      "note": "Copy the latest cloud-deployment-evidence artifact into docs/release-2/evidence/cloud/ before building, so this reflects the final deployment.",
+      "security_validation": {
+        "by_area": {
+          "data": {
+            "controls": [
+              "App identity: only AcrPull + Key Vault Secrets User",
+              "CI identity scoped to the resource group (not the subscription)",
+              "CI logs in with OIDC (no stored Azure credentials)",
+              "Gateway password stored only in Key Vault",
+              "Images built only from git-tracked files (no local .env or *.db)",
+              "Images pulled with managed identity (no registry password)",
+              "Key Vault uses Azure RBAC and soft delete",
+              "No plain-text secrets in environment variables",
+              "No secrets committed to the repository (detect-secrets)",
+              "Registry admin account disabled",
+              "Runs as the least-privilege app identity",
+              "Secrets are Key Vault references (no values in the app)"
+            ],
+            "passed": 32,
+            "total": 32
+          },
+          "endpoint": {
+            "controls": [
+              "Correct login accepted",
+              "HTTP redirects to HTTPS",
+              "Hidden files never served (/.env)",
+              "Login required (no credentials)",
+              "Only the gateway port is exposed, HTTPS only",
+              "Rate limiting (10 req/s per caller, burst 40)",
+              "Security headers",
+              "Server version hidden",
+              "TLS 1.2 or newer",
+              "Uploads over 1 MB refused",
+              "Wrong password rejected"
+            ],
+            "passed": 61,
+            "total": 61
+          }
+        },
+        "checked_at": "2026-10-28T02:19:03+00:00",
+        "failed": [],
+        "passed": 93,
+        "total": 93
+      },
+      "smoke_test": {
+        "checked_at": "2026-10-28T02:18:10+00:00",
+        "checks": [
+          "home: Home page lists every feature -> 200 (PASS)",
+          "student-1: Catalog page -> 200 (PASS)",
+          "student-1: Read products -> 200 (PASS)",
+          "student-1: AI summary disabled by default -> 503 (PASS)",
+          "student-1: Multi-Agent disabled by default -> 503 (PASS)",
+          "student-2: Customers page -> 200 (PASS)",
+          "student-2: Read customers -> 200 (PASS)",
+          "student-3: Consultant page -> 200 (PASS)",
+          "student-3: Create session -> 201 (PASS)",
+          "student-3: Read sessions -> 200 (PASS)",
+          "student-3: AI services disabled by default -> 200 (PASS)",
+          "student-3: Multi-Agent disabled by default -> 503 (PASS)",
+          "student-4: Cart page -> 200 (PASS)",
+          "student-5: Warranty page -> 200 (PASS)",
+          "student-5: Read tickets -> 200 (PASS)"
+        ],
+        "passed": 15,
+        "total": 15
+      }
+    },
+    "final_answer": null,
+    "human": null,
+    "id": "wf-efa27b7b",
+    "plan": {
+      "evidence_needed": [
+        "deployment",
+        "smoke_test",
+        "ai_services_disabled_by_default"
+      ],
+      "goal": "Verify cloud deployment status and identify missing evidence",
+      "missing_evidence": [],
+      "steps": [
+        "step 1: Review deployment status from deployment evidence",
+        "step 2: Check application health using smoke_test evidence",
+        "step 3: Verify core CRUD functionality with deployment evidence",
+        "step 4: Validate AI-Mode, MCP, RAG, and Multi-Agent Server are disabled by default"
+      ],
+      "success_criteria": [
+        "all steps complete without errors"
+      ]
+    },
+    "review": {
+      "checks": [
+        "Worker reported 1 issue(s)"
+      ],
+      "recommendations": [
+        "Provide additional evidence or clarification on how to verify core CRUD functionality",
+        "Re-evaluate the verification of AI-Mode, MCP, RAG, and Multi-Agent Server being disabled by default"
+      ],
+      "risks": [
+        "Core CRUD functionality cannot be verified with the provided evidence"
+      ],
+      "summary": "Worker returned an empty answer, missing evidence for core CRUD functionality and incomplete verification of AI-Mode, MCP, RAG, and Multi-Agent Server being disabled by default.",
+      "verdict": "needs_changes"
+    },
+    "status": "awaiting_human",
+    "student": "group",
+    "task": "Review the supplied cloud deployment evidence. Verify deployment status, application health, core CRUD functionality and evidence that AI-Mode, MCP, RAG and the Multi-Agent Server are disabled by default. Identify missing evidence and unresolved risks.\n\nCorrection from the previous OBSERVE step: worker returned an empty answer\nAddress this failure when starting the workflow again.",
+    "updated_at": "2026-10-28T02:43:09+00:00",
+    "work": {
+      "answer": "Deployment status: Deployed on Azure Container Apps at 2026-10-28T02:17:54Z. Application health: Smoke test passed with 93 out of 93 checks. Core CRUD functionality: Not directly verifiable from the evidence. AI-Mode, MCP, RAG, and Multi-Agent Server are disabled by default as indicated in the ai_services_disabled_by_default evidence.",
+      "evidence_used": [
+        "deployment",
+        "smoke_test",
+        "ai_services_disabled_by_default"
+      ],
+      "issues": [
+        "Core CRUD functionality cannot be verified with the provided evidence"
+      ],
+      "steps_done": [
+        "Review deployment status from deployment evidence",
+        "Check application health using smoke_test evidence",
+        "Verify core CRUD functionality with deployment evidence"
+      ]
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "http_status": 503,
+      "response": {
+        "created_at": "2026-10-28T02:42:42+00:00",
+        "error": "worker returned an empty answer",
+        "evidence": {
+          "ai_services_disabled_by_default": {
+            "not_deployed": [
+              "Ollama (AI-Mode)",
+              "MCP Server",
+              "RAG Server",
+              "Multi-Agent Server"
+            ],
+            "settings_applied_to_every_app": [
+              "AI_MODE_ENABLED=false",
+              "AI_ENABLED=false",
+              "RAG_ENABLED=false",
+              "MCP_ENABLED=false",
+              "MULTI_AGENT_ENABLED=false",
+              "OLLAMA_HOST=${DISABLED_AI}:11434",
+              "OLLAMA_BASE_URL=${DISABLED_AI}:11434/v1",
+              "RAG_HOST=${DISABLED_AI}:6002",
+              "RAG_SERVER_URL=${DISABLED_AI}:6002",
+              "MCP_HOST=${DISABLED_AI}:6003",
+              "MCP_SERVER_URL=${DISABLED_AI}:6003",
+              "MULTI_AGENT_HOST=${DISABLED_AI}:6004",
+              "FLASK_DEBUG=0"
+            ]
+          },
+          "deployment": {
+            "commit": "c4f96ec",
+            "deployed_at": "2026-10-28T02:17:54Z",
+            "platform": "Azure Container Apps",
+            "region": "australiaeast",
+            "resource_group": "omnitech-rg",
+            "services": {
+              "home": "https://omnitech-home.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-1": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-2": "https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-3": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-4": "https://omnitech-student-4.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-5": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io"
+            }
+          },
+          "missing_evidence": [],
+          "note": "Copy the latest cloud-deployment-evidence artifact into docs/release-2/evidence/cloud/ before building, so this reflects the final deployment.",
+          "security_validation": {
+            "by_area": {
+              "data": {
+                "controls": [
+                  "App identity: only AcrPull + Key Vault Secrets User",
+                  "CI identity scoped to the resource group (not the subscription)",
+                  "CI logs in with OIDC (no stored Azure credentials)",
+                  "Gateway password stored only in Key Vault",
+                  "Images built only from git-tracked files (no local .env or *.db)",
+                  "Images pulled with managed identity (no registry password)",
+                  "Key Vault uses Azure RBAC and soft delete",
+                  "No plain-text secrets in environment variables",
+                  "No secrets committed to the repository (detect-secrets)",
+                  "Registry admin account disabled",
+                  "Runs as the least-privilege app identity",
+                  "Secrets are Key Vault references (no values in the app)"
+                ],
+                "passed": 32,
+                "total": 32
+              },
+              "endpoint": {
+                "controls": [
+                  "Correct login accepted",
+                  "HTTP redirects to HTTPS",
+                  "Hidden files never served (/.env)",
+                  "Login required (no credentials)",
+                  "Only the gateway port is exposed, HTTPS only",
+                  "Rate limiting (10 req/s per caller, burst 40)",
+                  "Security headers",
+                  "Server version hidden",
+                  "TLS 1.2 or newer",
+                  "Uploads over 1 MB refused",
+                  "Wrong password rejected"
+                ],
+                "passed": 61,
+                "total": 61
+              }
+            },
+            "checked_at": "2026-10-28T02:19:03+00:00",
+            "failed": [],
+            "passed": 93,
+            "total": 93
+          },
+          "smoke_test": {
+            "checked_at": "2026-10-28T02:18:10+00:00",
+            "checks": [
+              "home: Home page lists every feature -> 200 (PASS)",
+              "student-1: Catalog page -> 200 (PASS)",
+              "student-1: Read products -> 200 (PASS)",
+              "student-1: AI summary disabled by default -> 503 (PASS)",
+              "student-1: Multi-Agent disabled by default -> 503 (PASS)",
+              "student-2: Customers page -> 200 (PASS)",
+              "student-2: Read customers -> 200 (PASS)",
+              "student-3: Consultant page -> 200 (PASS)",
+              "student-3: Create session -> 201 (PASS)",
+              "student-3: Read sessions -> 200 (PASS)",
+              "student-3: AI services disabled by default -> 200 (PASS)",
+              "student-3: Multi-Agent disabled by default -> 503 (PASS)",
+              "student-4: Cart page -> 200 (PASS)",
+              "student-5: Warranty page -> 200 (PASS)",
+              "student-5: Read tickets -> 200 (PASS)"
+            ],
+            "passed": 15,
+            "total": 15
+          }
+        },
+        "final_answer": null,
+        "human": null,
+        "id": "wf-3cd31ba2",
+        "plan": {
+          "evidence_needed": [
+            "deployment",
+            "smoke_test",
+            "security_validation",
+            "ai_services_disabled_by_default"
+          ],
+          "goal": "Verify cloud deployment status and identify missing evidence",
+          "missing_evidence": [],
+          "steps": [
+            "Review deployment status",
+            "Analyze application health",
+            "Check core CRUD functionality",
+            "Verify AI-Mode, MCP, RAG and Multi-Agent Server settings"
+          ],
+          "success_criteria": [
+            "all checks pass without errors"
+          ]
+        },
+        "review": null,
+        "status": "failed",
+        "student": "group",
+        "task": "Review the supplied cloud deployment evidence. Verify deployment status, application health, core CRUD functionality and evidence that AI-Mode, MCP, RAG and the Multi-Agent Server are disabled by default. Identify missing evidence and unresolved risks.",
+        "updated_at": "2026-10-28T02:42:52+00:00",
+        "work": null
+      },
+      "observation": {
+        "status": "REJECTED",
+        "feedback": "worker returned an empty answer"
+      }
+    },
+    {
+      "attempt": 2,
+      "http_status": 201,
+      "response": {
+        "created_at": "2026-10-28T02:42:52+00:00",
+        "error": null,
+        "evidence": {
+          "ai_services_disabled_by_default": {
+            "not_deployed": [
+              "Ollama (AI-Mode)",
+              "MCP Server",
+              "RAG Server",
+              "Multi-Agent Server"
+            ],
+            "settings_applied_to_every_app": [
+              "AI_MODE_ENABLED=false",
+              "AI_ENABLED=false",
+              "RAG_ENABLED=false",
+              "MCP_ENABLED=false",
+              "MULTI_AGENT_ENABLED=false",
+              "OLLAMA_HOST=${DISABLED_AI}:11434",
+              "OLLAMA_BASE_URL=${DISABLED_AI}:11434/v1",
+              "RAG_HOST=${DISABLED_AI}:6002",
+              "RAG_SERVER_URL=${DISABLED_AI}:6002",
+              "MCP_HOST=${DISABLED_AI}:6003",
+              "MCP_SERVER_URL=${DISABLED_AI}:6003",
+              "MULTI_AGENT_HOST=${DISABLED_AI}:6004",
+              "FLASK_DEBUG=0"
+            ]
+          },
+          "deployment": {
+            "commit": "c4f96ec",
+            "deployed_at": "2026-10-28T02:17:54Z",
+            "platform": "Azure Container Apps",
+            "region": "australiaeast",
+            "resource_group": "omnitech-rg",
+            "services": {
+              "home": "https://omnitech-home.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-1": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-2": "https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-3": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-4": "https://omnitech-student-4.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+              "student-5": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io"
+            }
+          },
+          "missing_evidence": [],
+          "note": "Copy the latest cloud-deployment-evidence artifact into docs/release-2/evidence/cloud/ before building, so this reflects the final deployment.",
+          "security_validation": {
+            "by_area": {
+              "data": {
+                "controls": [
+                  "App identity: only AcrPull + Key Vault Secrets User",
+                  "CI identity scoped to the resource group (not the subscription)",
+                  "CI logs in with OIDC (no stored Azure credentials)",
+                  "Gateway password stored only in Key Vault",
+                  "Images built only from git-tracked files (no local .env or *.db)",
+                  "Images pulled with managed identity (no registry password)",
+                  "Key Vault uses Azure RBAC and soft delete",
+                  "No plain-text secrets in environment variables",
+                  "No secrets committed to the repository (detect-secrets)",
+                  "Registry admin account disabled",
+                  "Runs as the least-privilege app identity",
+                  "Secrets are Key Vault references (no values in the app)"
+                ],
+                "passed": 32,
+                "total": 32
+              },
+              "endpoint": {
+                "controls": [
+                  "Correct login accepted",
+                  "HTTP redirects to HTTPS",
+                  "Hidden files never served (/.env)",
+                  "Login required (no credentials)",
+                  "Only the gateway port is exposed, HTTPS only",
+                  "Rate limiting (10 req/s per caller, burst 40)",
+                  "Security headers",
+                  "Server version hidden",
+                  "TLS 1.2 or newer",
+                  "Uploads over 1 MB refused",
+                  "Wrong password rejected"
+                ],
+                "passed": 61,
+                "total": 61
+              }
+            },
+            "checked_at": "2026-10-28T02:19:03+00:00",
+            "failed": [],
+            "passed": 93,
+            "total": 93
+          },
+          "smoke_test": {
+            "checked_at": "2026-10-28T02:18:10+00:00",
+            "checks": [
+              "home: Home page lists every feature -> 200 (PASS)",
+              "student-1: Catalog page -> 200 (PASS)",
+              "student-1: Read products -> 200 (PASS)",
+              "student-1: AI summary disabled by default -> 503 (PASS)",
+              "student-1: Multi-Agent disabled by default -> 503 (PASS)",
+              "student-2: Customers page -> 200 (PASS)",
+              "student-2: Read customers -> 200 (PASS)",
+              "student-3: Consultant page -> 200 (PASS)",
+              "student-3: Create session -> 201 (PASS)",
+              "student-3: Read sessions -> 200 (PASS)",
+              "student-3: AI services disabled by default -> 200 (PASS)",
+              "student-3: Multi-Agent disabled by default -> 503 (PASS)",
+              "student-4: Cart page -> 200 (PASS)",
+              "student-5: Warranty page -> 200 (PASS)",
+              "student-5: Read tickets -> 200 (PASS)"
+            ],
+            "passed": 15,
+            "total": 15
+          }
+        },
+        "final_answer": null,
+        "human": null,
+        "id": "wf-efa27b7b",
+        "plan": {
+          "evidence_needed": [
+            "deployment",
+            "smoke_test",
+            "ai_services_disabled_by_default"
+          ],
+          "goal": "Verify cloud deployment status and identify missing evidence",
+          "missing_evidence": [],
+          "steps": [
+            "step 1: Review deployment status from deployment evidence",
+            "step 2: Check application health using smoke_test evidence",
+            "step 3: Verify core CRUD functionality with deployment evidence",
+            "step 4: Validate AI-Mode, MCP, RAG, and Multi-Agent Server are disabled by default"
+          ],
+          "success_criteria": [
+            "all steps complete without errors"
+          ]
+        },
+        "review": {
+          "checks": [
+            "Worker reported 1 issue(s)"
+          ],
+          "recommendations": [
+            "Provide additional evidence or clarification on how to verify core CRUD functionality",
+            "Re-evaluate the verification of AI-Mode, MCP, RAG, and Multi-Agent Server being disabled by default"
+          ],
+          "risks": [
+            "Core CRUD functionality cannot be verified with the provided evidence"
+          ],
+          "summary": "Worker returned an empty answer, missing evidence for core CRUD functionality and incomplete verification of AI-Mode, MCP, RAG, and Multi-Agent Server being disabled by default.",
+          "verdict": "needs_changes"
+        },
+        "status": "awaiting_human",
+        "student": "group",
+        "task": "Review the supplied cloud deployment evidence. Verify deployment status, application health, core CRUD functionality and evidence that AI-Mode, MCP, RAG and the Multi-Agent Server are disabled by default. Identify missing evidence and unresolved risks.\n\nCorrection from the previous OBSERVE step: worker returned an empty answer\nAddress this failure when starting the workflow again.",
+        "updated_at": "2026-10-28T02:43:09+00:00",
+        "work": {
+          "answer": "Deployment status: Deployed on Azure Container Apps at 2026-10-28T02:17:54Z. Application health: Smoke test passed with 93 out of 93 checks. Core CRUD functionality: Not directly verifiable from the evidence. AI-Mode, MCP, RAG, and Multi-Agent Server are disabled by default as indicated in the ai_services_disabled_by_default evidence.",
+          "evidence_used": [
+            "deployment",
+            "smoke_test",
+            "ai_services_disabled_by_default"
+          ],
+          "issues": [
+            "Core CRUD functionality cannot be verified with the provided evidence"
+          ],
+          "steps_done": [
+            "Review deployment status from deployment evidence",
+            "Check application health using smoke_test evidence",
+            "Verify core CRUD functionality with deployment evidence"
+          ]
+        }
+      },
+      "observation": {
+        "status": "APPROVED",
+        "feedback": "Workflow created; status is awaiting_human."
+      }
+    }
+  ]
+}

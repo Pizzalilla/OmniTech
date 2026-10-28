@@ -1,8 +1,8 @@
 {
   "deployment": {
-    "deployed_at": "2026-10-19T12:27:57Z",
-    "commit": "ffa47c9",
-    "image_tag": "ffa47c9-dirty-20261019232548",
+    "deployed_at": "2026-10-28T02:17:54Z",
+    "commit": "c4f96ec",
+    "image_tag": "c4f96eca1f5dbe612f23891d33961e7ab2873751",
     "resource_group": "omnitech-rg",
     "region": "australiaeast",
     "services": {
@@ -14,9 +14,9 @@
       "student-5": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io"
     }
   },
-  "checked_at": "2026-10-19T12:27:58+00:00",
-  "passed": 12,
-  "total": 12,
+  "checked_at": "2026-10-28T02:18:10+00:00",
+  "passed": 15,
+  "total": 15,
   "results": [
     {
       "service": "home",
@@ -26,7 +26,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 45
+      "ms": 605
     },
     {
       "service": "student-1",
@@ -36,7 +36,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 58
+      "ms": 812
     },
     {
       "service": "student-1",
@@ -46,7 +46,27 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 36
+      "ms": 600
+    },
+    {
+      "service": "student-1",
+      "check": "AI summary disabled by default",
+      "method": "POST",
+      "url": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/api/products/1/ai-summary",
+      "expected": 503,
+      "status": 503,
+      "passed": true,
+      "ms": 610
+    },
+    {
+      "service": "student-1",
+      "check": "Multi-Agent disabled by default",
+      "method": "GET",
+      "url": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/api/multi-agent/history",
+      "expected": 503,
+      "status": 503,
+      "passed": true,
+      "ms": 602
     },
     {
       "service": "student-2",
@@ -56,7 +76,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 121
+      "ms": 604
     },
     {
       "service": "student-2",
@@ -66,7 +86,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 43
+      "ms": 602
     },
     {
       "service": "student-3",
@@ -76,7 +96,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 40
+      "ms": 839
     },
     {
       "service": "student-3",
@@ -86,7 +106,7 @@
       "expected": 201,
       "status": 201,
       "passed": true,
-      "ms": 59
+      "ms": 644
     },
     {
       "service": "student-3",
@@ -96,7 +116,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 36
+      "ms": 617
     },
     {
       "service": "student-3",
@@ -106,7 +126,17 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 37
+      "ms": 596
+    },
+    {
+      "service": "student-3",
+      "check": "Multi-Agent disabled by default",
+      "method": "GET",
+      "url": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/api/multi-agent/history",
+      "expected": 503,
+      "status": 503,
+      "passed": true,
+      "ms": 609
     },
     {
       "service": "student-4",
@@ -116,7 +146,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 177
+      "ms": 623
     },
     {
       "service": "student-5",
@@ -126,7 +156,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 36
+      "ms": 618
     },
     {
       "service": "student-5",
@@ -136,7 +166,7 @@
       "expected": 200,
       "status": 200,
       "passed": true,
-      "ms": 49
+      "ms": 1001
     }
   ]
 }
