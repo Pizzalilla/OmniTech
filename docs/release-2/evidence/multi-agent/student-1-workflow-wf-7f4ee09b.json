@@ -1,0 +1,182 @@
+﻿{
+    "created_at":  "2026-10-28T08:05:23+00:00",
+    "error":  null,
+    "events":  [
+                   {
+                       "action":  "workflow_started",
+                       "actor":  "student-1",
+                       "detail":  {
+                                      "evidence":  [
+                                                       "product",
+                                                       "specifications",
+                                                       "store_policy"
+                                                   ],
+                                      "task":  "Review this product listing for a shopper. Use only the supplied product, specifications, and store policy. Do not invent specifications or prices."
+                                  },
+                       "time":  "2026-10-28T08:05:23+00:00",
+                       "workflow_id":  "wf-7f4ee09b"
+                   },
+                   {
+                       "action":  "plan_created",
+                       "actor":  "planner",
+                       "detail":  {
+                                      "missing_evidence":  [
+
+                                                           ],
+                                      "steps":  4
+                                  },
+                       "time":  "2026-10-28T08:05:25+00:00",
+                       "workflow_id":  "wf-7f4ee09b"
+                   },
+                   {
+                       "action":  "task_completed",
+                       "actor":  "worker",
+                       "detail":  {
+                                      "evidence_used":  [
+                                                            "product",
+                                                            "specifications",
+                                                            "store_policy"
+                                                        ],
+                                      "issues":  0
+                                  },
+                       "time":  "2026-10-28T08:05:26+00:00",
+                       "workflow_id":  "wf-7f4ee09b"
+                   },
+                   {
+                       "action":  "review_completed",
+                       "actor":  "reviewer",
+                       "detail":  {
+                                      "checks":  [
+
+                                                 ],
+                                      "risks":  0,
+                                      "verdict":  "pass"
+                                  },
+                       "time":  "2026-10-28T08:05:26+00:00",
+                       "workflow_id":  "wf-7f4ee09b"
+                   },
+                   {
+                       "action":  "awaiting_human_review",
+                       "actor":  "system",
+                       "detail":  {
+
+                                  },
+                       "time":  "2026-10-28T08:05:26+00:00",
+                       "workflow_id":  "wf-7f4ee09b"
+                   },
+                   {
+                       "action":  "decision_correct",
+                       "actor":  "human:staff",
+                       "detail":  {
+                                      "note":  "",
+                                      "reviewer_verdict":  "pass",
+                                      "status":  "corrected"
+                                  },
+                       "time":  "2026-10-28T08:09:42+00:00",
+                       "workflow_id":  "wf-7f4ee09b"
+                   }
+               ],
+    "evidence":  {
+                     "product":  {
+                                     "brand":  "AquaJet",
+                                     "category":  "Dishwashers",
+                                     "description":  "Slimline dishwasher with 14 place settings and a quiet night cycle.",
+                                     "id":  7,
+                                     "name":  "AquaJet Slimline 14",
+                                     "price":  899.0,
+                                     "stock":  6
+                                 },
+                     "specifications":  [
+                                            {
+                                                "name":  "Noise Level",
+                                                "value":  "44 dB"
+                                            },
+                                            {
+                                                "name":  "Place Settings",
+                                                "value":  "14"
+                                            },
+                                            {
+                                                "name":  "Water Usage",
+                                                "value":  "9.5 L per cycle"
+                                            }
+                                        ],
+                     "store_policy":  [
+                                          {
+                                              "heading":  "AquaJet Slimline 14",
+                                              "source":  "appliance-catalog.md",
+                                              "text":  "The AquaJet Slimline 14 is an AquaJet dishwasher priced at $899.00. It has a capacity of 14 place settings, uses 9.5 L of water per cycle, and runs at 44 dB. It is a slimline dishwasher with a quiet night cycle."
+                                          },
+                                          {
+                                              "heading":  "AquaJet Freestanding 15",
+                                              "source":  "appliance-catalog.md",
+                                              "text":  "The AquaJet Freestanding 15 is an AquaJet dishwasher priced at $1049.00. It has a capacity of 15 place settings, uses 11 L of water per cycle, and runs at 46 dB. It is a freestanding dishwasher for larger kitchens."
+                                          }
+                                      ]
+                 },
+    "final_answer":  "The AquaJet Slimline 14 is a slimline dishwasher that fits 14 place settings, uses just 9.5 L of water per cycle, and runs at a quiet 44 dB, with a quiet night cycle for running overnight. Priced at $899.",
+    "human":  {
+                  "agreed_with_reviewer":  false,
+                  "corrected_answer":  "The AquaJet Slimline 14 is a slimline dishwasher that fits 14 place settings, uses just 9.5 L of water per cycle, and runs at a quiet 44 dB, with a quiet night cycle for running overnight. Priced at $899.",
+                  "decided_at":  "2026-10-28T08:09:42+00:00",
+                  "decision":  "correct",
+                  "note":  "",
+                  "reviewer":  "staff"
+              },
+    "id":  "wf-7f4ee09b",
+    "plan":  {
+                 "evidence_needed":  [
+                                         "product",
+                                         "specifications",
+                                         "store_policy"
+                                     ],
+                 "goal":  "Review the product listing for accuracy and completeness",
+                 "missing_evidence":  [
+
+                                      ],
+                 "steps":  [
+                               "Step 1: Review product listing for accuracy",
+                               "Step 2: Verify product specifications",
+                               "Step 3: Check store policy for any applicable restrictions",
+                               "Step 4: Document any discrepancies or concerns"
+                           ],
+                 "success_criteria":  [
+                                          "listing is accurate and complete",
+                                          "all specifications are correct",
+                                          "store policy is applied correctly"
+                                      ]
+             },
+    "review":  {
+                   "checks":  [
+
+                              ],
+                   "recommendations":  [
+
+                                       ],
+                   "risks":  [
+
+                             ],
+                   "summary":  "The product listing appears to be accurate and complete, with matching product specifications and no applicable store policy restrictions.",
+                   "verdict":  "pass"
+               },
+    "status":  "corrected",
+    "student":  "student-1",
+    "task":  "Review this product listing for a shopper. Use only the supplied product, specifications, and store policy. Do not invent specifications or prices.",
+    "updated_at":  "2026-10-28T08:09:42+00:00",
+    "work":  {
+                 "answer":  "The product listing appears to be accurate, product specifications match the provided information, and store policy does not have any restrictions for the AquaJet Slimline 14.",
+                 "evidence_used":  [
+                                       "product",
+                                       "specifications",
+                                       "store_policy"
+                                   ],
+                 "issues":  [
+
+                            ],
+                 "steps_done":  [
+                                    "Review product listing for accuracy",
+                                    "Verify product specifications",
+                                    "Check store policy for any applicable restrictions",
+                                    "Document any discrepancies or concerns"
+                                ]
+             }
+}
