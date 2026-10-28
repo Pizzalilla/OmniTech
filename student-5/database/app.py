@@ -54,4 +54,6 @@ def get_ticket_by_ticket_id(ticket_id):
     return jsonify(dict(ticket))
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5006, debug=True)
+    port = int(os.getenv("PORT", "5006"))
+    debug = os.getenv("FLASK_DEBUG", "0") == "1"
+    app.run(host="127.0.0.1", port=port, debug=debug) # noqa: S104
