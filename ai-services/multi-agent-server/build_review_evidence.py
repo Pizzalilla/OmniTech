@@ -61,7 +61,7 @@ def write(name, data):
 # ── Multi-Agent workflow evidence ───────────────────────────────────────────
 
 def summarise_workflow(path):
-    w = json.loads(path.read_text())
+    w = json.loads(path.read_text(encoding="utf-8-sig"))
     plan, work, review, human = (w.get(k) or {} for k in ("plan", "work", "review", "human"))
     return {
         "source": str(path.relative_to(ROOT)),
@@ -89,7 +89,7 @@ def count_tests(path):
 
 def multi_agent_evidence():
     records = sorted((EVIDENCE / "multi-agent").glob("*.json"))
-    covered = {json.loads(p.read_text()).get("student") for p in records}
+    covered = {json.loads(p.read_text(encoding="utf-8-sig")).get("student") for p in records}
     return {
         "implementation": {
             "server": "ai-services/multi-agent-server/server.py, port 6004, non-containerised",
