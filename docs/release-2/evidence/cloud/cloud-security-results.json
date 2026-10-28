@@ -1,0 +1,673 @@
+{
+  "checked_at": "2026-10-28T02:19:03+00:00",
+  "deployment": {
+    "deployed_at": "2026-10-28T02:17:54Z",
+    "commit": "c4f96ec",
+    "image_tag": "c4f96eca1f5dbe612f23891d33961e7ab2873751",
+    "resource_group": "omnitech-rg",
+    "region": "australiaeast",
+    "services": {
+      "home": "https://omnitech-home.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-1": "https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-2": "https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-3": "https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-4": "https://omnitech-student-4.happypebble-4f98f20b.australiaeast.azurecontainerapps.io",
+      "student-5": "https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io"
+    }
+  },
+  "passed": 93,
+  "total": 93,
+  "results": [
+    {
+      "area": "endpoint",
+      "control": "HTTP redirects to HTTPS",
+      "target": "home",
+      "passed": true,
+      "detail": "301 -> https://omnitech-home.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/"
+    },
+    {
+      "area": "endpoint",
+      "control": "TLS 1.2 or newer",
+      "target": "home",
+      "passed": true,
+      "detail": "TLSv1.3"
+    },
+    {
+      "area": "endpoint",
+      "control": "Login required (no credentials)",
+      "target": "home",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Security headers",
+      "target": "home",
+      "passed": true,
+      "detail": "all present"
+    },
+    {
+      "area": "endpoint",
+      "control": "Server version hidden",
+      "target": "home",
+      "passed": true,
+      "detail": "nginx"
+    },
+    {
+      "area": "endpoint",
+      "control": "Wrong password rejected",
+      "target": "home",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Correct login accepted",
+      "target": "home",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "area": "endpoint",
+      "control": "Hidden files never served (/.env)",
+      "target": "home",
+      "passed": true,
+      "detail": "404"
+    },
+    {
+      "area": "endpoint",
+      "control": "Uploads over 1 MB refused",
+      "target": "home",
+      "passed": true,
+      "detail": "413"
+    },
+    {
+      "area": "endpoint",
+      "control": "HTTP redirects to HTTPS",
+      "target": "student-1",
+      "passed": true,
+      "detail": "301 -> https://omnitech-student-1.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/"
+    },
+    {
+      "area": "endpoint",
+      "control": "TLS 1.2 or newer",
+      "target": "student-1",
+      "passed": true,
+      "detail": "TLSv1.3"
+    },
+    {
+      "area": "endpoint",
+      "control": "Login required (no credentials)",
+      "target": "student-1",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Security headers",
+      "target": "student-1",
+      "passed": true,
+      "detail": "all present"
+    },
+    {
+      "area": "endpoint",
+      "control": "Server version hidden",
+      "target": "student-1",
+      "passed": true,
+      "detail": "nginx"
+    },
+    {
+      "area": "endpoint",
+      "control": "Wrong password rejected",
+      "target": "student-1",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Correct login accepted",
+      "target": "student-1",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "area": "endpoint",
+      "control": "Hidden files never served (/.env)",
+      "target": "student-1",
+      "passed": true,
+      "detail": "404"
+    },
+    {
+      "area": "endpoint",
+      "control": "Uploads over 1 MB refused",
+      "target": "student-1",
+      "passed": true,
+      "detail": "413"
+    },
+    {
+      "area": "endpoint",
+      "control": "HTTP redirects to HTTPS",
+      "target": "student-2",
+      "passed": true,
+      "detail": "301 -> https://omnitech-student-2.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/"
+    },
+    {
+      "area": "endpoint",
+      "control": "TLS 1.2 or newer",
+      "target": "student-2",
+      "passed": true,
+      "detail": "TLSv1.3"
+    },
+    {
+      "area": "endpoint",
+      "control": "Login required (no credentials)",
+      "target": "student-2",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Security headers",
+      "target": "student-2",
+      "passed": true,
+      "detail": "all present"
+    },
+    {
+      "area": "endpoint",
+      "control": "Server version hidden",
+      "target": "student-2",
+      "passed": true,
+      "detail": "nginx"
+    },
+    {
+      "area": "endpoint",
+      "control": "Wrong password rejected",
+      "target": "student-2",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Correct login accepted",
+      "target": "student-2",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "area": "endpoint",
+      "control": "Hidden files never served (/.env)",
+      "target": "student-2",
+      "passed": true,
+      "detail": "404"
+    },
+    {
+      "area": "endpoint",
+      "control": "Uploads over 1 MB refused",
+      "target": "student-2",
+      "passed": true,
+      "detail": "413"
+    },
+    {
+      "area": "endpoint",
+      "control": "HTTP redirects to HTTPS",
+      "target": "student-3",
+      "passed": true,
+      "detail": "301 -> https://omnitech-student-3.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/"
+    },
+    {
+      "area": "endpoint",
+      "control": "TLS 1.2 or newer",
+      "target": "student-3",
+      "passed": true,
+      "detail": "TLSv1.3"
+    },
+    {
+      "area": "endpoint",
+      "control": "Login required (no credentials)",
+      "target": "student-3",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Security headers",
+      "target": "student-3",
+      "passed": true,
+      "detail": "all present"
+    },
+    {
+      "area": "endpoint",
+      "control": "Server version hidden",
+      "target": "student-3",
+      "passed": true,
+      "detail": "nginx"
+    },
+    {
+      "area": "endpoint",
+      "control": "Wrong password rejected",
+      "target": "student-3",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Correct login accepted",
+      "target": "student-3",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "area": "endpoint",
+      "control": "Hidden files never served (/.env)",
+      "target": "student-3",
+      "passed": true,
+      "detail": "404"
+    },
+    {
+      "area": "endpoint",
+      "control": "Uploads over 1 MB refused",
+      "target": "student-3",
+      "passed": true,
+      "detail": "413"
+    },
+    {
+      "area": "endpoint",
+      "control": "HTTP redirects to HTTPS",
+      "target": "student-4",
+      "passed": true,
+      "detail": "301 -> https://omnitech-student-4.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/"
+    },
+    {
+      "area": "endpoint",
+      "control": "TLS 1.2 or newer",
+      "target": "student-4",
+      "passed": true,
+      "detail": "TLSv1.3"
+    },
+    {
+      "area": "endpoint",
+      "control": "Login required (no credentials)",
+      "target": "student-4",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Security headers",
+      "target": "student-4",
+      "passed": true,
+      "detail": "all present"
+    },
+    {
+      "area": "endpoint",
+      "control": "Server version hidden",
+      "target": "student-4",
+      "passed": true,
+      "detail": "nginx"
+    },
+    {
+      "area": "endpoint",
+      "control": "Wrong password rejected",
+      "target": "student-4",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Correct login accepted",
+      "target": "student-4",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "area": "endpoint",
+      "control": "Hidden files never served (/.env)",
+      "target": "student-4",
+      "passed": true,
+      "detail": "404"
+    },
+    {
+      "area": "endpoint",
+      "control": "Uploads over 1 MB refused",
+      "target": "student-4",
+      "passed": true,
+      "detail": "413"
+    },
+    {
+      "area": "endpoint",
+      "control": "HTTP redirects to HTTPS",
+      "target": "student-5",
+      "passed": true,
+      "detail": "301 -> https://omnitech-student-5.happypebble-4f98f20b.australiaeast.azurecontainerapps.io/"
+    },
+    {
+      "area": "endpoint",
+      "control": "TLS 1.2 or newer",
+      "target": "student-5",
+      "passed": true,
+      "detail": "TLSv1.3"
+    },
+    {
+      "area": "endpoint",
+      "control": "Login required (no credentials)",
+      "target": "student-5",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Security headers",
+      "target": "student-5",
+      "passed": true,
+      "detail": "all present"
+    },
+    {
+      "area": "endpoint",
+      "control": "Server version hidden",
+      "target": "student-5",
+      "passed": true,
+      "detail": "nginx"
+    },
+    {
+      "area": "endpoint",
+      "control": "Wrong password rejected",
+      "target": "student-5",
+      "passed": true,
+      "detail": "401"
+    },
+    {
+      "area": "endpoint",
+      "control": "Correct login accepted",
+      "target": "student-5",
+      "passed": true,
+      "detail": "200"
+    },
+    {
+      "area": "endpoint",
+      "control": "Hidden files never served (/.env)",
+      "target": "student-5",
+      "passed": true,
+      "detail": "404"
+    },
+    {
+      "area": "endpoint",
+      "control": "Uploads over 1 MB refused",
+      "target": "student-5",
+      "passed": true,
+      "detail": "413"
+    },
+    {
+      "area": "endpoint",
+      "control": "Rate limiting (10 req/s per caller, burst 40)",
+      "target": "home",
+      "passed": true,
+      "detail": "41 of 100 parallel requests got 429"
+    },
+    {
+      "area": "endpoint",
+      "control": "Only the gateway port is exposed, HTTPS only",
+      "target": "home",
+      "passed": true,
+      "detail": "targetPort 8080, allowInsecure False, containers ['app', 'gateway']"
+    },
+    {
+      "area": "data",
+      "control": "Secrets are Key Vault references (no values in the app)",
+      "target": "home",
+      "passed": true,
+      "detail": "gateway-password -> https://omnitech-kv-f8fb3a40.vault.azure.net/secrets/gateway-password"
+    },
+    {
+      "area": "data",
+      "control": "Images pulled with managed identity (no registry password)",
+      "target": "home",
+      "passed": true,
+      "detail": "omnitechf8fb3a40.azurecr.io via omnitech-apps"
+    },
+    {
+      "area": "data",
+      "control": "Runs as the least-privilege app identity",
+      "target": "home",
+      "passed": true,
+      "detail": "UserAssigned"
+    },
+    {
+      "area": "data",
+      "control": "No plain-text secrets in environment variables",
+      "target": "home",
+      "passed": true,
+      "detail": "none"
+    },
+    {
+      "area": "endpoint",
+      "control": "Only the gateway port is exposed, HTTPS only",
+      "target": "student-1",
+      "passed": true,
+      "detail": "targetPort 8080, allowInsecure False, containers ['app', 'gateway']"
+    },
+    {
+      "area": "data",
+      "control": "Secrets are Key Vault references (no values in the app)",
+      "target": "student-1",
+      "passed": true,
+      "detail": "gateway-password -> https://omnitech-kv-f8fb3a40.vault.azure.net/secrets/gateway-password"
+    },
+    {
+      "area": "data",
+      "control": "Images pulled with managed identity (no registry password)",
+      "target": "student-1",
+      "passed": true,
+      "detail": "omnitechf8fb3a40.azurecr.io via omnitech-apps"
+    },
+    {
+      "area": "data",
+      "control": "Runs as the least-privilege app identity",
+      "target": "student-1",
+      "passed": true,
+      "detail": "UserAssigned"
+    },
+    {
+      "area": "data",
+      "control": "No plain-text secrets in environment variables",
+      "target": "student-1",
+      "passed": true,
+      "detail": "none"
+    },
+    {
+      "area": "endpoint",
+      "control": "Only the gateway port is exposed, HTTPS only",
+      "target": "student-2",
+      "passed": true,
+      "detail": "targetPort 8080, allowInsecure False, containers ['app', 'gateway']"
+    },
+    {
+      "area": "data",
+      "control": "Secrets are Key Vault references (no values in the app)",
+      "target": "student-2",
+      "passed": true,
+      "detail": "gateway-password -> https://omnitech-kv-f8fb3a40.vault.azure.net/secrets/gateway-password"
+    },
+    {
+      "area": "data",
+      "control": "Images pulled with managed identity (no registry password)",
+      "target": "student-2",
+      "passed": true,
+      "detail": "omnitechf8fb3a40.azurecr.io via omnitech-apps"
+    },
+    {
+      "area": "data",
+      "control": "Runs as the least-privilege app identity",
+      "target": "student-2",
+      "passed": true,
+      "detail": "UserAssigned"
+    },
+    {
+      "area": "data",
+      "control": "No plain-text secrets in environment variables",
+      "target": "student-2",
+      "passed": true,
+      "detail": "none"
+    },
+    {
+      "area": "endpoint",
+      "control": "Only the gateway port is exposed, HTTPS only",
+      "target": "student-3",
+      "passed": true,
+      "detail": "targetPort 8080, allowInsecure False, containers ['app', 'gateway']"
+    },
+    {
+      "area": "data",
+      "control": "Secrets are Key Vault references (no values in the app)",
+      "target": "student-3",
+      "passed": true,
+      "detail": "gateway-password -> https://omnitech-kv-f8fb3a40.vault.azure.net/secrets/gateway-password"
+    },
+    {
+      "area": "data",
+      "control": "Images pulled with managed identity (no registry password)",
+      "target": "student-3",
+      "passed": true,
+      "detail": "omnitechf8fb3a40.azurecr.io via omnitech-apps"
+    },
+    {
+      "area": "data",
+      "control": "Runs as the least-privilege app identity",
+      "target": "student-3",
+      "passed": true,
+      "detail": "UserAssigned"
+    },
+    {
+      "area": "data",
+      "control": "No plain-text secrets in environment variables",
+      "target": "student-3",
+      "passed": true,
+      "detail": "none"
+    },
+    {
+      "area": "endpoint",
+      "control": "Only the gateway port is exposed, HTTPS only",
+      "target": "student-4",
+      "passed": true,
+      "detail": "targetPort 8080, allowInsecure False, containers ['app', 'gateway']"
+    },
+    {
+      "area": "data",
+      "control": "Secrets are Key Vault references (no values in the app)",
+      "target": "student-4",
+      "passed": true,
+      "detail": "gateway-password -> https://omnitech-kv-f8fb3a40.vault.azure.net/secrets/gateway-password"
+    },
+    {
+      "area": "data",
+      "control": "Images pulled with managed identity (no registry password)",
+      "target": "student-4",
+      "passed": true,
+      "detail": "omnitechf8fb3a40.azurecr.io via omnitech-apps"
+    },
+    {
+      "area": "data",
+      "control": "Runs as the least-privilege app identity",
+      "target": "student-4",
+      "passed": true,
+      "detail": "UserAssigned"
+    },
+    {
+      "area": "data",
+      "control": "No plain-text secrets in environment variables",
+      "target": "student-4",
+      "passed": true,
+      "detail": "none"
+    },
+    {
+      "area": "endpoint",
+      "control": "Only the gateway port is exposed, HTTPS only",
+      "target": "student-5",
+      "passed": true,
+      "detail": "targetPort 8080, allowInsecure False, containers ['app', 'gateway']"
+    },
+    {
+      "area": "data",
+      "control": "Secrets are Key Vault references (no values in the app)",
+      "target": "student-5",
+      "passed": true,
+      "detail": "gateway-password -> https://omnitech-kv-f8fb3a40.vault.azure.net/secrets/gateway-password"
+    },
+    {
+      "area": "data",
+      "control": "Images pulled with managed identity (no registry password)",
+      "target": "student-5",
+      "passed": true,
+      "detail": "omnitechf8fb3a40.azurecr.io via omnitech-apps"
+    },
+    {
+      "area": "data",
+      "control": "Runs as the least-privilege app identity",
+      "target": "student-5",
+      "passed": true,
+      "detail": "UserAssigned"
+    },
+    {
+      "area": "data",
+      "control": "No plain-text secrets in environment variables",
+      "target": "student-5",
+      "passed": true,
+      "detail": "none"
+    },
+    {
+      "area": "data",
+      "control": "Registry admin account disabled",
+      "target": "omnitechf8fb3a40",
+      "passed": true,
+      "detail": "adminUserEnabled False"
+    },
+    {
+      "area": "data",
+      "control": "Key Vault uses Azure RBAC and soft delete",
+      "target": "omnitech-kv-f8fb3a40",
+      "passed": true,
+      "detail": "RBAC True, soft delete True, retention 7 days"
+    },
+    {
+      "area": "data",
+      "control": "Gateway password stored only in Key Vault",
+      "target": "omnitech-kv-f8fb3a40",
+      "passed": true,
+      "detail": "secrets: gateway-password (values not read by this check)"
+    },
+    {
+      "area": "data",
+      "control": "App identity: only AcrPull + Key Vault Secrets User",
+      "target": "omnitech-apps",
+      "passed": true,
+      "detail": "AcrPull on omnitechf8fb3a40; Key Vault Secrets User on omnitech-kv-f8fb3a40"
+    },
+    {
+      "area": "data",
+      "control": "CI identity scoped to the resource group (not the subscription)",
+      "target": "github-ci",
+      "passed": true,
+      "detail": "Contributor on omnitech-rg; Key Vault Secrets User on omnitech-kv-f8fb3a40"
+    },
+    {
+      "area": "data",
+      "control": "No secrets committed to the repository (detect-secrets)",
+      "target": "repo",
+      "passed": true,
+      "detail": "0 findings in .secrets.baseline"
+    },
+    {
+      "area": "data",
+      "control": "CI logs in with OIDC (no stored Azure credentials)",
+      "target": "repo",
+      "passed": true,
+      "detail": "azure/login with a federated identity; no client secret"
+    },
+    {
+      "area": "data",
+      "control": "Images built only from git-tracked files (no local .env or *.db)",
+      "target": "repo",
+      "passed": true,
+      "detail": "deploy.sh copies `git ls-files` into a clean build folder"
+    }
+  ]
+}

@@ -12,7 +12,8 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        args: [--baseline, .secrets.baseline]
+        # image_tag is the deployed git commit hash, written by deploy.sh into the cloud evidence
+        args: [--baseline, .secrets.baseline, --exclude-lines, '"image_tag": "[0-9a-f]{7,40}"']
         exclude: '\.(png|jpe?g|pdf|db|ttf|ico)$'
 
   - repo: local

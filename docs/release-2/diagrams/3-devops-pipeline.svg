@@ -1,0 +1,70 @@
+<!-- content 1600x760 --><svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 1600 1600"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4a5568"/></marker><marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#4a5568"/></marker></defs><rect width="1600" height="1600" fill="#ffffff"/><text x="40" y="46" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="26" font-weight="bold" fill="#1f2330" text-anchor="start">OmniTech Release 2: DevOps deployment flow</text>
+<text x="40" y="72" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="normal" fill="#5b6475" text-anchor="start">From a commit on a laptop to a reviewed release on Azure. A failure at any step stops the steps after it.</text>
+<rect x="30" y="100" width="1540" height="270" rx="14" fill="none" stroke="#6a91b2" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="46" y="126" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#6a91b2" text-anchor="start">Local machine and GitHub (every student)</text>
+<rect x="60" y="145" width="268" height="180" rx="10" fill="#1f2330" stroke="#1f2330" stroke-width="2"/>
+<text x="74" y="169" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#ffffff" text-anchor="start">1  Source control</text>
+<text x="74" y="191" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#d9dee8" text-anchor="start">Developer commits</text>
+<text x="74" y="210" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#d9dee8" text-anchor="start">on a feature branch</text>
+<path d="M 328 235 L 368 235" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="368" y="145" width="268" height="180" rx="10" fill="#eef7f0" stroke="#5a9e6f" stroke-width="2"/>
+<text x="382" y="169" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">2  Pre-commit security</text>
+<text x="382" y="191" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Ruff security rules (S)</text>
+<text x="382" y="210" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">detect-secrets</text>
+<text x="382" y="229" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">pip-audit</text>
+<text x="382" y="248" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Blocks the commit on findings</text>
+<path d="M 636 235 L 676 235" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="676" y="145" width="268" height="180" rx="10" fill="#ffffff" stroke="#6a91b2" stroke-width="2"/>
+<text x="690" y="169" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">3  Push to GitHub</text>
+<text x="690" y="191" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Pull request into main</text>
+<text x="690" y="210" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">(shared repository)</text>
+<path d="M 944 235 L 984 235" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="984" y="145" width="268" height="180" rx="10" fill="#f4f1fb" stroke="#7b68b5" stroke-width="2"/>
+<text x="998" y="169" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">4  GitHub Actions</text>
+<text x="998" y="191" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">student-1 … student-5.yml</text>
+<text x="998" y="210" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Syntax check</text>
+<text x="998" y="229" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Two endpoint tests (post-commit)</text>
+<text x="998" y="248" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Full test suite</text>
+<path d="M 1252 235 L 1292 235" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="1292" y="145" width="268" height="180" rx="10" fill="#f4f1fb" stroke="#7b68b5" stroke-width="2"/>
+<text x="1306" y="169" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">5  Docker build</text>
+<text x="1306" y="191" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Each student&#x27;s image</text>
+<text x="1306" y="210" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">builds and validates</text>
+<text x="1306" y="229" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">in the same workflow</text>
+<rect x="30" y="410" width="1540" height="320" rx="14" fill="none" stroke="#3b78b5" stroke-width="2" stroke-dasharray="8 6"/>
+<text x="46" y="436" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#3b78b5" text-anchor="start">Cloud deployment (runs on every push to main, or manually)</text>
+<rect x="60" y="455" width="268" height="190" rx="10" fill="#f4f1fb" stroke="#7b68b5" stroke-width="2"/>
+<text x="74" y="479" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">6  cloud-deployment.yml</text>
+<text x="74" y="501" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Calls all five student</text>
+<text x="74" y="520" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">workflows; deploys only</text>
+<text x="74" y="539" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">if every one passes</text>
+<path d="M 328 550 L 368 550" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="368" y="455" width="268" height="190" rx="10" fill="#eef7f0" stroke="#5a9e6f" stroke-width="2"/>
+<text x="382" y="479" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">7  Azure login (OIDC)</text>
+<text x="382" y="501" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Short-lived token,</text>
+<text x="382" y="520" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">no stored secret,</text>
+<text x="382" y="539" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">scoped to omnitech-rg</text>
+<path d="M 636 550 L 676 550" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="676" y="455" width="268" height="190" rx="10" fill="#eef4fb" stroke="#3b78b5" stroke-width="2"/>
+<text x="690" y="479" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">8  deploy.sh</text>
+<text x="690" y="501" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Build linux/amd64 images</text>
+<text x="690" y="520" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">from git-tracked files</text>
+<text x="690" y="539" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">Push to ACR, update the</text>
+<text x="690" y="558" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">six Container Apps (AI off)</text>
+<path d="M 944 550 L 984 550" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="984" y="455" width="268" height="190" rx="10" fill="#eef4fb" stroke="#3b78b5" stroke-width="2"/>
+<text x="998" y="479" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#1f2330" text-anchor="start">9  Validate</text>
+<text x="998" y="501" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">smoke_test.py: pages + CRUD</text>
+<text x="998" y="520" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">through the login</text>
+<text x="998" y="539" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">security_check.py:</text>
+<text x="998" y="558" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#5b6475" text-anchor="start">endpoint + data controls</text>
+<path d="M 1252 550 L 1292 550" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<rect x="1292" y="455" width="268" height="190" rx="10" fill="#1f2330" stroke="#1f2330" stroke-width="2"/>
+<text x="1306" y="479" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="15" font-weight="bold" fill="#ffffff" text-anchor="start">10  Review + release</text>
+<text x="1306" y="501" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#d9dee8" text-anchor="start">Evidence artifact →</text>
+<text x="1306" y="520" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#d9dee8" text-anchor="start">agentic-loop Cloud</text>
+<text x="1306" y="539" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#d9dee8" text-anchor="start">Deployment Review →</text>
+<text x="1306" y="558" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="normal" fill="#d9dee8" text-anchor="start">human release decision</text>
+<path d="M 1426 325 L 1426 392 L 40 392 L 40 550 L 60 550" fill="none" stroke="#4a5568" stroke-width="2" marker-end="url(#ah)"/>
+<text x="1438" y="356" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="13" font-weight="bold" fill="#4a5568" text-anchor="start">merge to main</text>
+<text x="60" y="700" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="14" font-weight="normal" fill="#5b6475" text-anchor="start">Failures: a pre-commit finding blocks the commit · a failed student workflow skips the deploy · a failed smoke or security check fails the run.</text></svg>
