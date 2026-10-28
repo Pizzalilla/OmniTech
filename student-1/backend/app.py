@@ -41,7 +41,7 @@ from sqlite3 import IntegrityError
 load_dotenv()
 init_db()
 
-# the agentic loop logs each stage here, so it shows up in docker compose logs
+# the agentic loop logs each stage here
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(message)s")
 
 app = Flask(
@@ -50,7 +50,7 @@ app = Flask(
     static_folder=str(ROOT / "frontend" / "static"),
 )
 
-# the unified home page
+# the home page
 HOME_URL = os.getenv("HOME_URL", "http://localhost:8080")
 
 # shared local MCP / RAG servers
@@ -849,13 +849,18 @@ def multi_agent_decision():
     if not MULTI_AGENT_ENABLED:
         return _ma_reply(error=MA_DISABLED, product_id=product_id, status=503)
 
+    decision = str(data.get("decision", ""))
+    # the form pre-fills the draft, so only Correct should send it to the audit log
+    corrected_answer = (
+        str(data.get("corrected_answer", "")) if decision.strip().lower() == "correct" else ""
+    )
     try:
         workflow = multi_agent_client.decide(
             workflow_id,
-            str(data.get("decision", "")),
+            decision,
             reviewer=str(data.get("reviewer", "staff")),
             note=str(data.get("note", "")),
-            corrected_answer=str(data.get("corrected_answer", "")),
+            corrected_answer=corrected_answer,
         )
     except (requests.RequestException, ValueError):
         return _ma_reply(error=MA_OFFLINE, product_id=product_id, status=503)

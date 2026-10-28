@@ -42,13 +42,18 @@
         <input type="hidden" name="product_id" value="{{ product_id or '' }}">
         <input type="text" name="reviewer" value="staff" maxlength="50" aria-label="Reviewer name">
         <textarea name="note" rows="2" placeholder="Note (needed for Partial and Reject)"></textarea>
-        <textarea name="corrected_answer" rows="2" placeholder="Corrected description (needed for Correct)"></textarea>
+        <label class="ma-dim" for="ma-corrected-{{ w.id }}">
+            Edit the Worker draft below, fixing or adding only what is missing, then press Correct.
+            Approve and Partial keep the draft as written.
+        </label>
+        <textarea id="ma-corrected-{{ w.id }}" name="corrected_answer" rows="5">{{ w.work.answer }}</textarea>
         <div class="ma-buttons">
             {% for value, label in [("approve", "Approve"), ("correct", "Correct"), ("partial", "Partial"), ("reject", "Reject")] %}
             <button type="button" class="btn{{ ' btn-secondary' if value == 'reject' else '' }}"
                     hx-post="{{ url_for('multi_agent_decision') }}"
                     hx-include="closest form"
                     hx-vals='{"decision": "{{ value }}"}'
+                    hx-disabled-elt="#ma-result .ma-buttons button"
                     hx-target="#ma-result" hx-swap="innerHTML">{{ label }}</button>
             {% endfor %}
         </div>

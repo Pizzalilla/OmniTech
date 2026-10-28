@@ -137,15 +137,32 @@
         Approve, correct, or partial saves the description. Reject leaves it as it is.
     </p>
     <div class="mcp-actions">
-        <button type="button" class="btn"
+        <button type="button" class="btn ai-review-btn"
                 hx-post="{{ url_for('multi_agent_review', product_id=product.id) }}"
                 hx-target="#ma-result" hx-swap="innerHTML"
-                hx-disabled-elt="this">Review this listing</button>
+                hx-indicator="#ma-output"
+                hx-disabled-elt="this">
+            <span class="ai-btn-idle">Review this listing</span>
+            <span class="ai-btn-busy">Agents working&hellip;</span>
+        </button>
         <button type="button" class="btn btn-secondary"
                 hx-get="{{ url_for('multi_agent_history') }}"
                 hx-target="#ma-result" hx-swap="innerHTML"
                 hx-disabled-elt="this">Review history</button>
     </div>
-    <div id="ma-result"></div>
+    <div id="ma-output">
+        <div id="ma-waiting" class="ai-waiting-panel" role="status" aria-live="polite">
+            <span class="ai-spinner" aria-hidden="true"></span>
+            <div>
+                <strong>Multi-Agent review running</strong>
+                <p>
+                    The Planner builds a plan, the Worker drafts a description from the
+                    specifications, then the Reviewer checks it. Three model calls run
+                    in sequence, so this can take up to a minute.
+                </p>
+            </div>
+        </div>
+        <div id="ma-result"></div>
+    </div>
 </section>
 {% endblock %}
