@@ -1,0 +1,82 @@
+{
+  "id": "wf-e0919325",
+  "student": "student-5",
+  "task": "Review this warranty claim as a separate quality-review workflow. Use only the supplied ticket and MCP product evidence. Assess whether the claim is consistent with the product information, identify missing evidence and risks, and state what should be checked before a warranty decision is made. Do not invent warranty terms. Do not update the ticket or automatically approve or reject the warranty claim. The workflow ends with a human review of its output.",
+  "evidence": {
+    "warranty_ticket": {
+      "ticket_id": 12,
+      "product_id": 9,
+      "product_category": "Blender",
+      "claim": "The blades were chipped, order number #9, the blades are chipped and dull, when it runs, the food does not get cut because of this, even a banana is not getting chopped properly.",
+      "current_ticket_status": "Pending"
+    },
+    "product_information_from_mcp": {
+      "product_category": "Blender",
+      "product_description": "Fastest and sharpest blender",
+      "product_id": 9,
+      "product_name": "Ninja Blender",
+      "product_price": 300.0,
+      "product_warranty_years": 4
+    }
+  },
+  "status": "approved",
+  "created_at": "2026-10-27T05:10:02+00:00",
+  "plan": {
+    "goal": "Review warranty claim as a separate quality-review workflow",
+    "steps": [
+      "Step 1: Review ticket and MCP product information",
+      "Step 2: Identify inconsistencies and missing evidence",
+      "Step 3: Assess risks and required checks",
+      "Step 4: Generate report for human review"
+    ],
+    "evidence_needed": [
+      "warranty_ticket",
+      "product_information_from_mcp"
+    ],
+    "success_criteria": [
+      "{'claim is consistent with product information': 'The claim is assessed as consistent or inconsistent with the provided product information.', 'missing evidence identified': 'All required evidence is listed in the report.', 'risks and checks are assessed': 'Potential risks and necessary checks are clearly outlined in the report.'}"
+    ],
+    "missing_evidence": []
+  },
+  "work": {
+    "answer": "The claim is inconsistent with the product information, missing evidence includes the date of purchase and serial number of the blender.",
+    "steps_done": [
+      "Step 1: Review ticket and MCP product information",
+      "Step 2: Identify inconsistencies and missing evidence"
+    ],
+    "evidence_used": [
+      "Review ticket and MCP product information",
+      "Identify inconsistencies and missing evidence"
+    ],
+    "issues": [
+      "Missing evidence includes the date of purchase and serial number of the blender."
+    ]
+  },
+  "review": {
+    "verdict": "needs_changes",
+    "summary": "The claim is inconsistent with the product information, but some required evidence was not identified.",
+    "risks": [
+      "Risk to customer: Inaccurate warranty assessment may lead to incorrect decision-making.",
+      "Risk to business: Potential financial loss due to misinterpretation of warranty terms."
+    ],
+    "recommendations": [
+      "Check for date of purchase and serial number in the warranty ticket.",
+      "Verify that all required evidence is present before making a warranty decision."
+    ],
+    "checks": [
+      "Worker cited evidence that was never supplied: Review ticket and MCP product information, Identify inconsistencies and missing evidence",
+      "Worker reported 1 issue(s)"
+    ]
+  },
+  "human": {
+    "decision": "approve",
+    "reviewer": "staff",
+    "note": "LGTM! Solid reasoning!",
+    "corrected_answer": null,
+    "agreed_with_reviewer": false,
+    "decided_at": "2026-10-27T05:11:44+00:00"
+  },
+  "final_answer": "The claim is inconsistent with the product information, missing evidence includes the date of purchase and serial number of the blender.",
+  "error": null,
+  "updated_at": "2026-10-27T05:11:44+00:00"
+}
