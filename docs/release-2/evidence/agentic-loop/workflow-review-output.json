@@ -1,0 +1,621 @@
+{
+  "status": "AWAITING_HUMAN",
+  "review_mode": "multi_agent_workflow_review",
+  "workflow_id": "wf-182b4b9f",
+  "workflow": {
+    "created_at": "2026-10-28T10:01:13+00:00",
+    "error": null,
+    "evidence": {
+      "completed_workflows": [
+        {
+          "audit_trail": [
+            "workflow_started",
+            "plan_created",
+            "task_completed",
+            "review_completed",
+            "awaiting_human_review",
+            "decision_correct"
+          ],
+          "evidence_supplied": [
+            "product",
+            "specifications",
+            "store_policy"
+          ],
+          "final_status": "corrected",
+          "human_review": {
+            "agreed_with_reviewer": false,
+            "decision": "correct",
+            "note": "",
+            "reviewer": "staff"
+          },
+          "planner": {
+            "goal": "Review the product listing for accuracy and completeness",
+            "steps": 4
+          },
+          "reviewer": {
+            "risks": [],
+            "summary": "The product listing appears to be accurate and complete, with matching product specifications and no applicable store policy restrictions.",
+            "verdict": "pass"
+          },
+          "source": "docs/release-2/evidence/multi-agent/student-1-workflow-wf-7f4ee09b.json",
+          "student": "student-1",
+          "task": "Review this product listing for a shopper. Use only the supplied product, specifications, and store policy. Do not invent specifications or prices.",
+          "worker": {
+            "answer": "The product listing appears to be accurate, product specifications match the provided information, and store policy does not have any restrictions for the AquaJet Slimline 14.",
+            "evidence_used": [
+              "product",
+              "specifications",
+              "store_policy"
+            ],
+            "issues": []
+          },
+          "workflow_id": "wf-7f4ee09b"
+        },
+        {
+          "audit_trail": [],
+          "evidence_supplied": [
+            "profile",
+            "preferences",
+            "system_rules"
+          ],
+          "final_status": "approved",
+          "human_review": {
+            "agreed_with_reviewer": false,
+            "decision": "approve",
+            "note": "",
+            "reviewer": "Staff Dashboard User"
+          },
+          "planner": {
+            "goal": "generate JSON object with recommended_tags and reasoning based on customer profile and preferences",
+            "steps": 4
+          },
+          "reviewer": {
+            "risks": [],
+            "summary": "The worker successfully generated recommended_tags based on the customer profile and preferences, and provided a clear reasoning string.",
+            "verdict": "needs_changes"
+          },
+          "source": "docs/release-2/evidence/multi-agent/student-2-workflow-wf-da396928.json",
+          "student": "student-2",
+          "task": "Analyze the customer profile and preferences. Output a JSON object with 'recommended_tags' (list of valid strings based on system rules) and 'reasoning' (string).",
+          "worker": {
+            "answer": "{\"recommended_tags\": [\"open hardware\", \"high performance storage\"], \"reasoning\": \"Customer Olivia Rodeo has a preference for budget tier and notes open hardware and high performance storage.\"}",
+            "evidence_used": [
+              "customer profile and preferences",
+              "system rules"
+            ],
+            "issues": []
+          },
+          "workflow_id": "wf-da396928"
+        },
+        {
+          "audit_trail": [
+            "workflow_started",
+            "plan_created",
+            "task_completed",
+            "review_completed",
+            "awaiting_human_review",
+            "decision_correct"
+          ],
+          "evidence_supplied": [
+            "recommendation",
+            "customer_requests",
+            "other_catalog_matches",
+            "store_policy"
+          ],
+          "final_status": "corrected",
+          "human_review": {
+            "agreed_with_reviewer": false,
+            "decision": "correct",
+            "note": "",
+            "reviewer": "staff"
+          },
+          "planner": {
+            "goal": "generate a personalized product recommendation based on customer requests",
+            "steps": 4
+          },
+          "reviewer": {
+            "risks": [
+              "Insufficient consideration of budget constraint"
+            ],
+            "summary": "The recommendation fits the customer's need for a laptop that can handle 4K timelines in a video editor, but it does not consider budget constraints.",
+            "verdict": "pass"
+          },
+          "source": "docs/release-2/evidence/multi-agent/student-3-workflow-wf-f3569d0e.json",
+          "student": "student-3",
+          "task": "Check whether this saved product recommendation fits what the customer asked for (needs, budget and preferences), using only the evidence. Then write a short final recommendation the customer can r...",
+          "worker": {
+            "answer": "Based on your request for a laptop that can handle 4K timelines in a video editor, we recommend the Meridian Pro 16 (LAP-001) from Aeon. This flagship creator laptop features a 16-core CPU, 32GB RAM, and 1TB SSD, making it ideal for 4K video editing and 3D ...",
+            "evidence_used": [
+              "customer_requests",
+              "other_catalog_matches",
+              "store_policy"
+            ],
+            "issues": []
+          },
+          "workflow_id": "wf-f3569d0e"
+        },
+        {
+          "audit_trail": [
+            "workflow_started",
+            "plan_created",
+            "task_completed",
+            "review_completed",
+            "awaiting_human_review",
+            "decision_partial"
+          ],
+          "evidence_supplied": [
+            "cart",
+            "product_specs",
+            "safety_checks",
+            "store_policy"
+          ],
+          "final_status": "partially_accepted",
+          "human_review": {
+            "agreed_with_reviewer": false,
+            "decision": "partial",
+            "note": "Stock checked",
+            "reviewer": "staff"
+          },
+          "planner": {
+            "goal": "Verify cart contents and provide necessary customer information before checkout",
+            "steps": 4
+          },
+          "reviewer": {
+            "risks": [
+              "Customer may not be aware of the necessary installation requirements"
+            ],
+            "summary": "The worker has provided accurate information about the product specs, safety checks, and store policy requirements, and has confirmed the total cost and stock levels. However, the worker could have...",
+            "verdict": "pass"
+          },
+          "source": "docs/release-2/evidence/multi-agent/student-4-workflow-wf-4c850c13.json",
+          "student": "student-4",
+          "task": "Check this cart is ready for checkout. Confirm stock, prices and the total, and list anything the customer must know before paying (delivery, power points, installation).",
+          "worker": {
+            "answer": "The Induction Cooktop 2000W has a 10A plug and requires a standard Australian power point. Ensure there is sufficient clearance for the fridge, microwave, and air fryer. A licensed electrician should install the appliance on a 32A circuit if it exceeds 3600...",
+            "evidence_used": [
+              "cart",
+              "product_specs",
+              "safety_checks",
+              "store_policy"
+            ],
+            "issues": []
+          },
+          "workflow_id": "wf-4c850c13"
+        },
+        {
+          "audit_trail": [],
+          "evidence_supplied": [
+            "warranty_ticket",
+            "product_information_from_mcp"
+          ],
+          "final_status": "approved",
+          "human_review": {
+            "agreed_with_reviewer": false,
+            "decision": "approve",
+            "note": "LGTM! Solid reasoning!",
+            "reviewer": "staff"
+          },
+          "planner": {
+            "goal": "Review warranty claim as a separate quality-review workflow",
+            "steps": 4
+          },
+          "reviewer": {
+            "risks": [
+              "Risk to customer: Inaccurate warranty assessment may lead to incorrect decision-making.",
+              "Risk to business: Potential financial loss due to misinterpretation of warranty terms."
+            ],
+            "summary": "The claim is inconsistent with the product information, but some required evidence was not identified.",
+            "verdict": "needs_changes"
+          },
+          "source": "docs/release-2/evidence/multi-agent/student-5-workflow-wf-e0919325.json",
+          "student": "student-5",
+          "task": "Review this warranty claim as a separate quality-review workflow. Use only the supplied ticket and MCP product evidence. Assess whether the claim is consistent with the product information, identif...",
+          "worker": {
+            "answer": "The claim is inconsistent with the product information, missing evidence includes the date of purchase and serial number of the blender.",
+            "evidence_used": [
+              "Review ticket and MCP product information",
+              "Identify inconsistencies and missing evidence"
+            ],
+            "issues": [
+              "Missing evidence includes the date of purchase and serial number of the blender."
+            ]
+          },
+          "workflow_id": "wf-e0919325"
+        }
+      ],
+      "implementation": {
+        "agents": "Planner -> Worker -> Reviewer (agents.py), then a human decision (workflow.py)",
+        "audit": "logs/history/<id>.json per workflow, logs/audit.jsonl one line per event",
+        "automated_tests": 26,
+        "decision_rules": "correct needs a corrected answer; partial and reject need a note",
+        "endpoints": [
+          "POST /workflow/start",
+          "POST /workflow/<id>/decision",
+          "GET /workflow/<id>",
+          "GET /workflows",
+          "GET /audit"
+        ],
+        "error_handling": [
+          "missing student, task or evidence -> HTTP 400 before any agent runs",
+          "Ollama unreachable, non-JSON reply or empty plan -> workflow status 'failed', HTTP 503, error saved in the audit log; feature UIs show a clear message",
+          "decision on an unknown workflow -> 404; on one already decided -> 409; invalid decision or missing note / corrected answer -> 400",
+          "evidence over 6000 characters is cut short so prompts stay within the model's context"
+        ],
+        "evidence_flow": "the feature backend sends task + evidence; the Planner lists the evidence it needs; the Worker answers only from that evidence and names what it used; the Reviewer checks the answer against the plan and evidence; the human decides",
+        "human_decisions": [
+          "approve",
+          "correct",
+          "partial",
+          "reject"
+        ],
+        "server": "ai-services/multi-agent-server/server.py, port 6004, non-containerised",
+        "terminal_access": "cli.py run / decide / list / show use the same workflow and logs"
+      },
+      "missing_evidence": []
+    },
+    "final_answer": null,
+    "human": null,
+    "id": "wf-182b4b9f",
+    "plan": {
+      "evidence_needed": [
+        "implementation",
+        "completed_workflows",
+        "missing_evidence"
+      ],
+      "goal": "Evaluate the Planner, Worker and Reviewer workflow for improvement",
+      "missing_evidence": [],
+      "steps": [
+        "Analyze the current workflow structure",
+        "Identify areas for evidence flow optimization",
+        "Assess error handling mechanisms",
+        "Review human approval processes",
+        "Document audit trail functionality"
+      ],
+      "success_criteria": [
+        "Provide a comprehensive evaluation of the workflow"
+      ]
+    },
+    "review": {
+      "checks": [],
+      "recommendations": [
+        "Worker should provide evidence from completed workflows; Reviewer should be re-trained to ensure consistency with human review decisions"
+      ],
+      "risks": [
+        "inconsistent Reviewer verdicts"
+      ],
+      "summary": "The Worker output is missing evidence from completed workflows, and the Reviewer verdicts are not always consistent with the human review decisions.",
+      "verdict": "needs_changes"
+    },
+    "status": "awaiting_human",
+    "student": "group",
+    "task": "Review the Planner, Worker and Reviewer workflow. Evaluate their responsibilities, evidence flow, error handling, human approval and audit trail.",
+    "updated_at": "2026-10-28T10:01:31+00:00",
+    "work": {
+      "answer": "The current workflow structure is as follows: Planner -> Worker -> Reviewer. The evidence flow is that the feature backend sends task + evidence, the Planner lists the evidence it needs, the Worker answers only from that evidence and names what it used, the Reviewer checks the answer against the plan and evidence, and a human decides. Error handling includes HTTP 400 for missing student, task or evidence, HTTP 503 for Ollama unreachable non-JSON reply or empty plan, HTTP 404 for unknown workflow, HTTP 409 for already decided workflow, HTTP 400 for invalid decision or missing note/corrected answer, and truncating evidence over 6000 characters. Automated tests are 26.",
+      "evidence_used": [
+        "implementation"
+      ],
+      "issues": [],
+      "steps_done": [
+        "Analyze the current workflow structure",
+        "Identify areas for evidence flow optimization",
+        "Assess error handling mechanisms",
+        "Review human approval processes",
+        "Document audit trail functionality"
+      ]
+    }
+  },
+  "attempts": [
+    {
+      "attempt": 1,
+      "http_status": 201,
+      "response": {
+        "created_at": "2026-10-28T10:01:13+00:00",
+        "error": null,
+        "evidence": {
+          "completed_workflows": [
+            {
+              "audit_trail": [
+                "workflow_started",
+                "plan_created",
+                "task_completed",
+                "review_completed",
+                "awaiting_human_review",
+                "decision_correct"
+              ],
+              "evidence_supplied": [
+                "product",
+                "specifications",
+                "store_policy"
+              ],
+              "final_status": "corrected",
+              "human_review": {
+                "agreed_with_reviewer": false,
+                "decision": "correct",
+                "note": "",
+                "reviewer": "staff"
+              },
+              "planner": {
+                "goal": "Review the product listing for accuracy and completeness",
+                "steps": 4
+              },
+              "reviewer": {
+                "risks": [],
+                "summary": "The product listing appears to be accurate and complete, with matching product specifications and no applicable store policy restrictions.",
+                "verdict": "pass"
+              },
+              "source": "docs/release-2/evidence/multi-agent/student-1-workflow-wf-7f4ee09b.json",
+              "student": "student-1",
+              "task": "Review this product listing for a shopper. Use only the supplied product, specifications, and store policy. Do not invent specifications or prices.",
+              "worker": {
+                "answer": "The product listing appears to be accurate, product specifications match the provided information, and store policy does not have any restrictions for the AquaJet Slimline 14.",
+                "evidence_used": [
+                  "product",
+                  "specifications",
+                  "store_policy"
+                ],
+                "issues": []
+              },
+              "workflow_id": "wf-7f4ee09b"
+            },
+            {
+              "audit_trail": [],
+              "evidence_supplied": [
+                "profile",
+                "preferences",
+                "system_rules"
+              ],
+              "final_status": "approved",
+              "human_review": {
+                "agreed_with_reviewer": false,
+                "decision": "approve",
+                "note": "",
+                "reviewer": "Staff Dashboard User"
+              },
+              "planner": {
+                "goal": "generate JSON object with recommended_tags and reasoning based on customer profile and preferences",
+                "steps": 4
+              },
+              "reviewer": {
+                "risks": [],
+                "summary": "The worker successfully generated recommended_tags based on the customer profile and preferences, and provided a clear reasoning string.",
+                "verdict": "needs_changes"
+              },
+              "source": "docs/release-2/evidence/multi-agent/student-2-workflow-wf-da396928.json",
+              "student": "student-2",
+              "task": "Analyze the customer profile and preferences. Output a JSON object with 'recommended_tags' (list of valid strings based on system rules) and 'reasoning' (string).",
+              "worker": {
+                "answer": "{\"recommended_tags\": [\"open hardware\", \"high performance storage\"], \"reasoning\": \"Customer Olivia Rodeo has a preference for budget tier and notes open hardware and high performance storage.\"}",
+                "evidence_used": [
+                  "customer profile and preferences",
+                  "system rules"
+                ],
+                "issues": []
+              },
+              "workflow_id": "wf-da396928"
+            },
+            {
+              "audit_trail": [
+                "workflow_started",
+                "plan_created",
+                "task_completed",
+                "review_completed",
+                "awaiting_human_review",
+                "decision_correct"
+              ],
+              "evidence_supplied": [
+                "recommendation",
+                "customer_requests",
+                "other_catalog_matches",
+                "store_policy"
+              ],
+              "final_status": "corrected",
+              "human_review": {
+                "agreed_with_reviewer": false,
+                "decision": "correct",
+                "note": "",
+                "reviewer": "staff"
+              },
+              "planner": {
+                "goal": "generate a personalized product recommendation based on customer requests",
+                "steps": 4
+              },
+              "reviewer": {
+                "risks": [
+                  "Insufficient consideration of budget constraint"
+                ],
+                "summary": "The recommendation fits the customer's need for a laptop that can handle 4K timelines in a video editor, but it does not consider budget constraints.",
+                "verdict": "pass"
+              },
+              "source": "docs/release-2/evidence/multi-agent/student-3-workflow-wf-f3569d0e.json",
+              "student": "student-3",
+              "task": "Check whether this saved product recommendation fits what the customer asked for (needs, budget and preferences), using only the evidence. Then write a short final recommendation the customer can r...",
+              "worker": {
+                "answer": "Based on your request for a laptop that can handle 4K timelines in a video editor, we recommend the Meridian Pro 16 (LAP-001) from Aeon. This flagship creator laptop features a 16-core CPU, 32GB RAM, and 1TB SSD, making it ideal for 4K video editing and 3D ...",
+                "evidence_used": [
+                  "customer_requests",
+                  "other_catalog_matches",
+                  "store_policy"
+                ],
+                "issues": []
+              },
+              "workflow_id": "wf-f3569d0e"
+            },
+            {
+              "audit_trail": [
+                "workflow_started",
+                "plan_created",
+                "task_completed",
+                "review_completed",
+                "awaiting_human_review",
+                "decision_partial"
+              ],
+              "evidence_supplied": [
+                "cart",
+                "product_specs",
+                "safety_checks",
+                "store_policy"
+              ],
+              "final_status": "partially_accepted",
+              "human_review": {
+                "agreed_with_reviewer": false,
+                "decision": "partial",
+                "note": "Stock checked",
+                "reviewer": "staff"
+              },
+              "planner": {
+                "goal": "Verify cart contents and provide necessary customer information before checkout",
+                "steps": 4
+              },
+              "reviewer": {
+                "risks": [
+                  "Customer may not be aware of the necessary installation requirements"
+                ],
+                "summary": "The worker has provided accurate information about the product specs, safety checks, and store policy requirements, and has confirmed the total cost and stock levels. However, the worker could have...",
+                "verdict": "pass"
+              },
+              "source": "docs/release-2/evidence/multi-agent/student-4-workflow-wf-4c850c13.json",
+              "student": "student-4",
+              "task": "Check this cart is ready for checkout. Confirm stock, prices and the total, and list anything the customer must know before paying (delivery, power points, installation).",
+              "worker": {
+                "answer": "The Induction Cooktop 2000W has a 10A plug and requires a standard Australian power point. Ensure there is sufficient clearance for the fridge, microwave, and air fryer. A licensed electrician should install the appliance on a 32A circuit if it exceeds 3600...",
+                "evidence_used": [
+                  "cart",
+                  "product_specs",
+                  "safety_checks",
+                  "store_policy"
+                ],
+                "issues": []
+              },
+              "workflow_id": "wf-4c850c13"
+            },
+            {
+              "audit_trail": [],
+              "evidence_supplied": [
+                "warranty_ticket",
+                "product_information_from_mcp"
+              ],
+              "final_status": "approved",
+              "human_review": {
+                "agreed_with_reviewer": false,
+                "decision": "approve",
+                "note": "LGTM! Solid reasoning!",
+                "reviewer": "staff"
+              },
+              "planner": {
+                "goal": "Review warranty claim as a separate quality-review workflow",
+                "steps": 4
+              },
+              "reviewer": {
+                "risks": [
+                  "Risk to customer: Inaccurate warranty assessment may lead to incorrect decision-making.",
+                  "Risk to business: Potential financial loss due to misinterpretation of warranty terms."
+                ],
+                "summary": "The claim is inconsistent with the product information, but some required evidence was not identified.",
+                "verdict": "needs_changes"
+              },
+              "source": "docs/release-2/evidence/multi-agent/student-5-workflow-wf-e0919325.json",
+              "student": "student-5",
+              "task": "Review this warranty claim as a separate quality-review workflow. Use only the supplied ticket and MCP product evidence. Assess whether the claim is consistent with the product information, identif...",
+              "worker": {
+                "answer": "The claim is inconsistent with the product information, missing evidence includes the date of purchase and serial number of the blender.",
+                "evidence_used": [
+                  "Review ticket and MCP product information",
+                  "Identify inconsistencies and missing evidence"
+                ],
+                "issues": [
+                  "Missing evidence includes the date of purchase and serial number of the blender."
+                ]
+              },
+              "workflow_id": "wf-e0919325"
+            }
+          ],
+          "implementation": {
+            "agents": "Planner -> Worker -> Reviewer (agents.py), then a human decision (workflow.py)",
+            "audit": "logs/history/<id>.json per workflow, logs/audit.jsonl one line per event",
+            "automated_tests": 26,
+            "decision_rules": "correct needs a corrected answer; partial and reject need a note",
+            "endpoints": [
+              "POST /workflow/start",
+              "POST /workflow/<id>/decision",
+              "GET /workflow/<id>",
+              "GET /workflows",
+              "GET /audit"
+            ],
+            "error_handling": [
+              "missing student, task or evidence -> HTTP 400 before any agent runs",
+              "Ollama unreachable, non-JSON reply or empty plan -> workflow status 'failed', HTTP 503, error saved in the audit log; feature UIs show a clear message",
+              "decision on an unknown workflow -> 404; on one already decided -> 409; invalid decision or missing note / corrected answer -> 400",
+              "evidence over 6000 characters is cut short so prompts stay within the model's context"
+            ],
+            "evidence_flow": "the feature backend sends task + evidence; the Planner lists the evidence it needs; the Worker answers only from that evidence and names what it used; the Reviewer checks the answer against the plan and evidence; the human decides",
+            "human_decisions": [
+              "approve",
+              "correct",
+              "partial",
+              "reject"
+            ],
+            "server": "ai-services/multi-agent-server/server.py, port 6004, non-containerised",
+            "terminal_access": "cli.py run / decide / list / show use the same workflow and logs"
+          },
+          "missing_evidence": []
+        },
+        "final_answer": null,
+        "human": null,
+        "id": "wf-182b4b9f",
+        "plan": {
+          "evidence_needed": [
+            "implementation",
+            "completed_workflows",
+            "missing_evidence"
+          ],
+          "goal": "Evaluate the Planner, Worker and Reviewer workflow for improvement",
+          "missing_evidence": [],
+          "steps": [
+            "Analyze the current workflow structure",
+            "Identify areas for evidence flow optimization",
+            "Assess error handling mechanisms",
+            "Review human approval processes",
+            "Document audit trail functionality"
+          ],
+          "success_criteria": [
+            "Provide a comprehensive evaluation of the workflow"
+          ]
+        },
+        "review": {
+          "checks": [],
+          "recommendations": [
+            "Worker should provide evidence from completed workflows; Reviewer should be re-trained to ensure consistency with human review decisions"
+          ],
+          "risks": [
+            "inconsistent Reviewer verdicts"
+          ],
+          "summary": "The Worker output is missing evidence from completed workflows, and the Reviewer verdicts are not always consistent with the human review decisions.",
+          "verdict": "needs_changes"
+        },
+        "status": "awaiting_human",
+        "student": "group",
+        "task": "Review the Planner, Worker and Reviewer workflow. Evaluate their responsibilities, evidence flow, error handling, human approval and audit trail.",
+        "updated_at": "2026-10-28T10:01:31+00:00",
+        "work": {
+          "answer": "The current workflow structure is as follows: Planner -> Worker -> Reviewer. The evidence flow is that the feature backend sends task + evidence, the Planner lists the evidence it needs, the Worker answers only from that evidence and names what it used, the Reviewer checks the answer against the plan and evidence, and a human decides. Error handling includes HTTP 400 for missing student, task or evidence, HTTP 503 for Ollama unreachable non-JSON reply or empty plan, HTTP 404 for unknown workflow, HTTP 409 for already decided workflow, HTTP 400 for invalid decision or missing note/corrected answer, and truncating evidence over 6000 characters. Automated tests are 26.",
+          "evidence_used": [
+            "implementation"
+          ],
+          "issues": [],
+          "steps_done": [
+            "Analyze the current workflow structure",
+            "Identify areas for evidence flow optimization",
+            "Assess error handling mechanisms",
+            "Review human approval processes",
+            "Document audit trail functionality"
+          ]
+        }
+      },
+      "observation": {
+        "status": "APPROVED",
+        "feedback": "Workflow created; status is awaiting_human."
+      }
+    }
+  ]
+}
