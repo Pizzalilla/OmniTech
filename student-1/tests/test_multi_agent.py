@@ -1,4 +1,4 @@
-"""Planner, Worker, Reviewer, and the human decision. The shared server is faked."""
+# Planner, Worker, Reviewer, and the human decision. The shared server is faked.
 
 import requests
 
@@ -196,6 +196,30 @@ def test_partial_saves_the_worker_answer(client, monkeypatch):
     assert response.status_code == 200
     stored = client.get("/api/products/1").get_json()
     assert stored["description"] == "A compact fridge with a 320 L capacity."
+
+
+def test_human_review_box_starts_with_the_worker_draft(client, monkeypatch):
+    monkeypatch.setattr(multi_agent_client, "start", lambda task, evidence: _workflow())
+    response = client.post("/api/products/1/multi-agent-review", headers={"HX-Request": "true"})
+    draft = _workflow()["work"]["answer"].encode()
+    assert b'name="corrected_answer"' in response.data
+    assert draft in response.data.split(b'name="corrected_answer"', 1)[1]
+
+
+def test_only_correct_forwards_the_edited_draft(client, monkeypatch):
+    sent = {}
+
+    def _decide(workflow_id, decision, **kwargs):
+        sent[decision] = kwargs["corrected_answer"]
+        return _decided(decision, "approved", "draft")
+
+    monkeypatch.setattr(multi_agent_client, "decide", _decide)
+    for decision in ("approve", "partial", "correct"):
+        client.post(
+            "/api/multi-agent/decision",
+            data={"workflow_id": WF_ID, "decision": decision, "note": "n", "corrected_answer": "edited"},
+        )
+    assert sent == {"approve": "", "partial": "", "correct": "edited"}
 
 
 def test_reject_keeps_the_description(client, monkeypatch):

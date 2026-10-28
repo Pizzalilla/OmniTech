@@ -71,9 +71,12 @@ def delete_category(category_id: int) -> bool:
         return cursor.rowcount > 0
 
 
-PRODUCT_COLUMNS = """
-    p.id, p.name, p.brand, p.category_id, c.name AS category_name,
-    p.price, p.stock, p.description, p.image_url
+PRODUCT_SELECT = """
+    SELECT
+        p.id, p.name, p.brand, p.category_id, c.name AS category_name,
+        p.price, p.stock, p.description, p.image_url
+    FROM products p
+    JOIN categories c ON c.id = p.category_id
 """
 
 
@@ -86,12 +89,7 @@ def list_products(
     search: str | None = None,
     spec_keyword: str | None = None,
 ) -> list[dict]:
-    query = f"""
-        SELECT {PRODUCT_COLUMNS}
-        FROM products p
-        JOIN categories c ON c.id = p.category_id
-        WHERE 1=1
-    """
+    query = PRODUCT_SELECT + " WHERE 1=1"
     params: list = []
     chosen_brands = [item.strip() for item in (brands or []) if item and item.strip()]
     if brand and not chosen_brands:
@@ -140,15 +138,7 @@ def list_brands() -> list[str]:
 
 def get_product(product_id: int) -> dict | None:
     with get_connection() as conn:
-        row = conn.execute(
-            f"""
-            SELECT {PRODUCT_COLUMNS}
-            FROM products p
-            JOIN categories c ON c.id = p.category_id
-            WHERE p.id = ?
-            """,
-            (product_id,),
-        ).fetchone()
+        row = conn.execute(PRODUCT_SELECT + " WHERE p.id = ?", (product_id,)).fetchone()
     return row_to_dict(row)
 
 
